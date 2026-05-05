@@ -10,6 +10,7 @@ const db = require('./database');
 const app = express();
 
 // --- CONFIGURACIÓN DE ROLES ---
+// Usa los IDs que me pasaste anteriormente
 const ROLES = {
     CIVIL: '1493350442644537464',
     POLICIA: '1493350424714150061',
@@ -21,35 +22,39 @@ passport.use(new DiscordStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL,
-    scope: ['identify', 'guilds', 'guilds.members.read'] // Permiso para ver roles
+    scope: ['identify', 'guilds', 'guilds.members.read'] 
 }, (at, rt, profile, done) => {
-    // Buscamos si el usuario tiene alguno de los roles en tu servidor
-    const member = profile.guilds.find(g => g.id === 'TU_SERVER_ID'); // Pon el ID de tu servidor de Discord
-    profile.isAdmin = member && member.permissions & 0x8; // Ejemplo: Check si es admin
     return done(null, profile);
 }));
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-app.use(session({ secret: 'buenos_aires_rp', resave: false, saveUninitialized: false }));
+app.use(session({ 
+    secret: 'buenos_aires_rp_secret', 
+    resave: false, 
+    saveUninitialized: false 
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- FUNCIÓN PARA LEER EL HOSTING EXTERNO ---
-// NOTA: Esta URL debe ser el enlace "Directo" o "Raw", no el del panel de edición.
-const URL_JSON_EXTERNO = "https://TU_DOMINIO_O_IP_DIRECTA/data/usuarios.json"; 
+// --- LÓGICA DE CONEXIÓN CON EL OTRO HOSTING ---
+// IMPORTANTE: Como HidenCloud es privado, necesitas la URL de la API o un link público.
+const URL_JSON_HIDENCLOUD = "https://TU_URL_DIRECTA_AL_JSON"; 
 
-async function verificarCedulaExterna(discordId) {
+async function obtenerUsuariosActualizados(discordId) {
     try {
-        // Si el panel de HidenCloud requiere API Key, se añade en los headers
-        const respuesta = await axios.get(URL_JSON_EXTERNO);
+        // Axios hace la petición al otro hosting en tiempo real
+        const respuesta = await axios.get(URL_JSON_HIDENCLOUD, {
+            // Si el panel pide autenticación, se pondría aquí
+            headers: { 'Cache-Control': 'no-cache' } 
+        });
         const usuarios = respuesta.data;
         return usuarios.some(u => u.discord_id === discordId);
     } catch (error) {
-        console.error("Error al conectar con HidenCloud:", error.message);
+        console.error("Error al leer usuarios.json de HidenCloud:", error.message);
         return false;
     }
 }
@@ -62,16 +67,17 @@ app.get('/auth/callback', passport.authenticate('discord', {
     successRedirect: '/registro.html' 
 }));
 
-// API para que el frontend sepa el estado y los roles
 app.get('/api/verificar-estado', async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: 'No logueado' });
+    if (!req.isAuthenticated()) return res.status(401).json({ error: 'No autorizado' });
     
-    const tieneCedula = await verificarCedulaExterna(req.user.id);
+    // Verificamos el JSON externo en tiempo real
+    const tieneCedula = await obtenerUsuariosActualizados(req.user.id);
     
-    // Aquí verificamos si tiene roles específicos (esto viene del scope guilds.members.read)
-    const misRoles = req.user.guilds ? req.user.guilds : []; 
+    // Verificamos roles (esto requiere que el bot esté en el server)
+    const misRoles = req.user.guilds || [];
     
     res.json({ 
+        id: req.user.id,
         username: req.user.username,
         tieneCedula: tieneCedula,
         roles: misRoles
@@ -83,15 +89,19 @@ app.post('/api/finalizar-registro', async (req, res) => {
     
     const { motivo } = req.body;
     try {
+        // Guardamos en la DB de Render para el sistema de logs/admin
         await db.query(
             'INSERT INTO usuarios (discord_id, username, motivo, estado) VALUES ($1, $2, $3, $4) ON CONFLICT (discord_id) DO UPDATE SET motivo = $3',
             [req.user.id, req.user.username, motivo, 'pendiente']
         );
         res.json({ success: true });
     } catch (e) {
-        res.status(500).send('Error en base de datos');
+        console.error(e);
+        res.status(500).send('Error al guardar registro');
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🔥 Web activa en puerto ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🔥 Sistema online en puerto ${PORT}`);
+});
