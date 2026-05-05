@@ -1,43 +1,38 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Configuración de la conexión usando la URL de Render
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    // Render requiere SSL para conexiones externas a PostgreSQL
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-const initDB = async () => {
+// Función para inicializar las tablas necesarias si no existen
+const initDb = async () => {
     const queryText = `
-        CREATE TABLE IF NOT EXISTS usuarios (
-            discord_id VARCHAR(50) PRIMARY KEY,
-            username VARCHAR(100),
-            roblox_user VARCHAR(100),
-            motivo TEXT,
-            estado VARCHAR(20) DEFAULT 'pendiente',
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
+    CREATE TABLE IF NOT EXISTS registros (
+        discord_id TEXT PRIMARY KEY,
+        nombre_rp TEXT NOT NULL,
+        cedula TEXT NOT NULL,
+        roblox_user TEXT,
+        estado TEXT DEFAULT 'Pendiente',
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+
     try {
-        const client = await pool.connect();
-        await client.query(queryText);
-        client.release();
-        console.log('✅ Base de datos lista en Render');
+        await pool.query(queryText);
+        console.log('✅ Base de datos verificada: Tabla "registros" lista.');
     } catch (err) {
-        console.error('❌ Error DB:', err.message);
+        console.error('❌ Error al inicializar la base de datos:', err);
     }
 };
 
-initDB();
-
+// Exportamos el pool para consultas y la función de inicio
 module.exports = {
     query: (text, params) => pool.query(text, params),
-    saveUser: async (discordId, username, robloxUser, motivo) => {
-        const query = `
-            INSERT INTO usuarios (discord_id, username, roblox_user, motivo)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (discord_id) 
-            DO UPDATE SET roblox_user = $3, motivo = $4;
-        `;
-        return pool.query(query, [discordId, username, robloxUser, motivo]);
-    }
+    initDb,
+    pool
 };
