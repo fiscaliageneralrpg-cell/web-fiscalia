@@ -1,36 +1,33 @@
-const { Pool } = require('pg');
 require('dotenv').config();
+const { Pool } = require('pg');
 
-// Configuración de la conexión usando la URL de Render
+// Configuración para PostgreSQL en Render
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Render requiere SSL para conexiones externas a PostgreSQL
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: { rejectUnauthorized: false } // Obligatorio para Render
 });
 
-// Función para inicializar las tablas necesarias si no existen
+// Crea la tabla de ciudadanos automáticamente si no existe
 const initDb = async () => {
     const queryText = `
-    CREATE TABLE IF NOT EXISTS registros (
+    CREATE TABLE IF NOT EXISTS usuarios (
         discord_id TEXT PRIMARY KEY,
-        nombre_rp TEXT NOT NULL,
-        cedula TEXT NOT NULL,
+        nombres TEXT,
+        apellidos TEXT,
+        nuip TEXT,
+        nacionalidad TEXT,
         roblox_user TEXT,
-        estado TEXT DEFAULT 'Pendiente',
-        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        estado TEXT DEFAULT 'nuevo'
     );`;
 
     try {
         await pool.query(queryText);
-        console.log('✅ Base de datos verificada: Tabla "registros" lista.');
+        console.log('✅ Base de datos sincronizada: Tabla "usuarios" lista.');
     } catch (err) {
-        console.error('❌ Error al inicializar la base de datos:', err);
+        console.error('❌ Error al inicializar DB:', err);
     }
 };
 
-// Exportamos el pool para consultas y la función de inicio
 module.exports = {
     query: (text, params) => pool.query(text, params),
     initDb,
