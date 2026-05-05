@@ -1,25 +1,23 @@
 {
-  "name": "dev-hub",
+  "name": "mi-dashboard",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "discord.js": "^14.26.4",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "helmet": "^8.1.0",
-    "morgan": "^1.10.1",
-    "pg": "^8.20.0",
-    "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+    "express-session": "^1.19.0",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4",
+    "path": "^0.12.7",
+    "pg": "^8.20.0"
   }
 }

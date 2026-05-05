@@ -2,183 +2,119 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevHub | Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Panel de Control | Dashboard</title>
     <style>
-        /* --- CORE SYSTEM --- */
-        :root {
-            --sidebar-width: 280px;
-            --apple-blue: #0071e3;
-            --bg-light: #f5f5f7;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --text-dark: #1d1d1f;
-            --text-gray: #86868b;
-            --border-color: rgba(0,0,0,0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
-
-        body {
-            background-color: var(--bg-light);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            color: var(--text-dark);
-        }
-
-        /* --- SIDEBAR DESIGN (DISCORD STYLE) --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: #fff;
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 30px 15px;
-            z-index: 10;
-        }
-
-        .brand {
-            padding: 0 15px;
-            margin-bottom: 40px;
+        :root { --admin: #e91e63; --police: #2196f3; --civil: #4caf50; }
+        body { background: #0b0e11; color: white; font-family: 'Segoe UI', sans-serif; padding: 40px; }
+        .header {
+            background: #15191d;
+            padding: 25px;
+            border-radius: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            border: 1px solid #222;
         }
+        .user-info { display: flex; align-items: center; gap: 20px; }
+        .user-info img { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #5865F2; }
+        .user-info h2 { margin: 0; font-size: 1.5rem; }
+        .user-info p { margin: 0; color: #777; font-size: 0.9rem; }
 
-        .brand-logo {
-            width: 35px; height: 35px;
-            background: var(--apple-blue);
-            border-radius: 10px;
-            display: flex; justify-content: center; align-items: center;
-            color: white; font-weight: 700; font-size: 20px;
-        }
-
-        .brand-name { font-size: 22px; font-weight: 700; letter-spacing: -1px; }
-
-        .nav-section { margin-bottom: 30px; }
-        .nav-label {
-            font-size: 11px; font-weight: 700; color: var(--text-gray);
-            text-transform: uppercase; letter-spacing: 1px;
-            margin-bottom: 12px; padding-left: 15px;
-        }
-
-        .nav-link {
-            display: flex; align-items: center; gap: 12px;
-            padding: 14px 15px; border-radius: 14px;
-            text-decoration: none; color: #424245;
-            font-weight: 500; font-size: 15px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .nav-link:hover { background: rgba(0,0,0,0.04); transform: translateX(3px); }
-        .nav-link.active { background: var(--apple-blue); color: white; box-shadow: 0 10px 20px rgba(0,113,227,0.15); }
-
-        /* --- MAIN CONTENT AREA --- */
-        .main-container {
-            flex: 1;
-            padding: 40px;
-            display: flex; flex-direction: column;
-            background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .welcome-hero {
-            background: white;
-            padding: 60px;
-            border-radius: 40px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.02);
-            max-width: 900px;
-            margin: auto;
+        .grid-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .card {
+            background: #1c2126;
+            padding: 30px;
+            border-radius: 18px;
             text-align: center;
-            animation: slideUp 0.8s ease;
+            border: 2px solid transparent;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
         }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-
-        .user-badge {
+        .card h3 { margin-bottom: 15px; font-size: 1.4rem; }
+        .btn-access {
             display: inline-block;
-            background: #e8f3ff;
-            color: var(--apple-blue);
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-weight: 600; font-size: 13px;
-            margin-bottom: 25px;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            margin-top: 15px;
+            background: #333;
+            pointer-events: none;
+            opacity: 0.3;
         }
-
-        .welcome-hero h1 { font-size: 48px; font-weight: 700; margin-bottom: 15px; letter-spacing: -2px; }
-        .welcome-hero p { font-size: 20px; color: var(--text-gray); line-height: 1.6; margin-bottom: 35px; }
-
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            max-width: 500px;
-            margin: 0 auto;
+        /* Estados Activos */
+        .card.active.admin { border-color: var(--admin); box-shadow: 0 10px 30px rgba(233, 30, 99, 0.2); }
+        .card.active.police { border-color: var(--police); box-shadow: 0 10px 30px rgba(33, 150, 243, 0.2); }
+        .card.active.civil { border-color: var(--civil); box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2); }
+        
+        .card.active .btn-access { 
+            pointer-events: auto; opacity: 1; 
         }
+        .card.active.admin .btn-access { background: var(--admin); }
+        .card.active.police .btn-access { background: var(--police); }
+        .card.active.civil .btn-access { background: var(--civil); }
 
-        .action-card {
-            background: #fbfbfd;
-            padding: 25px;
-            border-radius: 24px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .action-card:hover { border-color: var(--apple-blue); transform: translateY(-5px); }
+        .locked-tag { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; background: #000; padding: 5px 10px; border-radius: 20px; color: #ff3e3e; }
     </style>
 </head>
 <body>
-
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-logo">D</div>
-            <span class="brand-name">DevHub</span>
-        </div>
-
-        <div class="nav-section">
-            <p class="nav-label">Navegación</p>
-            <a href="dashboard.html" class="nav-link active">🏠 Dashboard</a>
-            <a href="chat.html" class="nav-link">💬 Chat & Amigos</a>
-            <a href="foro.html" class="nav-link">📚 Foro Global</a>
-        </div>
-
-        <div class="nav-section">
-            <p class="nav-label">Comunidad</p>
-            <a href="#" class="nav-link">👤 Perfil</a>
-            <a href="#" class="nav-link">⚙️ Ajustes</a>
-        </div>
-
-        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color);">
-            <a href="/" onclick="localStorage.clear()" class="nav-link" style="color: #ff3b30;">🚪 Salir</a>
-        </div>
-    </aside>
-
-    <main class="main-container">
-        <div class="welcome-hero">
-            <span class="user-badge">Developer ID Verificado</span>
-            <h1 id="userTitle">Bienvenido, Dev</h1>
-            <p>Tu ecosistema de desarrollo está listo. Conecta con otros programadores, comparte código y construye el futuro.</p>
-            
-            <div class="quick-actions">
-                <div class="action-card" onclick="location.href='chat.html'">
-                    <span style="font-size: 30px;">💬</span>
-                    <h3 style="margin-top:10px;">Ir al Chat</h3>
-                </div>
-                <div class="action-card" onclick="location.href='foro.html'">
-                    <span style="font-size: 30px;">📚</span>
-                    <h3 style="margin-top:10px;">Ver Foro</h3>
-                </div>
+    <div class="header">
+        <div class="user-info">
+            <img id="u-avatar" src="https://via.placeholder.com/70" alt="avatar">
+            <div>
+                <h2 id="u-name">Cargando Usuario...</h2>
+                <p id="u-roblox">Usuario de Roblox Verificado</p>
             </div>
         </div>
-    </main>
+        <div style="text-align: right;">
+            <p style="color: #4caf50;">● Servidor Online</p>
+        </div>
+    </div>
+
+    <div class="grid-menu">
+        <div id="card-admin" class="card admin">
+            <span class="locked-tag">BLOQUEADO</span>
+            <h3>ADMINISTRACIÓN</h3>
+            <p>Acceso a logs, gestión de usuarios y configuración del sistema.</p>
+            <a href="/dashboard/admin" class="btn-access">ENTRAR AL PANEL</a>
+        </div>
+
+        <div id="card-police" class="card police">
+            <span class="locked-tag">BLOQUEADO</span>
+            <h3>FUERZA PÚBLICA</h3>
+            <p>Acceso a central de radio, bases de datos y patrullaje.</p>
+            <a href="/dashboard/fuerza-publica" class="btn-access">ENTRAR AL PANEL</a>
+        </div>
+
+        <div id="card-civil" class="card civil">
+            <span class="locked-tag">BLOQUEADO</span>
+            <h3>CIUDADANÍA</h3>
+            <p>Acceso a trámites, empleos y propiedad privada.</p>
+            <a href="/dashboard/civil" class="btn-access">ENTRAR AL PANEL</a>
+        </div>
+    </div>
 
     <script>
-        const user = localStorage.getItem('username') || 'Invitado';
-        document.getElementById('userTitle').innerText = `Bienvenido, ${user}`;
+        fetch('/api/user-info')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('u-name').innerText = data.username;
+                document.getElementById('u-avatar').src = data.avatar;
+
+                if(data.roles.esAdmin) habilitar('card-admin');
+                if(data.roles.esPolicia) habilitar('card-police');
+                if(data.roles.esCivil) habilitar('card-civil');
+            });
+
+        function habilitar(id) {
+            const card = document.getElementById(id);
+            card.classList.add('active');
+            card.querySelector('.locked-tag').innerText = 'DESBLOQUEADO';
+            card.querySelector('.locked-tag').style.color = '#4caf50';
+        }
     </script>
 </body>
 </html>
