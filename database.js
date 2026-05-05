@@ -3,9 +3,7 @@ require('dotenv').config();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Requerido para Render
-    }
+    ssl: { rejectUnauthorized: false }
 });
 
 const initDB = async () => {
@@ -23,9 +21,9 @@ const initDB = async () => {
         const client = await pool.connect();
         await client.query(queryText);
         client.release();
-        console.log('✅ Conexión exitosa con Render PostgreSQL');
+        console.log('✅ Base de datos lista en Render');
     } catch (err) {
-        console.error('❌ Error de conexión DB:', err.message);
+        console.error('❌ Error DB:', err.message);
     }
 };
 
@@ -38,7 +36,7 @@ module.exports = {
             INSERT INTO usuarios (discord_id, username, roblox_user, motivo)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (discord_id) 
-            DO UPDATE SET roblox_user = $3, motivo = $4, estado = 'pendiente';
+            DO UPDATE SET roblox_user = $3, motivo = $4;
         `;
         return pool.query(query, [discordId, username, robloxUser, motivo]);
     }
