@@ -2,104 +2,87 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro | Buenos Aires RP</title>
+    <title>Buenos Aires RP | Registro</title>
     <style>
-        :root { --discord: #5865F2; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .container { background: var(--card); border: 1px solid #333; padding: 40px; border-radius: 16px; width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center; }
+        body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 12px; width: 400px; border: 1px solid #333; text-align: center; }
         .hidden { display: none; }
-        .status-box { margin-bottom: 20px; padding: 15px; border-radius: 8px; font-size: 14px; }
-        .error-bg { background: rgba(255, 71, 71, 0.1); color: #ff4747; border: 1px solid #ff4747; }
-        textarea { width: 100%; height: 120px; border-radius: 8px; background: #2a2a2a; color: white; border: 1px solid #444; padding: 12px; margin-top: 15px; resize: none; box-sizing: border-box; }
-        button { background: var(--discord); color: white; border: none; padding: 14px; border-radius: 8px; width: 100%; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.2s; }
-        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
-        .loader { border: 4px solid #333; border-top: 4px solid var(--discord); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .data-preview { background: #252525; padding: 10px; border-radius: 5px; margin: 15px 0; text-align: left; font-size: 13px; border-left: 4px solid #5865F2; }
+        textarea { width: 100%; height: 80px; background: #333; color: white; border: none; padding: 10px; box-sizing: border-box; border-radius: 5px; margin-top: 10px; }
+        button { background: #5865F2; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        .error { color: #ff4747; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="loading-state">
-        <div class="loader"></div>
-        <p>Sincronizando con los servidores...</p>
-    </div>
+<div class="card">
+    <div id="loader">Cargando datos...</div>
 
-    <!-- SECCIÓN SIN CÉDULA -->
+    <!-- SI NO TIENE CÉDULA -->
     <div id="no-cedula" class="hidden">
-        <h2 style="color: #ff4747;">🚫 Acceso Denegado</h2>
-        <div class="status-box error-bg">
-            No posees una cédula activa en nuestro registro nacional.
-        </div>
-        <p>Para registrarte, ingresa al bot de Discord en el canal <b>#registro-cedula</b> y sigue los pasos.</p>
-        <button onclick="location.reload()">Ya me registré, reintentar</button>
+        <h2 class="error">Cédula no encontrada</h2>
+        <p>No apareces en el Registro Nacional de HidenCloud.</p>
+        <button onclick="location.reload()">Reintentar</button>
     </div>
 
-    <!-- SECCIÓN FORMULARIO -->
-    <div id="form-section" class="hidden">
-        <h2>Bienvenido, <span id="user-display"></span></h2>
-        <p>Tu cédula ha sido verificada correctamente. Por favor, completa tu solicitud de ingreso.</p>
-        <label style="display: block; text-align: left; font-size: 13px; color: #aaa;">¿Por qué deseas unirte a Buenos Aires RP?</label>
-        <textarea id="motivo_input" placeholder="Explica brevemente tu experiencia y tus intenciones..."></textarea>
-        <button id="submit-btn" onclick="enviarFormulario()">Enviar Solicitud al Staff</button>
+    <!-- FORMULARIO SI TIENE CÉDULA -->
+    <div id="form-registro" class="hidden">
+        <h2>Verificación Exitosa</h2>
+        <div class="data-preview" id="data-box"></div>
+        
+        <p>Completa tu motivo de ingreso:</p>
+        <textarea id="motivo" placeholder="¿Por qué quieres entrar al servidor?"></textarea>
+        <button onclick="enviar()">Finalizar Registro</button>
     </div>
 
-    <!-- SECCIÓN PENDIENTE -->
-    <div id="wait-section" class="hidden">
-        <h2 style="color: var(--discord);">⏳ Solicitud Enviada</h2>
-        <p>Tu solicitud está siendo revisada por nuestro equipo de Staff.</p>
-        <p>Recibirás un mensaje automático en Discord cuando seas aprobado o denegado.</p>
-        <button disabled style="background: #333; cursor: not-allowed;">Esperando respuesta...</button>
+    <!-- ESPERA DE APROBACIÓN -->
+    <div id="espera" class="hidden">
+        <h2 style="color: #ffd700;">Solicitud Pendiente</h2>
+        <p>Tu solicitud está siendo revisada por el Staff.</p>
     </div>
 </div>
 
 <script>
-    async function syncSystem() {
-        try {
-            const response = await fetch('/api/verificar-estado');
-            const data = await response.json();
-            
-            document.getElementById('loading-state').classList.add('hidden');
-            document.getElementById('user-display').innerText = data.username;
+    let nombreCompleto = "";
 
-            if (!data.tieneCedula) {
-                document.getElementById('no-cedula').classList.remove('hidden');
-            } else if (data.estado === 'pendiente') {
-                document.getElementById('wait-section').classList.remove('hidden');
-            } else if (data.estado === 'aprobado') {
-                window.location.href = '/dashboard.html';
-            } else {
-                document.getElementById('form-section').classList.remove('hidden');
-            }
-        } catch (e) {
-            alert("Error de conexión con el servidor web.");
+    async function cargar() {
+        const res = await fetch('/api/verificar-estado');
+        const data = await res.json();
+        
+        document.getElementById('loader').classList.add('hidden');
+
+        if (!data.tieneCedula) {
+            document.getElementById('no-cedula').classList.remove('hidden');
+        } else if (data.estado === 'pendiente') {
+            document.getElementById('espera').classList.remove('hidden');
+        } else {
+            document.getElementById('form-registro').classList.remove('hidden');
+            nombreCompleto = `${data.datosHC.nombres} ${data.datosHC.apellidos}`;
+            
+            // Mostramos los datos extraídos del hosting
+            document.getElementById('data-box').innerHTML = `
+                <b>Nombre:</b> ${nombreCompleto}<br>
+                <b>NUIP:</b> ${data.datosHC.nuip}<br>
+                <b>Nacionalidad:</b> ${data.datosHC.nacionalidad}<br>
+                <b>Roblox:</b> ${data.datosHC.robloxUser}
+            `;
         }
     }
 
-    async function enviarFormulario() {
-        const mot = document.getElementById('motivo_input').value;
-        if (mot.length < 20) return alert("Por favor, desarrolla un poco más tu motivo (mínimo 20 caracteres).");
-
-        const btn = document.getElementById('submit-btn');
-        btn.disabled = true;
-        btn.innerText = "Procesando...";
+    async function enviar() {
+        const motivo = document.getElementById('motivo').value;
+        if(motivo.length < 10) return alert("Motivo muy corto");
 
         const res = await fetch('/api/finalizar-registro', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ motivo: mot })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ motivo, nombreC: nombreCompleto })
         });
 
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert("Hubo un fallo al enviar los datos.");
-            btn.disabled = false;
-        }
+        if(res.ok) location.reload();
     }
 
-    syncSystem();
+    cargar();
 </script>
 
 </body>
