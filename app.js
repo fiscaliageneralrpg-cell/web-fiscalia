@@ -4,12 +4,11 @@ const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 const db = require('./database');
-const fs = require('fs'); // Necesario para leer el JSON
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 
-// --- CONFIGURACIÓN DE PASSPORT ---
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
@@ -22,80 +21,65 @@ passport.use(new DiscordStrategy({
 
 app.use(express.json());
 app.use(session({
-    secret: 'buenos_aires_rp_sinc_2026',
+    secret: 'bsas_rp_2026_secret',
     resave: false,
     saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- API DE VERIFICACIÓN (MIGRA DATOS DE JSON A DB) ---
+// --- API DE VERIFICACIÓN ADAPTADA A TU JSON ---
 app.get('/api/verificar-ciudadano', async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: 'No autorizado' });
+    if (!req.isAuthenticated()) return res.status(401).json({ registrado: false });
     
-    const discordId = req.user.id;
+    const discordId = req.user.id; // Ejemplo: "1096198349390090240"
 
     try {
-        // 1. Primero buscamos en la Base de Datos de Render
+        // 1. Intentar buscar en PostgreSQL primero
         let result = await db.query('SELECT * FROM usuarios WHERE discord_id = $1', [discordId]);
         
-        // 2. Si NO aparece en la DB, buscamos en usuarios.json
         if (result.rows.length === 0) {
             const jsonPath = path.join(__dirname, 'data', 'usuarios.json');
             
             if (fs.existsSync(jsonPath)) {
-                const rawData = fs.readFileSync(jsonPath);
-                const usuariosJson = JSON.parse(rawData);
+                const usuariosJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
                 
-                // Buscamos al usuario en el array del JSON
-                const usuarioEncontrado = usuariosJson.find(u => u.discord_id === discordId);
+                // BUSQUEDA POR CLAVE (Tu formato: "ID": { datos })
+                const u = usuariosJson[discordId];
 
-                if (usuarioEncontrado) {
-                    console.log(`📦 Migrando datos de ${usuarioEncontrado.nombres} a la base de datos...`);
-                    
-                    // Insertamos los datos del JSON a la base de datos PostgreSQL
+                if (u) {
+                    console.log(`✅ Migrando a ${u.nombres} desde JSON por ID.`);
+                    // Insertar en DB para persistencia
                     await db.query(
                         'INSERT INTO usuarios (discord_id, nombres, apellidos, nuip, nacionalidad, roblox_user, estado) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                        [
-                            usuarioEncontrado.discord_id,
-                            usuarioEncontrado.nombres,
-                            usuarioEncontrado.apellidos,
-                            usuarioEncontrado.nuip,
-                            usuarioEncontrado.nacionalidad,
-                            usuarioEncontrado.roblox_user,
-                            usuarioEncontrado.estado || 'nuevo'
-                        ]
+                        [discordId, u.nombres, u.apellidos, u.nuip, u.nacionalidad, u.robloxUser, 'ACTIVO']
                     );
-                    
-                    // Volvemos a consultar para enviar los datos recién guardados
                     result = await db.query('SELECT * FROM usuarios WHERE discord_id = $1', [discordId]);
                 }
             }
         }
 
-        // 3. Respuesta final
         if (result.rows.length > 0) {
-            res.json({ registrado: true, datos: result.rows[0] });
+            return res.json({ registrado: true, datos: result.rows[0] });
         } else {
-            res.json({ registrado: false });
+            return res.json({ registrado: false });
         }
-
     } catch (err) {
-        console.error('❌ Error en verificación:', err);
-        res.status(500).json({ error: 'Error interno' });
+        console.error(err);
+        res.status(500).json({ registrado: false });
     }
 });
 
 app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/callback', passport.authenticate('discord', {
-    failureRedirect: '/',
-    successRedirect: '/registro.html'
+    successRedirect: '/registro.html',
+    failureRedirect: '/'
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`🚀 Web sincronizada en puerto ${PORT}`);
+    console.log(`🚀 Servidor Web en puerto ${PORT}`);
     db.initDb().catch(() => {});
 });
