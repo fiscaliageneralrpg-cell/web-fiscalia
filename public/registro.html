@@ -2,177 +2,62 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro Civil - Buenos Aires RP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Sistema de Identificación - BS AS RP</title>
     <style>
-        :root {
-            --bg-color: #0f0f12;
-            --card-bg: #1a1a1f;
-            --accent: #3b82f6;
-            --text-main: #ffffff;
-            --text-dim: #a1a1aa;
-            --error: #ef4444;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        /* Pantalla de Carga */
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-            transition: opacity 0.5s ease;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Contenedor Principal */
-        .container {
-            background: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-            display: none; /* Se activa con JS */
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        h1 { font-weight: 700; margin-bottom: 0.5rem; color: var(--accent); }
-        p { color: var(--text-dim); margin-bottom: 2rem; }
-
-        .data-field {
-            background: rgba(255,255,255,0.03);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .label { color: var(--text-dim); font-size: 0.85rem; }
-        .value { font-weight: 600; color: var(--text-main); }
-
-        .btn {
-            display: inline-block;
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-top: 1.5rem;
-            transition: opacity 0.2s;
-        }
-
-        .btn:hover { opacity: 0.9; }
-
-        .error-card { color: var(--error); }
+        body { background: #0b0b0d; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #16161a; padding: 30px; border-radius: 15px; width: 380px; text-align: center; border: 1px solid #333; display: none; }
+        #loader { text-align: center; }
+        .field { background: #1f1f23; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; font-size: 14px; }
+        .label { color: #888; }
+        .value { font-weight: bold; color: #3b82f6; }
+        h2 { margin-top: 0; color: #3b82f6; letter-spacing: 1px; }
+        .btn { display: block; background: #3b82f6; color: white; padding: 12px; border-radius: 8px; text-decoration: none; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Carga -->
-    <div id="loader">
-        <div class="spinner"></div>
-        <div id="loader-text">Cargando datos...</div>
+    <div id="loader"><h2>Cargando registro...</h2></div>
+
+    <div id="card-ready" class="card">
+        <h2>CIUDADANO ACTIVO</h2>
+        <p style="color: #888; font-size: 13px;">Tus datos han sido sincronizados correctamente.</p>
+        <div class="field"><span class="label">Nombres:</span> <span class="value" id="nom"></span></div>
+        <div class="field"><span class="label">Apellidos:</span> <span class="value" id="ape"></span></div>
+        <div class="field"><span class="label">NUIP:</span> <span class="value" id="nui"></span></div>
+        <div class="field"><span class="label">Nacionalidad:</span> <span class="value" id="nac"></span></div>
+        <div class="field"><span class="label">Estado:</span> <span class="value" style="color: #10b981;">VALIDADO</span></div>
+        <a href="/" class="btn">Cerrar Sesión</a>
     </div>
 
-    <!-- Contenido: Usuario Registrado -->
-    <div id="profile-card" class="container">
-        <h1>CIUDADANO ACTIVO</h1>
-        <p>Tu identificación ha sido verificada en la base de datos.</p>
-        
-        <div class="data-field"><span class="label">Nombres:</span> <span class="value" id="res-nombres"></span></div>
-        <div class="data-field"><span class="label">Apellidos:</span> <span class="value" id="res-apellidos"></span></div>
-        <div class="data-field"><span class="label">NUIP:</span> <span class="value" id="res-nuip"></span></div>
-        <div class="data-field"><span class="label">Estado:</span> <span class="value" id="res-estado" style="color: #10b981;"></span></div>
-        
-        <a href="/" class="btn">Volver al Inicio</a>
-    </div>
-
-    <!-- Contenido: No Registrado -->
-    <div id="no-reg-card" class="container">
-        <h1 style="color: var(--error);">SIN REGISTRO</h1>
-        <p>No se encontró una cédula vinculada a tu cuenta de Discord.</p>
-        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; font-size: 0.9rem;">
-            Por favor, dirígete al canal de <b>#tramites-cedula</b> en nuestro Discord y usa el comando: <br>
-            <code style="color: white; display: block; margin-top: 10px;">/registrar_cedula</code>
-        </div>
-        <a href="https://discord.gg/TU_INVITACION" class="btn" style="background: #5865F2;">Ir al Discord</a>
+    <div id="card-error" class="card">
+        <h2 style="color: #ef4444;">SIN REGISTRO</h2>
+        <p>No se encontró información para tu ID de Discord en el sistema.</p>
+        <a href="https://discord.gg/bsas-rp" class="btn">Ir a Discord</a>
     </div>
 
     <script>
-        async function verificar() {
-            const loader = document.getElementById('loader');
-            const profileCard = document.getElementById('profile-card');
-            const noRegCard = document.getElementById('no-reg-card');
-
+        async function cargar() {
             try {
-                // Llamada a la API que configuramos en app.js
-                const response = await fetch('/api/verificar-ciudadano');
+                const res = await fetch('/api/verificar-ciudadano');
+                const data = await res.json();
                 
-                if (response.status === 401) {
-                    window.location.href = '/auth/discord'; // Redirigir si no está logueado
-                    return;
-                }
+                document.getElementById('loader').style.display = 'none';
 
-                const data = await response.json();
-
-                // Ocultar loader
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-
-                if (data.registrado) {
-                    // Llenar datos en la tarjeta de perfil
-                    document.getElementById('res-nombres').textContent = data.datos.nombres;
-                    document.getElementById('res-apellidos').textContent = data.datos.apellidos;
-                    document.getElementById('res-nuip').textContent = data.datos.nuip;
-                    document.getElementById('res-estado').textContent = data.datos.estado.toUpperCase();
-                    profileCard.style.display = 'block';
+                if (data.registrado && data.datos) {
+                    // Mapeo directo de los datos que envía el app.js
+                    document.getElementById('nom').innerText = data.datos.nombres;
+                    document.getElementById('ape').innerText = data.datos.apellidos;
+                    document.getElementById('nui').innerText = data.datos.nuip;
+                    document.getElementById('nac').innerText = data.datos.nacionalidad;
+                    document.getElementById('card-ready').style.display = 'block';
                 } else {
-                    // Mostrar tarjeta de error
-                    noRegCard.style.display = 'block';
+                    document.getElementById('card-error').style.display = 'block';
                 }
-
-            } catch (error) {
-                console.error("Error:", error);
-                document.getElementById('loader-text').innerHTML = "<span style='color: #ef4444'>Error de conexión con el servidor.</span>";
+            } catch (e) {
+                console.error(e);
             }
         }
-
-        // Ejecutar al cargar la página
-        window.onload = verificar;
+        window.onload = cargar;
     </script>
 </body>
 </html>
