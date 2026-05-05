@@ -10,10 +10,11 @@ const db = require('./database');
 const app = express();
 
 // Bot de Discord
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ 
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] 
+});
 client.login(process.env.DISCORD_TOKEN);
 
-// Configuración de IDs
 const ROLES = {
     CIVIL: '1493350442644537464',
     POLICIA: '1493350424714150061',
@@ -21,7 +22,6 @@ const ROLES = {
 };
 const CANAL_LOGS = '1482550071521185926';
 
-// Configuración Passport
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
@@ -30,10 +30,12 @@ passport.use(new DiscordStrategy({
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL,
     scope: ['identify', 'guilds', 'guilds.members.read']
-}, (at, rt, profile, done) => done(null, profile)));
+}, (at, rt, profile, done) => {
+    process.nextTick(() => done(null, profile));
+}));
 
 app.use(session({ 
-    secret: 'atm7_secret_key', 
+    secret: 'buenos_aires_rp_secret', 
     resave: false, 
     saveUninitialized: false 
 }));
@@ -41,60 +43,43 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 
-// Middleware de Autenticación
-const checkAuth = (req, res, next) => req.isAuthenticated() ? next() : res.redirect('/');
-
-// Rutas
+// Rutas de Auth
 app.get('/auth/discord', passport.authenticate('discord'));
-app.get('/auth/callback', passport.authenticate('discord', { failureRedirect: '/' }), (req, res) => {
-    res.redirect('/registro.html'); 
-});
+app.get('/auth/callback', passport.authenticate('discord', { 
+    failureRedirect: '/',
+    successRedirect: '/registro.html' 
+}));
 
-// Guardar datos en Render y avisar por Discord
-app.post('/api/solicitar-ingreso', checkAuth, async (req, res) => {
+// API para guardar registro
+app.post('/api/solicitar-ingreso', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send('No autorizado');
+    
     const { robloxUser, motivo } = req.body;
     try {
-        // Guardar en DB
         await db.saveUser(req.user.id, req.user.username, robloxUser, motivo);
         
-        // Log a Discord
         const canal = await client.channels.fetch(CANAL_LOGS);
         const embed = new EmbedBuilder()
-            .setTitle("📄 Nueva Solicitud de Cédula")
-            .setColor("#00FF00")
+            .setTitle("Nuevo Registro de Cédula")
+            .setColor("#00ff00")
             .addFields(
-                { name: "Usuario", value: `<@${req.user.id}>`, inline: true },
-                { name: "Roblox", value: robloxUser, inline: true },
+                { name: "Usuario", value: `<@${req.user.id}>` },
+                { name: "Roblox", value: robloxUser },
                 { name: "Motivo", value: motivo }
-            )
-            .setTimestamp();
-
+            );
+        
         await canal.send({ embeds: [embed] });
         res.json({ success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Error al procesar' });
+        res.status(500).send('Error interno');
     }
-});
-
-// Info del usuario para el frontend
-app.get('/api/user-info', checkAuth, async (req, res) => {
-    const guild = await client.guilds.fetch(process.env.GUILD_ID);
-    const member = await guild.members.fetch(req.user.id).catch(() => null);
-    res.json({
-        username: req.user.username,
-        avatar: `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png`,
-        roles: {
-            esCivil: member?.roles.cache.has(ROLES.CIVIL),
-            esPolicia: member?.roles.cache.has(ROLES.POLICIA),
-            esAdmin: member?.roles.cache.has(ROLES.ADMIN)
-        }
-    });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`🔥 Servidor funcionando en http://localhost:${PORT}`);
+// IMPORTANTE: Configuración de puerto para Render
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🔥 Servidor activo en puerto ${PORT}`);
 });
