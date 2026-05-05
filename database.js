@@ -1,13 +1,11 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 
-// Configuración para PostgreSQL en Render
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Obligatorio para Render
+    ssl: { rejectUnauthorized: false }
 });
 
-// Crea la tabla de ciudadanos automáticamente si no existe
 const initDb = async () => {
     const queryText = `
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -22,9 +20,9 @@ const initDb = async () => {
 
     try {
         await pool.query(queryText);
-        console.log('✅ Base de datos sincronizada: Tabla "usuarios" lista.');
+        console.log('✅ Base de datos de Render conectada y sincronizada.');
     } catch (err) {
-        console.error('❌ Error al inicializar DB:', err);
+        console.error('❌ Error al conectar con PostgreSQL:', err.message);
     }
 };
 
