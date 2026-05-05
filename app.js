@@ -10,7 +10,10 @@ const db = require('./database');
 
 const app = express();
 
-// --- CONFIGURACIÓN DE ROLES Y LOGS ---
+/**
+ * CONFIGURACIÓN DE IDENTIDADES Y CANALES
+ * Definición de roles y canal de auditoría para el staff
+ */
 const ROLES = {
     CIVIL: '1493350442644537464',
     POLICIA: '1493350424714150061',
@@ -18,28 +21,36 @@ const ROLES = {
 };
 const CANAL_LOGS = '1482550071521185926';
 
-// --- CONFIGURACIÓN DEL BOT ---
+/**
+ * INICIALIZACIÓN DEL BOT DE DISCORD
+ * Necesario para enviar los embeds con botones al staff
+ */
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences
+        GatewayIntentBits.GuildMembers
     ] 
 });
 
-// --- ESTRATEGIA DISCORD (OAuth2) ---
+/**
+ * CONFIGURACIÓN DE PASSPORT (OAuth2)
+ * Se solicita permiso para identificar al usuario y leer sus gremios/roles
+ */
 passport.use(new DiscordStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL,
     scope: ['identify', 'guilds', 'guilds.members.read']
-}, (at, rt, profile, done) => done(null, profile)));
+}, (accessToken, refreshToken, profile, done) => {
+    return done(null, profile);
+}));
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
+// Middlewares de Express
 app.use(session({ 
-    secret: 'buenos_aires_rp_secure_key', 
+    secret: 'buenos_aires_rp_session_ultra_secret_2026', 
     resave: false, 
     saveUninitialized: false 
 }));
@@ -48,118 +59,139 @@ app.use(passport.session());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- LÓGICA DE HIDENCLOUD (JSON EXTERNO) ---
-const URL_JSON_EXTERNO = "https://tu-hosting-hidencloud.com/data/usuarios.json"; 
+/**
+ * LÓGICA DE CONEXIÓN CON HIDENCLOUD
+ * Función asíncrona para validar la existencia del usuario en el JSON externo
+ */
+const URL_HIDENCLOUD = "https://tu-hosting-externo.com/data/usuarios.json"; 
 
-async function verificarCedulaHidenCloud(discordId) {
+async function consultarHidenCloud(discordId) {
     try {
-        const res = await axios.get(URL_JSON_EXTERNO, { headers: { 'Cache-Control': 'no-cache' } });
-        return res.data.some(u => u.discord_id === discordId);
-    } catch (e) {
-        console.error("Error leyendo HidenCloud:", e.message);
+        const respuesta = await axios.get(URL_HIDENCLOUD, { 
+            headers: { 'Cache-Control': 'no-cache' } 
+        });
+        const lista = respuesta.data;
+        return lista.some(u => u.discord_id === discordId);
+    } catch (error) {
+        console.error("Error crítico al conectar con HidenCloud:", error.message);
         return false;
     }
 }
 
-// --- RUTAS DE AUTENTICACIÓN ---
+/**
+ * RUTAS DE AUTENTICACIÓN
+ */
 app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/callback', passport.authenticate('discord', { 
     failureRedirect: '/', 
     successRedirect: '/registro.html' 
 }));
 
-// --- API DE ESTADO Y ROLES ---
+/**
+ * ENDPOINT DE VERIFICACIÓN INTEGRADA
+ * Cruza datos de HidenCloud, la DB de Render y los roles de Discord
+ */
 app.get('/api/verificar-estado', async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: 'No autorizado' });
+    if (!req.isAuthenticated()) return res.status(401).json({ error: 'Sesión no iniciada' });
     
-    // 1. Verificamos cédula en el JSON externo
-    const tieneCedula = await verificarCedulaHidenCloud(req.user.id);
-    
-    // 2. Verificamos estado de solicitud en DB local
-    const dbRes = await db.query('SELECT estado FROM usuarios WHERE discord_id = $1', [req.user.id]);
-    const estado = dbRes.rows.length > 0 ? dbRes.rows[0].estado : 'nuevo';
-
-    // 3. Obtenemos roles (si el bot está en el servidor)
-    const misRoles = req.user.guilds ? req.user.guilds : [];
-
-    res.json({ 
-        id: req.user.id,
-        username: req.user.username,
-        tieneCedula, 
-        estado,
-        roles: misRoles,
-        idsRoles: ROLES // Enviamos los IDs para el frontend
-    });
+    try {
+        const tieneCedula = await consultarHidenCloud(req.user.id);
+        const consultaDB = await db.query('SELECT estado FROM usuarios WHERE discord_id = $1', [req.user.id]);
+        const estadoLocal = consultaDB.rows.length > 0 ? consultaDB.rows[0].estado : 'nuevo';
+        
+        // Verificación de roles en el servidor de Discord
+        const rolesUsuario = req.user.guilds || [];
+        
+        res.json({ 
+            id: req.user.id,
+            username: req.user.username,
+            tieneCedula: tieneCedula,
+            estado: estadoLocal,
+            roles: rolesUsuario,
+            configRoles: ROLES
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
 });
 
-// --- ENVIAR SOLICITUD A DISCORD CON BOTONES ---
+/**
+ * ENVÍO DE FORMULARIO Y NOTIFICACIÓN AL STAFF
+ */
 app.post('/api/finalizar-registro', async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).send('No autorizado');
+    if (!req.isAuthenticated()) return res.status(401).send('Acceso denegado');
     
     const { motivo } = req.body;
 
-    // Crear botones de Aceptación/Denegación
-    const row = new ActionRowBuilder().addComponents(
+    // Componentes de Discord (Botones)
+    const botones = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`aprobar_${req.user.id}`)
-            .setLabel('Aceptar Ingreso')
+            .setLabel('Aprobar Ciudadano')
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
             .setCustomId(`denegar_${req.user.id}`)
-            .setLabel('Denegar')
+            .setLabel('Rechazar')
             .setStyle(ButtonStyle.Danger)
     );
 
-    const embed = new EmbedBuilder()
-        .setTitle("📢 Nueva Solicitud de Ingreso")
+    const embedNotificacion = new EmbedBuilder()
+        .setTitle("📑 Nueva Solicitud de Ingreso")
         .setColor("#5865F2")
+        .setDescription(`El usuario <@${req.user.id}> ha enviado su solicitud para ingresar al servidor.`)
         .addFields(
-            { name: "Usuario", value: `<@${req.user.id}> (${req.user.username})`, inline: true },
-            { name: "Discord ID", value: `\`${req.user.id}\``, inline: true },
-            { name: "Motivo de Ingreso", value: motivo }
+            { name: "👤 Usuario", value: `${req.user.username}#${req.user.discriminator}`, inline: true },
+            { name: "🆔 Discord ID", value: `\`${req.user.id}\``, inline: true },
+            { name: "📝 Motivo", value: motivo }
         )
+        .setThumbnail(`https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png`)
         .setTimestamp();
 
     try {
-        // Guardar en DB de Render
+        // Registro en PostgreSQL (Render)
         await db.query(
             'INSERT INTO usuarios (discord_id, username, motivo, estado) VALUES ($1, $2, $3, $4) ON CONFLICT (discord_id) DO UPDATE SET estado = $4, motivo = $3', 
             [req.user.id, req.user.username, motivo, 'pendiente']
         );
         
-        // Enviar a canal de logs
-        const canal = await client.channels.fetch(CANAL_LOGS);
-        await canal.send({ embeds: [embed], components: [row] });
+        const canalAuditoria = await client.channels.fetch(CANAL_LOGS);
+        await canalAuditoria.send({ embeds: [embedNotificacion], components: [botones] });
         
         res.json({ success: true });
-    } catch (e) {
-        res.status(500).send('Error interno');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error al procesar la solicitud');
     }
 });
 
-// --- GESTIÓN DE INTERACCIONES (BOTONES) ---
+/**
+ * ESCUCHA DE INTERACCIONES (BOTONES DE STAFF)
+ */
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
-    const [accion, userId] = interaction.customId.split('_');
-    const nuevoEstado = accion === 'aprobar' ? 'aprobado' : 'denegado';
+    const [operacion, idUsuario] = interaction.customId.split('_');
+    const resultado = operacion === 'aprobar' ? 'aprobado' : 'denegado';
 
     try {
-        // Actualizar base de datos
-        await db.query('UPDATE usuarios SET estado = $1 WHERE discord_id = $2', [nuevoEstado, userId]);
+        await db.query('UPDATE usuarios SET estado = $1 WHERE discord_id = $2', [resultado, idUsuario]);
 
-        // Editar el mensaje original para quitar botones
         await interaction.update({
-            content: `✅ Solicitud **${nuevoEstado.toUpperCase()}** por <@${interaction.user.id}>`,
+            content: `📢 **Solicitud Procesada**: El usuario ha sido **${resultado.toUpperCase()}** por <@${interaction.user.id}>.`,
             components: [],
             embeds: [interaction.message.embeds[0]]
         });
     } catch (err) {
-        console.error("Error al procesar botón:", err);
+        console.error("Fallo al actualizar estado desde Discord:", err);
     }
 });
 
 client.login(process.env.DISCORD_TOKEN);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Buenos Aires RP Web activa en puerto ${PORT}`));
+const SERVER_PORT = process.env.PORT || 3000;
+app.listen(SERVER_PORT, '0.0.0.0', () => {
+    console.log(`=========================================`);
+    console.log(`🚀 BUENOS AIRES RP - WEB SYSTEM ONLINE`);
+    console.log(`📡 Puerto de escucha: ${SERVER_PORT}`);
+    console.log(`=========================================`);
+});
