@@ -2,249 +2,67 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RENAPER | Sistema de Enrolamiento Federal</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>RENAPER | Registro de Ciudadanía</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root { --arg-blue: #74ACDF; --arg-white: #FFFFFF; --dark: #0f0f12; --card: #1a1b21; --input: #25262e; }
-        
-        body {
-            background-color: var(--dark);
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .main-wrapper {
-            width: 100%;
-            max-width: 600px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            background: var(--card);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255,255,255,0.05);
-            position: relative;
-        }
-
-        .container::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 6px;
-            background: linear-gradient(90deg, var(--arg-blue), var(--arg-white), var(--arg-blue));
-            border-radius: 24px 24px 0 0;
-        }
-
-        .header { text-align: center; margin-bottom: 35px; }
-        .header img { width: 140px; margin-bottom: 15px; }
-        .header h1 { font-size: 1.5rem; margin: 0; letter-spacing: 1px; color: var(--arg-blue); }
-
-        .user-status-bar {
-            display: flex;
-            align-items: center;
-            background: rgba(116, 172, 223, 0.1);
-            padding: 15px 20px;
-            border-radius: 16px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(116, 172, 223, 0.2);
-        }
-
-        .user-status-bar img {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            border: 2px solid var(--arg-blue);
-            margin-right: 15px;
-        }
-
-        .user-info-text span { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; }
-        .user-info-text strong { font-size: 1rem; color: var(--arg-white); }
-
-        .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .full-width { grid-column: span 2; }
-
-        .input-box { margin-bottom: 5px; }
-        .input-box label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #a0a0ab;
-            margin-bottom: 8px;
-            margin-left: 4px;
-        }
-
-        .input-box input, .input-box select, .input-box textarea {
-            width: 100%;
-            background: var(--input);
-            border: 2px solid transparent;
-            color: white;
-            padding: 14px 16px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-
-        .input-box input:focus, .input-box select:focus {
-            border-color: var(--arg-blue);
-            background: #2a2b35;
-            outline: none;
-        }
-
-        textarea { resize: none; font-family: inherit; }
-
-        .btn-submit {
-            grid-column: span 2;
-            background: var(--arg-blue);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 14px;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-submit:hover {
-            background: #5fa0d6;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(116, 172, 223, 0.4);
-        }
-
-        /* Responsive */
-        @media (max-width: 500px) {
-            .form-section { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .btn-submit { grid-column: span 1; }
-        }
+        .profile-card { background: #f0f2f5; padding: 20px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 20px; }
+        .profile-card img { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; border: 2px solid #0052cc; }
+        .profile-card h3 { margin: 0; color: #333; }
     </style>
 </head>
 <body>
-
-    <div class="main-wrapper">
-        <div class="container">
-            <div class="header">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Renaper_%28logotipo%29.png" alt="Logo">
-                <h1>ENROLAMIENTO CIUDADANO</h1>
+    <div class="container">
+        <h1>Trámite de Identidad Digital</h1>
+        
+        <!-- Perfil Automático de Discord -->
+        <div class="profile-card" id="user-profile">
+            <img id="user-avatar" src="loading.gif" alt="Avatar">
+            <div>
+                <h3 id="user-name">Cargando...</h3>
+                <small>Autenticado con Discord</small>
             </div>
-
-            <div class="user-status-bar">
-                <img id="avatar" src="https://via.placeholder.com/50" alt="Avatar">
-                <div class="user-info-text">
-                    <span>Identidad de Red Vinculada</span>
-                    <strong id="username">Cargando perfil...</strong>
-                </div>
-            </div>
-
-            <form id="registroForm" class="form-section">
-                <div class="input-box full-width">
-                    <label><i class="fa-brands fa-roblox"></i> Usuario de Roblox</label>
-                    <input type="text" id="roblox" required placeholder="Ej: Ciudadano_AR">
-                </div>
-
-                <div class="input-box">
-                    <label>Nombres</label>
-                    <input type="text" id="nombres" required placeholder="Tus nombres">
-                </div>
-
-                <div class="input-box">
-                    <label>Apellidos</label>
-                    <input type="text" id="apellidos" required placeholder="Tus apellidos">
-                </div>
-
-                <div class="input-box">
-                    <label>Fecha de Nacimiento</label>
-                    <input type="text" id="nacimiento" required placeholder="DD/MM/AAAA">
-                </div>
-
-                <div class="input-box">
-                    <label>Género</label>
-                    <select id="sexo">
-                        <option value="M">Masculino</option>
-                        <option value="F">Femenino</option>
-                        <option value="X">No Binario</option>
-                    </select>
-                </div>
-
-                <div class="input-box full-width">
-                    <label>Lugar de Residencia/Origen</label>
-                    <input type="text" id="lugar" required placeholder="Ej: Buenos Aires, Argentina">
-                </div>
-
-                <div class="input-box full-width">
-                    <label>Motivo de ingreso al servidor</label>
-                    <textarea id="motivo" rows="4" required placeholder="Explica brevemente qué vienes a hacer al servidor..."></textarea>
-                </div>
-
-                <button type="submit" class="btn-submit">Someter Trámite de DNI</button>
-            </form>
         </div>
+
+        <form id="dni-form">
+            <input type="text" name="nombre" placeholder="Nombres" required>
+            <input type="text" name="apellido" placeholder="Apellidos" required>
+            <input type="number" name="edad" placeholder="Edad" required>
+            <input type="text" name="roblox" placeholder="Usuario de Roblox" required>
+            <textarea name="motivo" placeholder="¿Por qué solicitas el DNI?" required></textarea>
+            <button type="submit">Enviar Solicitud</button>
+        </form>
     </div>
 
     <script>
-        // Verificación de Estado Inicial
-        async function checkFlow() {
-            const res = await fetch('/api/check-status');
-            const data = await res.json();
-
-            if (data.status === 'aceptado') {
-                window.location.href = '/cedula.html';
-            } else if (data.status === 'pendiente' || data.status === 'rechazado') {
-                window.location.href = '/espera.html';
-            } else if (data.status === 'unauthorized') {
-                window.location.href = '/auth/discord';
-            }
-        }
-
-        // Cargar Info de Perfil
-        fetch('/api/user-info')
-            .then(res => res.json())
-            .then(user => {
-                document.getElementById('username').innerText = user.username;
-                document.getElementById('avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-            });
-
-        // Enviar Formulario
-        document.getElementById('registroForm').onsubmit = async (e) => {
-            e.preventDefault();
+        // Cargar datos del usuario al entrar
+        window.onload = async () => {
+            const res = await fetch('/api/user-info');
+            if (res.status === 401) window.location.href = '/auth/discord';
             
-            const payload = {
-                robloxUser: document.getElementById('roblox').value,
-                nombres: document.getElementById('nombres').value,
-                apellidos: document.getElementById('apellidos').value,
-                nacimiento: document.getElementById('nacimiento').value,
-                lugarNacimiento: document.getElementById('lugar').value,
-                sexo: document.getElementById('sexo').value,
-                motivo: document.getElementById('motivo').value,
-                nacionalidad: "ARGENTINA"
-            };
-
-            const response = await fetch('/api/enviar-solicitud', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                window.location.href = "/espera.html";
-            } else {
-                alert("Hubo un error al procesar tu solicitud.");
-            }
+            const user = await res.json();
+            document.getElementById('user-avatar').src = user.avatar;
+            document.getElementById('user-name').innerText = user.display_name;
         };
 
-        checkFlow();
+        // Enviar formulario
+        document.getElementById('dni-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            const res = await fetch('/api/submit-dni', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("¡Solicitud enviada! Serás redirigido a la sala de espera.");
+                window.location.href = '/espera.html';
+            } else {
+                alert("Error al procesar tu solicitud.");
+            }
+        };
     </script>
 </body>
 </html>
