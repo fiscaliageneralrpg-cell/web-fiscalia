@@ -5,10 +5,13 @@ const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 const db = require('./database');
 const path = require('path');
+const axios = require('axios'); // Para enviar el Webhook
 
 const app = express();
 
-// Configuración de Passport para Discord
+// --- CONFIGURACIÓN DE DISCORD WEBHOOK ---
+const DISCORD_WEBHOOK_URL = "TU_WEBHOOK_URL_AQUÍ"; // Créalo en: Ajustes canal > Integraciones > Webhooks
+
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
@@ -17,93 +20,71 @@ passport.use(new DiscordStrategy({
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL,
     scope: ['identify']
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-}));
+}, (at, rt, profile, done) => done(null, profile)));
 
-// Middlewares Globales
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(session({
-    secret: 'buenos_aires_rp_ultra_secret_2026',
+    secret: 'buenos_aires_rp_2026',
     resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 60000 * 60 * 24 } // 24 horas
+    saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- ENDPOINTS API ---
+// --- ENDPOINTS LÓGICOS ---
 
-// 1. Obtener info básica del usuario para el formulario
-app.get('/api/user-info', (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Inicia sesión" });
-    res.json({
-        id: req.user.id,
-        username: req.user.username,
-        avatar: req.user.avatar,
-        global_name: req.user.global_name
-    });
-});
-
-// 2. Procesar el envío del DNI desde la Web
+// 1. Enviar Solicitud + Notificar a Discord
 app.post('/api/enviar-solicitud', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "No autorizado" });
 
-    const { robloxUser, nombres, apellidos, nacimiento, lugarNacimiento, nacionalidad, sexo, motivo } = req.body;
-
+    const d = req.body;
     try {
-        // Verificar si ya tiene una solicitud pendiente o es ciudadano
-        const check = await db.query('SELECT * FROM solicitudes WHERE discord_id = $1 AND estado = $2', [req.user.id, 'PENDIENTE']);
-        if (check.rows.length > 0) {
-            return res.status(400).json({ error: "Ya tienes una solicitud en revisión." });
-        }
+        // Guardar en DB
+        await db.query(
+            `INSERT INTO solicitudes (discord_id, nombres, apellidos, roblox_user, nacimiento, lugar_nacimiento, nacionalidad, genero, motivo) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [req.user.id, d.nombres, d.apellidos, d.robloxUser, d.nacimiento, d.lugarNacimiento, d.nacionalidad, d.sexo, d.motivo]
+        );
 
-        const sql = `
-            INSERT INTO solicitudes (discord_id, nombres, apellidos, roblox_user, nacimiento, lugar_nacimiento, nacionalidad, genero, motivo)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        `;
-        await db.query(sql, [req.user.id, nombres, apellidos, robloxUser, nacimiento, lugarNacimiento, nacionalidad, sexo, motivo]);
-        
-        res.json({ success: true, message: "Solicitud enviada al Ministerio." });
+        // Enviar notificación al canal 1482550071521185926 vía Webhook
+        await axios.post(DISCORD_WEBHOOK_URL, {
+            embeds: [{
+                title: "📥 NUEVA SOLICITUD DE DNI",
+                color: 7646431, // Color azul Argentina
+                fields: [
+                    { name: "Ciudadano", value: `<@${req.user.id}>`, inline: true },
+                    { name: "Roblox", value: d.robloxUser, inline: true },
+                    { name: "Nombre IC", value: `${d.nombres} ${d.apellidos}` },
+                    { name: "Motivo", value: d.motivo }
+                ],
+                footer: { text: "ID del sistema: " + req.user.id }
+            }]
+        });
+
+        res.json({ success: true });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Error al procesar el registro." });
+        res.status(500).json({ error: "Error en el sistema federal." });
     }
 });
 
-// 3. Verificar si el usuario ya es Ciudadano Aceptado
-app.get('/api/verificar-ciudadano', async (req, res) => {
-    if (!req.isAuthenticated()) return res.json({ registrado: false, auth: false });
-    
-    try {
-        const result = await db.query('SELECT * FROM usuarios WHERE discord_id = $1', [req.user.id]);
-        if (result.rows.length > 0) {
-            res.json({ registrado: true, auth: true, datos: result.rows[0] });
-        } else {
-            res.json({ registrado: false, auth: true });
-        }
-    } catch (err) {
-        res.status(500).json({ error: "Error de servidor" });
+// 2. Verificar estado para redirección
+app.get('/api/check-status', async (req, res) => {
+    if (!req.isAuthenticated()) return res.json({ status: 'login' });
+
+    // Caso 1: ¿Es ya un ciudadano validado?
+    const ciudadano = await db.query('SELECT * FROM usuarios WHERE discord_id = $1', [req.user.id]);
+    if (ciudadano.rows.length > 0) return res.json({ status: 'aceptado' });
+
+    // Caso 2: ¿Tiene solicitud pendiente?
+    const solicitud = await db.query('SELECT estado FROM solicitudes WHERE discord_id = $1 ORDER BY fecha_solicitud DESC LIMIT 1', [req.user.id]);
+    if (solicitud.rows.length > 0) {
+        return res.json({ status: solicitud.rows[0].estado.toLowerCase() }); // 'pendiente' o 'rechazado'
     }
+
+    // Caso 3: No ha hecho nada
+    return res.json({ status: 'nuevo' });
 });
 
-// Rutas de Autenticación
-app.get('/auth/discord', passport.authenticate('discord'));
-app.get('/auth/callback', passport.authenticate('discord', {
-    failureRedirect: '/',
-    successRedirect: '/registro.html'
-}));
-app.get('/auth/logout', (req, res) => {
-    req.logout(() => res.redirect('/'));
-});
-
-// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Inicio del Servidor
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, async () => {
-    console.log(`🚀 Servidor Web en puerto ${PORT}`);
-    await db.initDb();
-});
+app.listen(process.env.PORT || 10000);
