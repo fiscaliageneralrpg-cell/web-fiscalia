@@ -2,62 +2,75 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Identificación - BS AS RP</title>
+    <title>RENAPER | Mi Identidad</title>
     <style>
-        body { background: #0b0b0d; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #16161a; padding: 30px; border-radius: 15px; width: 380px; text-align: center; border: 1px solid #333; display: none; }
-        #loader { text-align: center; }
-        .field { background: #1f1f23; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; font-size: 14px; }
-        .label { color: #888; }
-        .value { font-weight: bold; color: #3b82f6; }
-        h2 { margin-top: 0; color: #3b82f6; letter-spacing: 1px; }
-        .btn { display: block; background: #3b82f6; color: white; padding: 12px; border-radius: 8px; text-decoration: none; margin-top: 20px; font-weight: bold; }
+        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #151515; border: 1px solid #333; padding: 2rem; border-radius: 15px; width: 400px; text-align: center; display: none; } /* Oculto por defecto */
+        .error-box { background: #2a1010; border: 1px solid #ff4444; padding: 20px; border-radius: 10px; display: none; text-align: center; }
+        .btn-login { background: #5865F2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .data-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .label { color: #888; font-size: 0.9rem; }
+        .value { color: #00A8E1; font-weight: bold; }
+        .status { color: #2ecc71; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="loader"><h2>Cargando registro...</h2></div>
-
-    <div id="card-ready" class="card">
-        <h2>CIUDADANO ACTIVO</h2>
-        <p style="color: #888; font-size: 13px;">Tus datos han sido sincronizados correctamente.</p>
-        <div class="field"><span class="label">Nombres:</span> <span class="value" id="nom"></span></div>
-        <div class="field"><span class="label">Apellidos:</span> <span class="value" id="ape"></span></div>
-        <div class="field"><span class="label">NUIP:</span> <span class="value" id="nui"></span></div>
-        <div class="field"><span class="label">Nacionalidad:</span> <span class="value" id="nac"></span></div>
-        <div class="field"><span class="label">Estado:</span> <span class="value" style="color: #10b981;">VALIDADO</span></div>
-        <a href="/" class="btn">Cerrar Sesión</a>
+    <!-- Cuadro de Login (Si no hay sesión) -->
+    <div id="login-section">
+        <a href="/auth/discord" class="btn-login">Iniciar Sesión con Discord</a>
     </div>
 
-    <div id="card-error" class="card">
-        <h2 style="color: #ef4444;">SIN REGISTRO</h2>
-        <p>No se encontró información para tu ID de Discord en el sistema.</p>
-        <a href="https://discord.gg/bsas-rp" class="btn">Ir a Discord</a>
+    <!-- Cuadro de Datos (Si está registrado) -->
+    <div id="card-section" class="card">
+        <h2 style="color: #00A8E1; margin-bottom: 5px;">CIUDADANO ACTIVO</h2>
+        <p style="font-size: 0.8rem; color: #666;">Sistema Nacional de Identidad</p>
+        <hr border="0" style="border-top: 1px solid #333; margin: 20px 0;">
+        
+        <div class="data-row"><span class="label">Nombres:</span> <span id="nombres" class="value"></span></div>
+        <div class="data-row"><span class="label">Apellidos:</span> <span id="apellidos" class="value"></span></div>
+        <div class="data-row"><span class="label">NUIP:</span> <span id="nuip" class="value"></span></div>
+        <div class="data-row"><span class="label">Nacionalidad:</span> <span id="nacionalidad" class="value"></span></div>
+        <div class="data-row"><span class="label">Estado:</span> <span id="estado" class="status"></span></div>
+
+        <br>
+        <a href="/auth/logout" style="color: #ff4444; text-decoration: none; font-size: 0.8rem;">Cerrar Sesión</a>
+    </div>
+
+    <!-- Mensaje de Error (Si hay sesión pero no hay registro) -->
+    <div id="error-section" class="error-box">
+        <h3 style="color: #ff4444;">⚠️ CIUDADANO NO ENCONTRADO</h3>
+        <p>No tienes una cédula registrada en nuestra base de datos nacional.</p>
+        <p style="font-size: 0.9rem;">Usa el comando <b>/registrar_cedula</b> en el servidor de Discord.</p>
+        <br>
+        <a href="/auth/logout" style="color: #888; text-decoration: none;">Salir</a>
     </div>
 
     <script>
-        async function cargar() {
-            try {
-                const res = await fetch('/api/verificar-ciudadano');
-                const data = await res.json();
-                
-                document.getElementById('loader').style.display = 'none';
+        fetch('/api/verificar-ciudadano')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('login-section').style.display = 'none';
 
-                if (data.registrado && data.datos) {
-                    // Mapeo directo de los datos que envía el app.js
-                    document.getElementById('nom').innerText = data.datos.nombres;
-                    document.getElementById('ape').innerText = data.datos.apellidos;
-                    document.getElementById('nui').innerText = data.datos.nuip;
-                    document.getElementById('nac').innerText = data.datos.nacionalidad;
-                    document.getElementById('card-ready').style.display = 'block';
+                if (data.registrado) {
+                    // Si el bot ya guardó los datos, los mostramos
+                    document.getElementById('card-section').style.display = 'block';
+                    document.getElementById('nombres').innerText = data.datos.nombres;
+                    document.getElementById('apellidos').innerText = data.datos.apellidos;
+                    document.getElementById('nuip').innerText = data.datos.nuip;
+                    document.getElementById('nacionalidad').innerText = data.datos.nacionalidad;
+                    document.getElementById('estado').innerText = data.datos.estado;
+                } else if (data.sesion) {
+                    // Hay sesión iniciada pero el bot no tiene sus datos
+                    document.getElementById('error-section').style.display = 'block';
                 } else {
-                    document.getElementById('card-error').style.display = 'block';
+                    // No hay sesión ni registro
+                    document.getElementById('login-section').style.display = 'block';
                 }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        window.onload = cargar;
+            })
+            .catch(() => {
+                document.getElementById('login-section').style.display = 'block';
+            });
     </script>
 </body>
 </html>
