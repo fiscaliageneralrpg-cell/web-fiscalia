@@ -10,7 +10,7 @@ const axios = require('axios'); // Para enviar el Webhook
 const app = express();
 
 // --- CONFIGURACIÓN DE DISCORD WEBHOOK ---
-const DISCORD_WEBHOOK_URL = "TU_WEBHOOK_URL_AQUÍ"; // Créalo en: Ajustes canal > Integraciones > Webhooks
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1501382372136976525/7uIl15bVW2WzMoaarAjBZvTwwxM9xQDI-TfIlW02P1E79nYv7TnYKdgd6zTJxZ-eFI94"; // Créalo en: Ajustes canal > Integraciones > Webhooks
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
