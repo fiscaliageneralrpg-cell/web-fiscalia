@@ -2,75 +2,119 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>RENAPER | Mi Identidad</title>
+    <title>RENAPER | Sistema de Enrolamiento</title>
     <style>
-        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #151515; border: 1px solid #333; padding: 2rem; border-radius: 15px; width: 400px; text-align: center; display: none; } /* Oculto por defecto */
-        .error-box { background: #2a1010; border: 1px solid #ff4444; padding: 20px; border-radius: 10px; display: none; text-align: center; }
-        .btn-login { background: #5865F2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; }
-        .data-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .label { color: #888; font-size: 0.9rem; }
-        .value { color: #00A8E1; font-weight: bold; }
-        .status { color: #2ecc71; font-weight: bold; }
+        :root { --arg-blue: #74ACDF; --dark-bg: #0b0b0b; }
+        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .form-container { background: #151515; border: 1px solid #333; padding: 30px; border-radius: 15px; width: 100%; max-width: 500px; }
+        .user-profile { display: flex; align-items: center; background: #202020; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--arg-blue); }
+        .user-profile img { width: 50px; border-radius: 50%; margin-right: 15px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; color: #888; font-size: 0.8rem; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; background: #252525; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
+        .btn-submit { background: var(--arg-blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-submit:hover { background: #5a8ebf; }
     </style>
 </head>
 <body>
 
-    <!-- Cuadro de Login (Si no hay sesión) -->
-    <div id="login-section">
-        <a href="/auth/discord" class="btn-login">Iniciar Sesión con Discord</a>
-    </div>
-
-    <!-- Cuadro de Datos (Si está registrado) -->
-    <div id="card-section" class="card">
-        <h2 style="color: #00A8E1; margin-bottom: 5px;">CIUDADANO ACTIVO</h2>
-        <p style="font-size: 0.8rem; color: #666;">Sistema Nacional de Identidad</p>
-        <hr border="0" style="border-top: 1px solid #333; margin: 20px 0;">
+    <div class="form-container">
+        <h2 style="text-align: center; color: var(--arg-blue);">ENROLAMIENTO NACIONAL</h2>
         
-        <div class="data-row"><span class="label">Nombres:</span> <span id="nombres" class="value"></span></div>
-        <div class="data-row"><span class="label">Apellidos:</span> <span id="apellidos" class="value"></span></div>
-        <div class="data-row"><span class="label">NUIP:</span> <span id="nuip" class="value"></span></div>
-        <div class="data-row"><span class="label">Nacionalidad:</span> <span id="nacionalidad" class="value"></span></div>
-        <div class="data-row"><span class="label">Estado:</span> <span id="estado" class="status"></span></div>
+        <!-- Datos de Discord (Llenados por la API) -->
+        <div id="discord-info" class="user-profile">
+            <img id="discord-avatar" src="" alt="">
+            <div>
+                <p id="discord-name" style="margin: 0; font-weight: bold;"></p>
+                <p style="margin: 0; font-size: 0.7rem; color: #777;">IDENTIDAD VINCULADA</p>
+            </div>
+        </div>
 
-        <br>
-        <a href="/auth/logout" style="color: #ff4444; text-decoration: none; font-size: 0.8rem;">Cerrar Sesión</a>
-    </div>
+        <form id="registroForm">
+            <div class="input-group">
+                <label>USUARIO DE ROBLOX</label>
+                <input type="text" id="robloxUser" required placeholder="Ej: JuanPerez_RP">
+            </div>
 
-    <!-- Mensaje de Error (Si hay sesión pero no hay registro) -->
-    <div id="error-section" class="error-box">
-        <h3 style="color: #ff4444;">⚠️ CIUDADANO NO ENCONTRADO</h3>
-        <p>No tienes una cédula registrada en nuestra base de datos nacional.</p>
-        <p style="font-size: 0.9rem;">Usa el comando <b>/registrar_cedula</b> en el servidor de Discord.</p>
-        <br>
-        <a href="/auth/logout" style="color: #888; text-decoration: none;">Salir</a>
+            <div style="display: flex; gap: 10px;">
+                <div class="input-group">
+                    <label>NOMBRES</label>
+                    <input type="text" id="nombres" required>
+                </div>
+                <div class="input-group">
+                    <label>APELLIDOS</label>
+                    <input type="text" id="apellidos" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>FECHA DE NACIMIENTO</label>
+                <input type="text" id="nacimiento" placeholder="DD/MM/AAAA" required>
+            </div>
+
+            <div class="input-group">
+                <label>LUGAR DE NACIMIENTO</label>
+                <input type="text" id="lugarNacimiento" placeholder="Ciudad, Provincia" required>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="input-group" style="flex: 1;">
+                    <label>NACIONALIDAD</label>
+                    <select id="nacionalidad">
+                        <option value="ARGENTINA">ARGENTINA</option>
+                        <option value="EXTRANJERA">EXTRANJERA</option>
+                    </select>
+                </div>
+                <div class="input-group" style="flex: 1;">
+                    <label>GÉNERO</label>
+                    <select id="sexo">
+                        <option value="M">MASCULINO</option>
+                        <option value="F">FEMENINO</option>
+                        <option value="X">NO BINARIO</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>¿POR QUÉ QUIERES ENTRAR AL SERVIDOR?</label>
+                <textarea id="motivo" rows="3" required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">ENVIAR SOLICITUD DE REGISTRO</button>
+        </form>
     </div>
 
     <script>
-        fetch('/api/verificar-ciudadano')
+        // Cargar info de Discord al entrar
+        fetch('/api/user-info')
             .then(res => res.json())
-            .then(data => {
-                document.getElementById('login-section').style.display = 'none';
-
-                if (data.registrado) {
-                    // Si el bot ya guardó los datos, los mostramos
-                    document.getElementById('card-section').style.display = 'block';
-                    document.getElementById('nombres').innerText = data.datos.nombres;
-                    document.getElementById('apellidos').innerText = data.datos.apellidos;
-                    document.getElementById('nuip').innerText = data.datos.nuip;
-                    document.getElementById('nacionalidad').innerText = data.datos.nacionalidad;
-                    document.getElementById('estado').innerText = data.datos.estado;
-                } else if (data.sesion) {
-                    // Hay sesión iniciada pero el bot no tiene sus datos
-                    document.getElementById('error-section').style.display = 'block';
-                } else {
-                    // No hay sesión ni registro
-                    document.getElementById('login-section').style.display = 'block';
-                }
-            })
-            .catch(() => {
-                document.getElementById('login-section').style.display = 'block';
+            .then(user => {
+                document.getElementById('discord-name').innerText = user.username;
+                document.getElementById('discord-avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
             });
+
+        document.getElementById('registroForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const datos = {
+                robloxUser: document.getElementById('robloxUser').value,
+                nombres: document.getElementById('nombres').value,
+                apellidos: document.getElementById('apellidos').value,
+                fechaNacimiento: document.getElementById('nacimiento').value,
+                lugarNacimiento: document.getElementById('lugarNacimiento').value,
+                nacionalidad: document.getElementById('nacionalidad').value,
+                sexo: document.getElementById('sexo').value,
+                motivo: document.getElementById('motivo').value,
+                fechaExpedicion: new Date().toLocaleDateString('es-AR')
+            };
+
+            const res = await fetch('/api/enviar-solicitud', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(datos)
+            });
+
+            if(res.ok) alert("Solicitud enviada. Revisa los canales de Discord.");
+        };
     </script>
 </body>
 </html>
