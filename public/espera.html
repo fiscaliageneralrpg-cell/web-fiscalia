@@ -2,58 +2,83 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Solicitud Enviada | Sistema</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENAPER | Estado de Trámite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            background: #0b0e11;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
+        :root { --arg-blue: #74ACDF; --bg: #0d0d0d; --card: #161616; }
+        body { 
+            background: var(--bg); color: white; font-family: 'Montserrat', sans-serif; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
         }
-        .loader-card {
-            background: #15191d;
-            padding: 50px;
-            border-radius: 20px;
-            border: 1px solid #333;
-            max-width: 500px;
+        .container { 
+            background: var(--card); padding: 50px; border-radius: 20px; text-align: center; 
+            border: 1px solid #333; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(0, 170, 255, 0.1);
-            border-top: 5px solid #00AAFF;
-            border-radius: 50%;
-            margin: 0 auto 30px;
-            animation: spin 1s linear infinite;
+        .loader { 
+            border: 5px solid #222; border-top: 5px solid var(--arg-blue); 
+            border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 30px auto; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h2 { color: #00AAFF; margin-bottom: 15px; }
-        p { color: #aaa; line-height: 1.6; }
-        .btn-check {
-            margin-top: 30px;
-            display: inline-block;
-            padding: 12px 25px;
-            background: #333;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: background 0.3s;
+        
+        .status-icon { font-size: 60px; margin-bottom: 20px; }
+        .pend { color: #f1c40f; }
+        .rech { color: #e74c3c; }
+        
+        h2 { margin-bottom: 10px; color: var(--arg-blue); }
+        p { color: #888; line-height: 1.6; }
+        .btn-exit { 
+            background: #333; color: white; padding: 12px 25px; text-decoration: none; 
+            border-radius: 8px; display: inline-block; margin-top: 25px; font-weight: bold;
         }
-        .btn-check:hover { background: #444; }
     </style>
 </head>
 <body>
-    <div class="loader-card">
-        <div class="spinner"></div>
-        <h2>SOLICITUD EN REVISIÓN</h2>
-        <p>Hemos enviado tus datos al canal de administración. Un miembro del staff revisará tu perfil y te asignará el rango correspondiente en Discord.</p>
-        <p><small>Una vez que recibas el rol, podrás acceder a las secciones del Dashboard.</small></p>
-        <a href="/dashboard.html" class="btn-check">VERIFICAR ESTADO</a>
+
+    <div class="container">
+        <div id="content">
+            <div class="loader"></div>
+            <h2>CONSULTANDO SISTEMA</h2>
+            <p>Estamos recuperando el estado de tu trámite de identidad nacional. Por favor, mantén esta pestaña abierta.</p>
+        </div>
     </div>
+
+    <script>
+        const content = document.getElementById('content');
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/check-status');
+                const data = await res.json();
+
+                if (data.status === 'aceptado') {
+                    // Si ya fue aceptado, lo mandamos a que vea su cédula
+                    window.location.href = '/cedula.html';
+                } 
+                else if (data.status === 'rechazado') {
+                    content.innerHTML = `
+                        <div class="status-icon rech"><i class="fa-solid fa-circle-xmark"></i></div>
+                        <h2>TRÁMITE RECHAZADO</h2>
+                        <p>Lamentamos informarte que tu solicitud de ciudadanía ha sido denegada por el departamento de administración.</p>
+                        <a href="/auth/logout" class="btn-exit">VOLVER AL INICIO</a>
+                    `;
+                } 
+                else if (data.status === 'pendiente') {
+                    content.innerHTML = `
+                        <div class="loader"></div>
+                        <h2>SOLICITUD PENDIENTE</h2>
+                        <p>Tu información ya está en manos del Staff. Se están validando tus datos de Roblox y antecedentes.</p>
+                        <p style="font-size: 0.8rem; color: var(--arg-blue);">La página se actualizará sola cuando seas aceptado.</p>
+                    `;
+                }
+            } catch (err) {
+                console.error("Error al consultar estado:", err);
+            }
+        }
+
+        // Revisa cada 5 segundos
+        setInterval(checkStatus, 5000);
+        checkStatus();
+    </script>
 </body>
 </html>
