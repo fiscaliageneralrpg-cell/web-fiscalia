@@ -3,44 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RENAPER | Registro Digital</title>
+    <title>RENAPER | Buenos Aires RP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 40px 20px; }
-        .container { background: #121212; border: 1px solid #222; border-radius: 12px; width: 100%; max-width: 550px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .header { text-align: center; border-bottom: 2px solid #74ACDF; margin-bottom: 25px; padding-bottom: 10px; }
-        .profile-card { display: flex; align-items: center; background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
-        .profile-card img { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; border: 2px solid #74ACDF; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .full { grid-column: span 2; }
-        label { display: block; font-size: 0.75rem; color: #74ACDF; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
-        input, select, textarea { width: 100%; background: #222; border: 1px solid #333; color: white; padding: 12px; border-radius: 6px; box-sizing: border-box; }
-        input:focus { border-color: #74ACDF; outline: none; }
-        .btn { background: #74ACDF; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn:hover { background: #5a8ebf; transform: translateY(-2px); }
+        :root { --arg-blue: #74ACDF; --bg: #0d0d0d; --card: #161616; --text: #e0e0e0; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: var(--card); width: 100%; max-width: 500px; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-top: 5px solid var(--arg-blue); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .user-box { display: flex; align-items: center; background: #222; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .user-box img { width: 50px; border-radius: 50%; border: 2px solid var(--arg-blue); margin-right: 15px; }
+        .input-group { margin-bottom: 18px; position: relative; }
+        label { display: block; font-size: 0.7rem; color: var(--arg-blue); font-weight: 800; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        input, select, textarea { width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--arg-blue); outline: none; box-shadow: 0 0 8px rgba(116, 172, 223, 0.3); }
+        .btn-enviar { background: var(--arg-blue); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-enviar:hover { background: #5a8ebf; transform: scale(1.02); }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div class="container" id="form-container">
         <div class="header">
-            <h1 style="margin: 0; font-size: 1.5rem;">REGISTRO DE CIUDADANÍA</h1>
-            <p style="margin: 5px 0 0; font-size: 0.8rem; color: #888;">Buenos Aires Roleplay - Sistema Federal</p>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Renaper_%28logotipo%29.png" width="120" alt="RENAPER">
+            <h2>ENROLAMIENTO DIGITAL</h2>
         </div>
 
-        <div class="profile-card">
-            <img id="u-avatar" src="" alt="Avatar">
+        <div class="user-box">
+            <img id="avatar" src="" alt="">
             <div>
-                <span style="display: block; font-size: 0.7rem; color: #888;">CIUDADANO VINCULADO</span>
-                <strong id="u-name" style="font-size: 1.1rem;">Cargando...</strong>
+                <span style="font-size: 0.7rem; color: #888;">CIUDADANO VINCULADO</span>
+                <div id="username" style="font-weight: bold;">Cargando...</div>
             </div>
         </div>
 
-        <form id="formRegistro">
-            <div class="form-grid">
-                <div class="input-group full">
-                    <label>Usuario de Roblox</label>
-                    <input type="text" id="roblox" placeholder="Ingresa tu nombre de usuario exacto" required>
-                </div>
+        <form id="dniForm">
+            <div class="input-group">
+                <label><i class="fa-solid fa-gamepad"></i> Usuario de Roblox</label>
+                <input type="text" id="roblox" placeholder="Tu username de Roblox" required>
+            </div>
+
+            <div class="row">
                 <div class="input-group">
                     <label>Nombres</label>
                     <input type="text" id="nombres" required>
@@ -49,8 +52,11 @@
                     <label>Apellidos</label>
                     <input type="text" id="apellidos" required>
                 </div>
+            </div>
+
+            <div class="row">
                 <div class="input-group">
-                    <label>Fecha de Nacimiento</label>
+                    <label>Fecha Nacimiento</label>
                     <input type="text" id="nac" placeholder="DD/MM/AAAA" required>
                 </div>
                 <div class="input-group">
@@ -58,30 +64,37 @@
                     <select id="sexo">
                         <option value="M">Masculino</option>
                         <option value="F">Femenino</option>
-                        <option value="X">No Binario</option>
+                        <option value="X">X (No Binario)</option>
                     </select>
                 </div>
-                <div class="input-group full">
-                    <label>Lugar de Nacimiento</label>
-                    <input type="text" id="lugar" placeholder="Ej: Buenos Aires, Argentina" required>
-                </div>
-                <div class="input-group full">
-                    <label>¿Por qué deseas unirte al servidor?</label>
-                    <textarea id="motivo" rows="3" required></textarea>
-                </div>
             </div>
-            <button type="submit" class="btn">ENVIAR SOLICITUD DE DNI</button>
+
+            <div class="input-group">
+                <label>Lugar de Nacimiento</label>
+                <input type="text" id="lugar" placeholder="Ciudad, Provincia" required>
+            </div>
+
+            <div class="input-group">
+                <label>¿Por qué quieres entrar?</label>
+                <textarea id="motivo" rows="2" placeholder="Escribe tus motivos de ingreso..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-enviar">ENVIAR A REVISIÓN STAFF</button>
         </form>
     </div>
 
     <script>
-        // Obtener info de Discord
-        fetch('/api/user-info').then(res => res.json()).then(user => {
-            document.getElementById('u-name').innerText = user.username;
-            document.getElementById('u-avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-        });
+        // Cargar datos de Discord al iniciar
+        fetch('/api/user-info')
+            .then(res => res.json())
+            .then(user => {
+                document.getElementById('username').innerText = user.username;
+                document.getElementById('avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+            })
+            .catch(() => window.location.href = '/auth/discord');
 
-        document.getElementById('formRegistro').onsubmit = async (e) => {
+        // Manejar envío del formulario
+        document.getElementById('dniForm').onsubmit = async (e) => {
             e.preventDefault();
             const payload = {
                 robloxUser: document.getElementById('roblox').value,
@@ -94,15 +107,18 @@
                 nacionalidad: "ARGENTINA"
             };
 
-            const response = await fetch('/api/enviar-solicitud', {
+            const res = await fetch('/api/enviar-solicitud', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                alert("¡Solicitud enviada correctamente! El equipo de administración revisará tu perfil.");
-                window.location.href = "/";
+            const data = await res.json();
+            if(res.ok) {
+                alert("✅ Solicitud enviada. El Staff revisará tu DNI.");
+                window.location.href = '/';
+            } else {
+                alert("❌ Error: " + data.error);
             }
         };
     </script>
