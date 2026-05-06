@@ -2,118 +2,108 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>RENAPER | Sistema de Enrolamiento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENAPER | Registro Digital</title>
     <style>
-        :root { --arg-blue: #74ACDF; --dark-bg: #0b0b0b; }
-        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .form-container { background: #151515; border: 1px solid #333; padding: 30px; border-radius: 15px; width: 100%; max-width: 500px; }
-        .user-profile { display: flex; align-items: center; background: #202020; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--arg-blue); }
-        .user-profile img { width: 50px; border-radius: 50%; margin-right: 15px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; color: #888; font-size: 0.8rem; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 10px; background: #252525; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
-        .btn-submit { background: var(--arg-blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-submit:hover { background: #5a8ebf; }
+        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 40px 20px; }
+        .container { background: #121212; border: 1px solid #222; border-radius: 12px; width: 100%; max-width: 550px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .header { text-align: center; border-bottom: 2px solid #74ACDF; margin-bottom: 25px; padding-bottom: 10px; }
+        .profile-card { display: flex; align-items: center; background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+        .profile-card img { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; border: 2px solid #74ACDF; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full { grid-column: span 2; }
+        label { display: block; font-size: 0.75rem; color: #74ACDF; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+        input, select, textarea { width: 100%; background: #222; border: 1px solid #333; color: white; padding: 12px; border-radius: 6px; box-sizing: border-box; }
+        input:focus { border-color: #74ACDF; outline: none; }
+        .btn { background: #74ACDF; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .btn:hover { background: #5a8ebf; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-    <div class="form-container">
-        <h2 style="text-align: center; color: var(--arg-blue);">ENROLAMIENTO NACIONAL</h2>
-        
-        <!-- Datos de Discord (Llenados por la API) -->
-        <div id="discord-info" class="user-profile">
-            <img id="discord-avatar" src="" alt="">
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0; font-size: 1.5rem;">REGISTRO DE CIUDADANÍA</h1>
+            <p style="margin: 5px 0 0; font-size: 0.8rem; color: #888;">Buenos Aires Roleplay - Sistema Federal</p>
+        </div>
+
+        <div class="profile-card">
+            <img id="u-avatar" src="" alt="Avatar">
             <div>
-                <p id="discord-name" style="margin: 0; font-weight: bold;"></p>
-                <p style="margin: 0; font-size: 0.7rem; color: #777;">IDENTIDAD VINCULADA</p>
+                <span style="display: block; font-size: 0.7rem; color: #888;">CIUDADANO VINCULADO</span>
+                <strong id="u-name" style="font-size: 1.1rem;">Cargando...</strong>
             </div>
         </div>
 
-        <form id="registroForm">
-            <div class="input-group">
-                <label>USUARIO DE ROBLOX</label>
-                <input type="text" id="robloxUser" required placeholder="Ej: JuanPerez_RP">
-            </div>
-
-            <div style="display: flex; gap: 10px;">
+        <form id="formRegistro">
+            <div class="form-grid">
+                <div class="input-group full">
+                    <label>Usuario de Roblox</label>
+                    <input type="text" id="roblox" placeholder="Ingresa tu nombre de usuario exacto" required>
+                </div>
                 <div class="input-group">
-                    <label>NOMBRES</label>
+                    <label>Nombres</label>
                     <input type="text" id="nombres" required>
                 </div>
                 <div class="input-group">
-                    <label>APELLIDOS</label>
+                    <label>Apellidos</label>
                     <input type="text" id="apellidos" required>
                 </div>
-            </div>
-
-            <div class="input-group">
-                <label>FECHA DE NACIMIENTO</label>
-                <input type="text" id="nacimiento" placeholder="DD/MM/AAAA" required>
-            </div>
-
-            <div class="input-group">
-                <label>LUGAR DE NACIMIENTO</label>
-                <input type="text" id="lugarNacimiento" placeholder="Ciudad, Provincia" required>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <div class="input-group" style="flex: 1;">
-                    <label>NACIONALIDAD</label>
-                    <select id="nacionalidad">
-                        <option value="ARGENTINA">ARGENTINA</option>
-                        <option value="EXTRANJERA">EXTRANJERA</option>
-                    </select>
+                <div class="input-group">
+                    <label>Fecha de Nacimiento</label>
+                    <input type="text" id="nac" placeholder="DD/MM/AAAA" required>
                 </div>
-                <div class="input-group" style="flex: 1;">
-                    <label>GÉNERO</label>
+                <div class="input-group">
+                    <label>Género</label>
                     <select id="sexo">
-                        <option value="M">MASCULINO</option>
-                        <option value="F">FEMENINO</option>
-                        <option value="X">NO BINARIO</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                        <option value="X">No Binario</option>
                     </select>
                 </div>
+                <div class="input-group full">
+                    <label>Lugar de Nacimiento</label>
+                    <input type="text" id="lugar" placeholder="Ej: Buenos Aires, Argentina" required>
+                </div>
+                <div class="input-group full">
+                    <label>¿Por qué deseas unirte al servidor?</label>
+                    <textarea id="motivo" rows="3" required></textarea>
+                </div>
             </div>
-
-            <div class="input-group">
-                <label>¿POR QUÉ QUIERES ENTRAR AL SERVIDOR?</label>
-                <textarea id="motivo" rows="3" required></textarea>
-            </div>
-
-            <button type="submit" class="btn-submit">ENVIAR SOLICITUD DE REGISTRO</button>
+            <button type="submit" class="btn">ENVIAR SOLICITUD DE DNI</button>
         </form>
     </div>
 
     <script>
-        // Cargar info de Discord al entrar
-        fetch('/api/user-info')
-            .then(res => res.json())
-            .then(user => {
-                document.getElementById('discord-name').innerText = user.username;
-                document.getElementById('discord-avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-            });
+        // Obtener info de Discord
+        fetch('/api/user-info').then(res => res.json()).then(user => {
+            document.getElementById('u-name').innerText = user.username;
+            document.getElementById('u-avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+        });
 
-        document.getElementById('registroForm').onsubmit = async (e) => {
+        document.getElementById('formRegistro').onsubmit = async (e) => {
             e.preventDefault();
-            const datos = {
-                robloxUser: document.getElementById('robloxUser').value,
+            const payload = {
+                robloxUser: document.getElementById('roblox').value,
                 nombres: document.getElementById('nombres').value,
                 apellidos: document.getElementById('apellidos').value,
-                fechaNacimiento: document.getElementById('nacimiento').value,
-                lugarNacimiento: document.getElementById('lugarNacimiento').value,
-                nacionalidad: document.getElementById('nacionalidad').value,
+                nacimiento: document.getElementById('nac').value,
+                lugarNacimiento: document.getElementById('lugar').value,
                 sexo: document.getElementById('sexo').value,
                 motivo: document.getElementById('motivo').value,
-                fechaExpedicion: new Date().toLocaleDateString('es-AR')
+                nacionalidad: "ARGENTINA"
             };
 
-            const res = await fetch('/api/enviar-solicitud', {
+            const response = await fetch('/api/enviar-solicitud', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(datos)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            if(res.ok) alert("Solicitud enviada. Revisa los canales de Discord.");
+            if (response.ok) {
+                alert("¡Solicitud enviada correctamente! El equipo de administración revisará tu perfil.");
+                window.location.href = "/";
+            }
         };
     </script>
 </body>
