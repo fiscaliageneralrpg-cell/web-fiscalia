@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeSnap - Comparte tu código con estilo</title>
+    <style>
+        :root { --apple-blue: #007AFF; --glass: rgba(255, 255, 255, 0.7); }
+        body {
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            min-height: 100vh; margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            color: #1d1d1f; display: flex; flex-direction: column; align-items: center;
+        }
+        .nav { width: 100%; max-width: 1000px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .hero { text-align: center; padding: 80px 20px; max-width: 800px; }
+        .hero h1 { font-size: 3.5rem; letter-spacing: -2px; margin-bottom: 10px; }
+        .hero p { font-size: 1.5rem; color: #515154; margin-bottom: 30px; }
+        .glass-card {
+            background: var(--glass); backdrop-filter: blur(20px); border-radius: 30px;
+            padding: 40px; border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05); text-align: left; margin-bottom: 50px;
+        }
+        .btn-primary {
+            background: var(--apple-blue); color: white; padding: 15px 40px;
+            border-radius: 50px; text-decoration: none; font-weight: 600;
+            transition: all 0.3s; display: inline-block;
+        }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,122,255,0.3); }
+        .features { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 40px; }
+        .feature-item { background: rgba(255,255,255,0.3); padding: 20px; border-radius: 20px; }
+        footer { margin-top: auto; padding: 40px; font-size: 0.9rem; color: #86868b; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div style="font-weight: 800; font-size: 1.2rem;">CodeSnap</div>
+        <div>
+            <a href="/publicados" style="text-decoration:none; color:#1d1d1f; margin-right:20px;">Explorar</a>
+            <a href="/login" class="btn-primary" style="padding: 10px 25px;">Empezar</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Tu código merece<br><span style="color:var(--apple-blue)">un mejor marco.</span></h1>
+        <p>La plataforma minimalista para desarrolladores que venden scripts de Discord, Roblox y más.</p>
+        <a href="/registro" class="btn-primary">Crea tu cuenta gratis</a>
+        
+        <div class="features">
+            <div class="feature-item">
+                <h3>Glassmorphism</h3>
+                <p>Interfaz ultra limpia basada en el diseño de Apple.</p>
+            </div>
+            <div class="feature-item">
+                <h3>Ventas Seguras</h3>
+                <p>Muestra tu reputación y links de pago en cada snippet.</p>
+            </div>
+            <div class="feature-item">
+                <h3>Multilenguaje</h3>
+                <p>Soporte premium para Lua, JS, Python y SQL.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="glass-card">
+        <h2>¿Por qué CodeSnap?</h2>
+        <p>En el mundo del desarrollo freelance, la primera impresión es la que cierra el trato. No envíes bloques de texto aburridos por Discord. Envía un <b>CodeSnap</b>: un enlace profesional que genera confianza instantánea en tus clientes.</p>
+        <ul>
+            <li>Personalización de perfiles para usuarios Pro.</li>
+            <li>Generación de recibos PDF automáticos.</li>
+            <li>Mural público para atraer nuevos compradores.</li>
+        </ul>
+    </div>
+
+    <footer>&copy; 2026 CodeSnap Digital Projects. Todos los derechos reservados.</footer>
+</body>
+</html>

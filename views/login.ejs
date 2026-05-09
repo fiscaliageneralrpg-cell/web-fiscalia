@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | CodeSnap</title>
+    <style>
+        :root { --main-blue: #007AFF; --bg: #f5f5f7; }
+        body {
+            background: linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%);
+            height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .glass-box {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 35px;
+            padding: 50px;
+            width: 100%; max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 { font-size: 2rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 10px; color: #1d1d1f; }
+        p { color: #86868b; margin-bottom: 30px; font-size: 0.9rem; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        input {
+            width: 100%; padding: 16px; border-radius: 14px; border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.8); box-sizing: border-box; font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        input:focus { outline: none; border-color: var(--main-blue); box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        .btn-auth {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            background: var(--main-blue); color: white; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: transform 0.2s; margin-top: 10px;
+        }
+        .btn-auth:hover { transform: scale(1.02); background: #0066d6; }
+        .footer-link { margin-top: 25px; font-size: 0.85rem; color: #1d1d1f; }
+        .footer-link a { color: var(--main-blue); text-decoration: none; font-weight: 600; }
+        .error-msg { background: #ff3b3020; color: #ff3b30; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="glass-box">
+        <h1>Bienvenido</h1>
+        <p>Inicia sesión para gestionar tus códigos.</p>
+
+        <% if(error) { %> <div class="error-msg"><%= error %></div> <% } %>
+
+        <form action="/auth/login" method="POST">
+            <div class="input-group">
+                <input type="text" name="nombre" placeholder="Nombre de usuario" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Contraseña" required>
+            </div>
+            <button type="submit" class="btn-auth">Entrar</button>
+        </form>
+
+        <div class="footer-link">
+            ¿No tienes cuenta? <a href="/registro">Regístrate ahora</a>
+        </div>
+    </div>
+</body>
+</html>

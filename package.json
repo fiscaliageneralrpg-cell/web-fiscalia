@@ -1,23 +1,30 @@
 {
-  "name": "mi-dashboard",
+  "name": "app",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Emmanuel08731/buenos-aires-rp-web.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Emmanuel08731/buenos-aires-rp-web/issues"
+  },
+  "homepage": "https://github.com/Emmanuel08731/buenos-aires-rp-web#readme",
   "dependencies": {
-    "discord.js": "^14.26.4",
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
+    "ejs": "^5.0.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "passport": "^0.7.0",
-    "passport-discord": "^0.1.4",
-    "path": "^0.12.7",
     "pg": "^8.20.0"
   }
 }
