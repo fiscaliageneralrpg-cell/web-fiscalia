@@ -1,9 +1,14 @@
 {
+<<<<<<< HEAD
   "name": "app",
+=======
+  "name": "buenos-aires-rp-web",
+>>>>>>> c50a70484b837f2c51c00ee09626d309b172dce3
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Sistema de registro y gestión para Buenos Aires RP",
+  "main": "app.js",
   "scripts": {
+<<<<<<< HEAD
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
@@ -27,4 +32,24 @@
     "express-session": "^1.19.0",
     "pg": "^8.20.0"
   }
+=======
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4",
+    "pg": "^8.11.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Emmanuel",
+  "license": "ISC"
+>>>>>>> c50a70484b837f2c51c00ee09626d309b172dce3
 }
