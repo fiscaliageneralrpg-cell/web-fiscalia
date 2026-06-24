@@ -3,62 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Los Más Buscados - Fiscalía General de la Nación</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Fiscalía General - Los Más Buscados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root {
-            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;
-            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;            
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; }
-        
-        .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
-        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
-        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
-        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
-        .nav-menu { display: flex; list-style: none; gap: 28px; }
-        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; }
-        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
-        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; }
-
-        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; text-align: center; }
-        .page-title { font-size: 32px; font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
-        .page-subtitle { font-size: 16px; color: var(--text-muted); margin-bottom: 30px; }
-        
-        .empty-state { background: var(--white); padding: 60px 40px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03); }
-        .empty-icon { font-size: 50px; color: #a1a1a6; margin-bottom: 20px; }
-        .empty-state h2 { font-size: 22px; margin-bottom: 10px; color: var(--text-dark); }
-        .empty-state p { color: var(--text-muted); font-size: 15px; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar-custom { background-color: #0b1d3a; }
+        .wanted-card { border: 2px solid #dc3545; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 15px rgba(220, 53, 69, 0.1); background: white; }
+        .wanted-header { background-color: #dc3545; color: white; font-weight: bold; text-align: center; padding: 6px; font-size: 0.9rem; letter-spacing: 1px; }
+        .avatar-placeholder { background-color: #e9ecef; height: 180px; display: flex; align-items: center; justify-content: center; color: #6c757d; border-bottom: 1px solid #dee2e6; }
+        .footer-custom { background-color: #0b1d3a; color: white; padding: 15px 0; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
-                <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html">Inicio</a></li>
-                <li><a href="buscados.html" class="active">Buscados</a></li>
-                <li><a href="noticias.html">Noticias</a></li>
-                <li><a href="denuncias.html">Denuncias</a></li>
-            </ul>
-            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-scale-balanced me-2"></i>FISCALÍA GENERAL</a>
         </div>
     </nav>
 
-    <div class="container">
-        <h1 class="page-title">Cartel de los Más Buscados</h1>
-        <p class="page-subtitle">Orden de captura y requerimientos judiciales vigentes en el territorio nacional.</p>
-        <div class="empty-state">
-            <i class="fa-solid fa-user-shield empty-icon"></i>
-            <h2>Sin reportes por el momento</h2>
-            <p>Actualmente no se registran ciudadanos con órdenes de captura pendientes en la base de datos pública.</p>
+    <div class="container my-5" style="min-height: 75vh;">
+        <div class="row mb-4 text-center">
+            <div class="col">
+                <h1 class="fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Orden de Captura Inmediata</h1>
+                <p class="text-muted">Listado oficial de los ciudadanos con requerimientos judiciales activos.</p>
+                <hr class="w-25 mx-auto text-danger" style="height: 3px;">
+            </div>
+        </div>
+
+        <div class="row g-4" id="contenedor-buscados">
+            <div class="text-center col-12" id="cargando">
+                <div class="spinner-border text-danger" role="status"></div>
+                <p class="mt-2 text-muted">Consultando archivos criminales...</p>
+            </div>
         </div>
     </div>
+
+    <footer class="footer-custom text-center mt-auto">
+        <div class="container">
+            <p class="mb-0">&copy; 2026 Fiscalía General de la Nacion RP - Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        async function cargarBuscados() {
+            try {
+                const response = await fetch('/api/admin/data');
+                const data = await response.json();
+                
+                const contenedor = document.getElementById('contenedor-buscados');
+                contenedor.innerHTML = '';
+
+                if (data.buscados.length === 0) {
+                    contenedor.innerHTML = `
+                        <div class="col-12 text-center my-5">
+                            <i class="fa-solid fa-shield fa-3x text-success mb-3"></i>
+                            <p class="text-success fs-5 fw-bold">No hay órdenes de captura activas. Ciudad en paz.</p>
+                        </div>`;
+                    return;
+                }
+
+                data.buscados.forEach(criminal => {
+                    const html = `
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="card wanted-card h-100">
+                                <div class="wanted-header"><i class="fa-solid fa-skull"></i> REQUERIDO</div>
+                                <div class="avatar-placeholder">
+                                    <i class="fa-solid fa-user-secret fa-4x"></i>
+                                </div>
+                                <div class="card-body text-center bg-light p-3">
+                                    <h6 class="text-muted mb-1 small fw-bold">NOMBRE COMPLETO</h6>
+                                    <h5 class="card-title text-dark fw-bold mb-0">${criminal.nombre}</h5>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    contenedor.innerHTML += html;
+                });
+            } catch (error) {
+                console.error("Error cargando buscados:", error);
+                document.getElementById('contenedor-buscados').innerHTML = `
+                    <div class="alert alert-danger text-center col-12" role="alert">
+                        <i class="fa-solid fa-circle-exclamation me-2"></i> Error de conexión con el departamento de inteligencia.
+                    </div>`;
+            }
+        }
+
+        window.onload = cargarBuscados;
+    </script>
 </body>
 </html>
