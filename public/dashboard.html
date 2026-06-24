@@ -14,12 +14,17 @@
         .card-custom { border: none; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: white; margin-bottom: 25px; }
         .table th { background-color: #f8f9fa; color: #495057; font-weight: 600; }
         .btn-action { padding: 4px 10px; font-size: 0.85rem; border-radius: 6px; }
+        
+        /* Barra de usuario superior */
+        .user-topbar { background: white; padding: 12px 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 25px; }
+        .user-avatar { width: 38px; height: 38px; background-color: #e3f2fd; color: #0d6efd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="container-fluid">
         <div class="row">
+            <!-- Menú Lateral -->
             <div class="col-md-3 col-lg-2 p-0 sidebar shadow">
                 <div class="p-3 text-center border-bottom border-secondary">
                     <h5 class="fw-bold m-0"><i class="fa-solid fa-user-gear me-2 text-primary"></i>ADMINISTRACIÓN</h5>
@@ -31,12 +36,33 @@
                 </div>
             </div>
 
+            <!-- Contenido del Panel -->
             <div class="col-md-9 col-lg-10 p-4">
+                
+                <!-- BARRA SUPERIOR: BIENVENIDA Y CERRAR SESIÓN -->
+                <div class="user-topbar d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="user-avatar">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Sesión activa</span>
+                            <strong class="text-dark">Bienvenido, fiscaliageneralrpg@gmail.com</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-danger btn-sm fw-semibold px-3 py-2" onclick="cerrarSesion()">
+                            <i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
                     <h2 class="fw-bold text-dark">Sistema Central de la Fiscalía General</h2>
                     <span class="badge bg-success p-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i>Servidor Conectado</span>
                 </div>
 
+                <!-- SECCIÓN 1: SOLICITUDES Y CUENTAS -->
                 <div class="card card-custom p-4">
                     <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users me-2 text-primary"></i>Cuentas Registradas en el Sistema</h5>
                     <div class="table-responsive">
@@ -50,12 +76,14 @@
                                 </tr>
                             </thead>
                             <tbody id="tabla-usuarios">
-                                </tbody>
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
 
                 <div class="row">
+                    <!-- SECCIÓN 2: GESTIÓN DE NOTICIAS -->
                     <div class="col-md-6">
                         <div class="card card-custom p-4">
                             <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullhorn me-2 text-primary"></i>Publicar Noticia Oficial</h5>
@@ -67,6 +95,7 @@
                         </div>
                     </div>
 
+                    <!-- SECCIÓN 3: GESTIÓN DE BUSCADOS -->
                     <div class="col-md-6">
                         <div class="card card-custom p-4">
                             <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-user-ninja me-2 text-danger"></i>Añadir Orden de Captura</h5>
@@ -83,6 +112,7 @@
         </div>
     </div>
 
+    <!-- CONTROLADOR JAVASCRIPT -->
     <script>
         async function cargarDatosDashboard() {
             try {
@@ -155,9 +185,17 @@
 
         function agregarBuscado() { 
             const nombre = document.getElementById('input-buscado').value;
-            if(nombre) { gestionarPost('/api/admin/add-buscado', { nombre }); document.getElementById('input-buscado').value = ''; }
+            if(nombre) { gestionarPost('/api/admin/add-búscado', { nombre }); document.getElementById('input-buscado').value = ''; }
         }
         function eliminarBuscado(id) { gestionarPost('/api/admin/delete-buscado', { id }); }
+
+        // Función para limpiar la sesión local e irse a la página de login / inicio
+        function cerrarSesion() {
+            if(confirm("¿Estás seguro de que deseas cerrar sesión en el sistema central?")) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }
 
         window.onload = cargarDatosDashboard;
     </script>
