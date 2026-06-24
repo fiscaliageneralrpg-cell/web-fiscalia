@@ -42,14 +42,14 @@
     <!-- Contenido Principal -->
     <div class="main-content">
         
-        <!-- Barra Superior Modificada -->
+        <!-- Barra Superior Dinámica -->
         <div class="user-topbar d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">
                 <div class="user-avatar">
                     <i class="fa-solid fa-user"></i>
                 </div>
                 <div>
-                    <strong class="text-dark" style="font-size: 15px;">Bienvenido, user</strong>
+                    <strong class="text-dark" style="font-size: 15px;" id="display-username">Bienvenido...</strong>
                 </div>
             </div>
             <div>
@@ -63,7 +63,7 @@
         <div id="tab-consola" class="tab-content-panel active">
             <div class="card card-custom p-5 text-center">
                 <i class="fa-solid fa-shield-halved fa-3x text-primary mb-3"></i>
-                <h2 class="fw-bold text-dark">Bienvenido, user</h2>
+                <h2 class="fw-bold text-dark" id="hero-welcome">Bienvenido</h2>
                 <p class="text-muted">Has ingresado al centro operativo y base de datos de la Fiscalía General de la Nación. Utiliza el panel izquierdo para gestionar la plataforma.</p>
                 <div class="mt-2">
                     <span class="badge bg-success p-2 fs-7"><i class="fa-solid fa-circle-check me-1"></i>Servidor RPG Activo</span>
@@ -86,7 +86,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-usuarios">
-                            <!-- Datos inyectados por API -->
+                            <!-- Datos de la API -->
                         </tbody>
                     </table>
                 </div>
@@ -179,16 +179,18 @@
 
     </div>
 
-    <!-- CONTROLADOR JAVASCRIPT -->
     <script>
-        // Función para cambiar entre las secciones/pestañas
+        // Carga el nombre de usuario de forma dinámica desde las variables de sesión
+        function establecerNombreUsuario() {
+            const usuarioGuardado = localStorage.getItem('username') || localStorage.getItem('email') || 'Usuario Autorizado';
+            document.getElementById('display-username').innerText = `Bienvenido, ${usuarioGuardado}`;
+            document.getElementById('hero-welcome').innerText = `Bienvenido, ${usuarioGuardado}`;
+        }
+
         function switchTab(tabId) {
-            // Ocultar todos los paneles
             document.querySelectorAll('.tab-content-panel').forEach(panel => panel.classList.remove('active'));
-            // Desactivar todos los links de la barra lateral
             document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
             
-            // Mostrar el panel seleccionado y activar su link
             document.getElementById('tab-' + tabId).classList.add('active');
             document.getElementById('link-' + tabId).classList.add('active');
         }
@@ -285,13 +287,16 @@
         function eliminarBuscado(id) { ejecutarOperacion('/api/admin/delete-buscado', { id }); }
 
         function cerrarSesion() {
-            if(confirm("¿Cerrar sesión del sistema de la fiscalía?")) {
+            if(confirm("¿Cerrar sesión del sistema?")) {
                 localStorage.clear();
                 window.location.href = 'index.html';
             }
         }
 
-        window.onload = cargarDatosDashboard;
+        window.onload = function() {
+            establecerNombreUsuario();
+            cargarDatosDashboard();
+        };
     </script>
 </body>
 </html>
