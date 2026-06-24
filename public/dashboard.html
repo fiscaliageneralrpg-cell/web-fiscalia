@@ -3,281 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - Fiscalía General</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Panel de Administración - Fiscalía</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root {
-            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;
-            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 12px;
-            --success: #34c759; --warning: #ff9500;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-        body { background-color: var(--bg-apple); color: var(--text-dark); display: flex; min-height: 100vh; }
-
-        .sidebar { width: 260px; background-color: var(--blue-dark); color: var(--white); padding: 25px 20px; display: flex; flex-direction: column; gap: 30px; }
-        .sidebar-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
-        .sidebar-logo img { height: 35px; background: white; padding: 2px; border-radius: 4px; }
-        .menu-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-        .menu-list button { width: 100%; background: none; border: none; color: #cbd5e1; padding: 12px 15px; border-radius: 8px; text-align: left; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
-        .menu-list button:hover, .menu-list button.active { background: rgba(255,255,255,0.15); color: white; }
-        .btn-logout { margin-top: auto; background: rgba(239, 68, 68, 0.2) !important; color: #f87171 !important; }
-
-        .main-panel { flex: 1; padding: 40px; overflow-y: auto; }
-        .header-dash { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .welcome-title { font-size: 28px; font-weight: 700; color: var(--blue-dark); }
-        
-        .notif-box { position: relative; cursor: pointer; background: var(--white); padding: 10px; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .notif-badge { position: absolute; top: -2px; right: -2px; background: red; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 700; display: none; }
-
-        .card-dash { background: var(--white); padding: 30px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03); margin-bottom: 25px; }
-        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 15px; }
-        .status-pendiente { background: rgba(255, 149, 0, 0.15); color: var(--warning); }
-        
-        .admin-section { display: none; }
-        .admin-section.active { display: block; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d2d2d7; outline: none; }
-        .btn-add { background: var(--blue-light); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e8e8ed; font-size: 14px; }
-        th { background: #f5f5f7; color: var(--blue-dark); font-weight: 600; }
-        
-        .btn-action { padding: 5px 10px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 5px; }
-        .btn-accept { background: rgba(52, 199, 89, 0.15); color: var(--success); }
-        .btn-delete { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { background-color: #0b1d3a; min-height: 100vh; color: white; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; display: block; padding: 12px 20px; transition: 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background-color: #1a365d; color: white; border-left: 4px solid #0d6efd; }
+        .card-custom { border: none; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: white; margin-bottom: 25px; }
+        .table th { background-color: #f8f9fa; color: #495057; font-weight: 600; }
+        .btn-action { padding: 4px 10px; font-size: 0.85rem; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10">
-            <span>FGN PANEL</span>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 col-lg-2 p-0 sidebar shadow">
+                <div class="p-3 text-center border-bottom border-secondary">
+                    <h5 class="fw-bold m-0"><i class="fa-solid fa-user-gear me-2 text-primary"></i>ADMINISTRACIÓN</h5>
+                </div>
+                <div class="py-3">
+                    <a href="#" class="active"><i class="fa-solid fa-chart-line me-2"></i>Inicio / Control</a>
+                    <a href="/noticias.html" target="_blank"><i class="fa-solid fa-newspaper me-2"></i>Ver Noticias</a>
+                    <a href="/buscados.html" target="_blank"><i class="fa-solid fa-skull me-2"></i>Ver Buscados</a>
+                </div>
+            </div>
+
+            <div class="col-md-9 col-lg-10 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h2 class="fw-bold text-dark">Sistema Central de la Fiscalía General</h2>
+                    <span class="badge bg-success p-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i>Servidor Conectado</span>
+                </div>
+
+                <div class="card card-custom p-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users me-2 text-primary"></i>Cuentas Registradas en el Sistema</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Usuario / Correo</th>
+                                    <th>Estado</th>
+                                    <th>Contraseña (Cifrada)</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-usuarios">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card card-custom p-4">
+                            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullhorn me-2 text-primary"></i>Publicar Noticia Oficial</h5>
+                            <div class="input-group mb-3">
+                                <input type="text" id="input-noticia" class="form-control" placeholder="Escribe el titular de la noticia...">
+                                <button class="btn btn-primary" onclick="agregarNoticia()"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <ul class="list-group" id="lista-noticias"></ul>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card card-custom p-4">
+                            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-user-ninja me-2 text-danger"></i>Añadir Orden de Captura</h5>
+                            <div class="input-group mb-3">
+                                <input type="text" id="input-buscado" class="form-control" placeholder="Nombre completo del requerido...">
+                                <button class="btn btn-danger" onclick="agregarBuscado()"><i class="fa-solid fa-user-plus"></i></button>
+                            </div>
+                            <ul class="list-group" id="lista-buscados"></ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <nav style="flex:1;">
-            <ul class="menu-list">
-                <li><button id="m-home" class="active" onclick="showTab('home')"><i class="fa-solid fa-house"></i> Inicio</button></li>
-                <li class="admin-ctrl" style="display:none;"><button id="m-buscados" onclick="showTab('buscados')"><i class="fa-solid fa-bullseye"></i> Gestionar Buscados</button></li>
-                <li class="admin-ctrl" style="display:none;"><button id="m-noticias" onclick="showTab('noticias')"><i class="fa-solid fa-newspaper"></i> Gestionar Noticias</button></li>
-                <li class="admin-ctrl" style="display:none;"><button id="m-users" onclick="showTab('users')"><i class="fa-solid fa-users"></i> Gestionar Usuarios</button></li>
-            </ul>
-        </nav>
-        <button class="menu-list button btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
-    </aside>
-
-    <main class="main-panel">
-        <header class="header-dash">
-            <h1 class="welcome-title" id="welcomeUser">Bienvenido, Usuario</h1>
-            <div class="notif-box" onclick="checkNotifications()">
-                <i class="fa-solid fa-bell" style="font-size: 20px; color: var(--blue-dark);"></i>
-                <div class="notif-badge" id="notifCount">0</div>
-            </div>
-        </header>
-
-        <!-- SECCIÓN: INICIO GENERAL -->
-        <section id="sec-home" class="admin-section active">
-            <div class="card-dash" id="userStatusBox">
-                <h2>Estado de la cuenta</h2>
-                <p style="margin-top:10px; color:var(--text-muted);" id="welcomeSubtext">Hola, tu cuenta se encuentra registrada en el sistema.</p>
-                <span class="status-badge status-pendiente" id="statusLabel">Se ha enviado la solicitud a un admin para que acepte tu cuenta</span>
-            </div>
-            <div class="card-dash admin-ctrl" style="display:none;">
-                <h2>Consola Suprema de Administración</h2>
-                <p style="margin-top: 10px; color: var(--text-muted);">Tienes acceso completo al control de la base de datos nacional de la Fiscalía General de la Nación.</p>
-            </div>
-        </section>
-
-        <!-- SECCIÓN: GESTIONAR BUSCADOS -->
-        <section id="sec-buscados" class="admin-section">
-            <div class="card-dash">
-                <h2>Añadir al Cartel de Buscados</h2>
-                <div style="margin-top: 15px;">
-                    <div class="form-group"><label>Nombre Completo / Alias</label><input type="text" id="b-name"></div>
-                    <button class="btn-add" onclick="addBuscado()">Añadir Buscado</button>
-                </div>
-            </div>
-            <div class="card-dash">
-                <h2>Lista de Buscados Actuales</h2>
-                <table>
-                    <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
-                    <tbody id="table-buscados"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- SECCIÓN: GESTIONAR NOTICIAS -->
-        <section id="sec-noticias" class="admin-section">
-            <div class="card-dash">
-                <h2>Añadir Noticia Institucional</h2>
-                <div style="margin-top: 15px;">
-                    <div class="form-group"><label>Titular de la Noticia</label><input type="text" id="n-title"></div>
-                    <button class="btn-add" onclick="addNoticia()">Añadir Noticia</button>
-                </div>
-            </div>
-            <div class="card-dash">
-                <h2>Listado de Noticias Publicadas</h2>
-                <table>
-                    <thead><tr><th>Titular</th><th>Acciones</th></tr></thead>
-                    <tbody id="table-noticias"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- SECCIÓN: GESTIONAR USUARIOS -->
-        <section id="sec-users" class="admin-section">
-            <div class="card-dash">
-                <h2>Cuentas Registradas en el Sistema</h2>
-                <table>
-                    <thead><tr><th>Usuario / Correo</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody id="table-users"></tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+    </div>
 
     <script>
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if(!currentUser) window.location.href = 'iniciar-sesion.html';
-
-        document.getElementById('welcomeUser').innerText = `Bienvenido, ${currentUser.username}`;
-
-        if(currentUser.role === 'admin') {
-            document.getElementById('userStatusBox').style.display = 'none';
-            document.querySelectorAll('.admin-ctrl').forEach(el => el.style.display = 'block');
-            loadAdminData();
-        } else {
-            checkUserLiveStatus();
-        }
-
-        function showTab(tab) {
-            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.menu-list button').forEach(b => b.classList.remove('active'));
-            document.getElementById(`sec-${tab}`).classList.add('active');
-            document.getElementById(`m-${tab}`).classList.add('active');
-        }
-
-        async function checkUserLiveStatus() {
+        async function cargarDatosDashboard() {
             try {
-                const res = await fetch(`/api/user-status/${currentUser.username}`);
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.error);
-                
-                if(data.status === 'aceptado') {
-                    const label = document.getElementById('statusLabel');
-                    label.className = "status-badge";
-                    label.style.backgroundColor = "rgba(52, 199, 89, 0.15)";
-                    label.style.color = "var(--success)";
-                    label.innerText = "Cuenta Aceptada - Acceso Completo Concedido";
-                    document.getElementById('welcomeSubtext').innerText = "Tu cuenta ha sido aprobada por la administración central.";
-                }
-            } catch(err) {
-                alert("❌ ERROR DE BASE DE DATOS: " + err.message);
-            }
-        }
+                const response = await fetch('/api/admin/data');
+                const data = await response.json();
 
-        let pendingCountGlobal = 0;
-
-        async function loadAdminData() {
-            try {
-                const res = await fetch('/api/admin/data');
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.error);
-
-                // Contador de Notificaciones de cuentas pendientes
-                const pendingUsers = data.users.filter(u => u.status === 'pendiente');
-                pendingCountGlobal = pendingUsers.length;
-                const badge = document.getElementById('notifCount');
-                if(pendingCountGlobal > 0) {
-                    badge.innerText = pendingCountGlobal;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
-
-                // Renderizar Usuarios
-                const usersTable = document.getElementById('table-users');
-                usersTable.innerHTML = '';
-                data.users.forEach(u => {
-                    usersTable.innerHTML += `
+                // 1. Renderizar Usuarios
+                const tUsuarios = document.getElementById('tabla-usuarios');
+                tUsuarios.innerHTML = '';
+                data.users.forEach(user => {
+                    const esPendiente = user.status === 'pendiente';
+                    tUsuarios.innerHTML += `
                         <tr>
-                            <td>${u.username}</td>
-                            <td style="font-weight:600; color:${u.status==='aceptado'?'green':'orange'}">${u.status.toUpperCase()}</td>
-                            <td>
-                                ${u.status === 'pendiente' ? `<button class="btn-action btn-accept" onclick="executeAction('/api/admin/accept-user', {username:'${u.username}'})">Aceptar</button>` : ''}
-                                <button class="btn-action btn-delete" onclick="executeAction('/api/admin/delete-user', {username:'${u.username}'})">Eliminar</button>
+                            <td class="fw-bold">${user.username}</td>
+                            <td><span class="badge ${esPendiente ? 'bg-warning text-dark' : 'bg-success'}">${user.status.toUpperCase()}</span></td>
+                            <td><code class="text-muted small">${user.password.substring(0, 25)}...</code></td>
+                            <td class="text-end">
+                                ${esPendiente ? `<button class="btn btn-success btn-action me-1" onclick="aceptarUsuario('${user.username}')"><i class="fa-solid fa-check"></i> Aceptar</button>` : ''}
+                                <button class="btn btn-outline-danger btn-action" onclick="eliminarUsuario('${user.username}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
                             </td>
                         </tr>
                     `;
                 });
 
-                // Renderizar Buscados
-                const buscadosTable = document.getElementById('table-buscados');
-                buscadosTable.innerHTML = '';
-                data.buscados.forEach(b => {
-                    buscadosTable.innerHTML += `
-                        <tr><td>${b.nombre}</td><td><button class="btn-action btn-delete" onclick="executeAction('/api/admin/delete-buscado', {id:${b.id}})">Eliminar</button></td></tr>
-                    `;
-                });
-
-                // Renderizar Noticias
-                const noticiasTable = document.getElementById('table-noticias');
-                noticiasTable.innerHTML = '';
+                // 2. Renderizar Noticias
+                const lNoticias = document.getElementById('lista-noticias');
+                lNoticias.innerHTML = '';
                 data.noticias.forEach(n => {
-                    noticiasTable.innerHTML += `
-                        <tr><td>${n.titular}</td><td><button class="btn-action btn-delete" onclick="executeAction('/api/admin/delete-noticia', {id:${n.id}})">Eliminar</button></td></tr>
+                    lNoticias.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fa-regular fa-file-lines me-2 text-muted"></i>${n.titular}</span>
+                            <button class="btn btn-link text-danger p-0" onclick="eliminarNoticia(${n.id})"><i class="fa-solid fa-trash-can"></i></button>
+                        </li>
                     `;
                 });
 
-            } catch (err) {
-                alert("❌ ERROR DE BASE DE DATOS: " + err.message);
-            }
-        }
-
-        async function executeAction(url, bodyData) {
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bodyData)
+                // 3. Renderizar Buscados
+                const lBuscados = document.getElementById('lista-buscados');
+                lBuscados.innerHTML = '';
+                data.buscados.forEach(b => {
+                    lBuscados.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-start border-danger border-3">
+                            <span><i class="fa-solid fa-skull-crossbones me-2 text-danger"></i><strong>${b.nombre}</strong></span>
+                            <button class="btn btn-link text-danger p-0" onclick="eliminarBuscado(${b.id})"><i class="fa-solid fa-trash-can"></i></button>
+                        </li>
+                    `;
                 });
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.error);
-                loadAdminData();
-            } catch (err) {
-                alert("❌ ERROR DE CONEXIÓN: " + err.message);
-            }
+
+            } catch (err) { console.error("Error al cargar datos:", err); }
         }
 
-        function addBuscado() {
-            const nombre = document.getElementById('b-name').value;
-            if(!nombre) return;
-            executeAction('/api/admin/add-buscado', { nombre });
-            document.getElementById('b-name').value = '';
+        // FUNCIONES DE ACCIONES API
+        async function gestionarPost(url, body) {
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            cargarDatosDashboard();
         }
 
-        function addNoticia() {
-            const titular = document.getElementById('n-title').value;
-            if(!titular) return;
-            executeAction('/api/admin/add-noticia', { titular });
-            document.getElementById('n-title').value = '';
+        function aceptarUsuario(username) { gestionarPost('/api/admin/accept-user', { username }); }
+        function eliminarUsuario(username) { if(confirm("¿Eliminar cuenta?")) gestionarPost('/api/admin/delete-user', { username }); }
+        
+        function agregarNoticia() { 
+            const titular = document.getElementById('input-noticia').value;
+            if(titular) { gestionarPost('/api/admin/add-noticia', { titular }); document.getElementById('input-noticia').value = ''; }
         }
+        function eliminarNoticia(id) { gestionarPost('/api/admin/delete-noticia', { id }); }
 
-        function checkNotifications() {
-            if(currentUser.role !== 'admin') return;
-            if(pendingCountGlobal > 0) {
-                alert(`🔔 Tienes ${pendingCountGlobal} nueva(s) solicitud(es) de cuenta esperando tu aprobación en la sección 'Gestionar Usuarios'.`);
-            } else {
-                alert("🔕 No tienes notificaciones o solicitudes pendientes por procesar.");
-            }
+        function agregarBuscado() { 
+            const nombre = document.getElementById('input-buscado').value;
+            if(nombre) { gestionarPost('/api/admin/add-buscado', { nombre }); document.getElementById('input-buscado').value = ''; }
         }
+        function eliminarBuscado(id) { gestionarPost('/api/admin/delete-buscado', { id }); }
 
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = 'iniciar-sesion.html';
-        }
+        window.onload = cargarDatosDashboard;
     </script>
 </body>
 </html>
