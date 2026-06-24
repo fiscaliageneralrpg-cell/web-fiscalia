@@ -22,11 +22,11 @@
         .form-label { font-weight: 600; font-size: 13px; color: #1d1d1f; }
         .tab-content-panel { display: none; }
         .tab-content-panel.active { display: block; }
+        .preview-img-box { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; margin-top: 10px; display: none; border: 1px dashed #cbd5e1; }
     </style>
 </head>
 <body>
 
-    <!-- Menú Lateral -->
     <div class="sidebar shadow-sm">
         <div class="p-4 text-center border-bottom border-secondary border-opacity-25">
             <h5 class="fw-bold m-0"><i class="fa-solid fa-user-shield me-2 text-info"></i>FISCALÍA G.N.</h5>
@@ -39,17 +39,15 @@
         </div>
     </div>
 
-    <!-- Contenido Principal -->
     <div class="main-content">
         
-        <!-- Barra Superior Dinámica -->
         <div class="user-topbar d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">
                 <div class="user-avatar">
                     <i class="fa-solid fa-user"></i>
                 </div>
                 <div>
-                    <strong class="text-dark" style="font-size: 15px;" id="display-username">Bienvenido...</strong>
+                    <strong class="text-dark" style="font-size: 15px;" id="display-username">Bienvenido, cargando...</strong>
                 </div>
             </div>
             <div>
@@ -59,7 +57,6 @@
             </div>
         </div>
 
-        <!-- VISTA 1: CONSOLA DE MANDO -->
         <div id="tab-consola" class="tab-content-panel active">
             <div class="card card-custom p-5 text-center">
                 <i class="fa-solid fa-shield-halved fa-3x text-primary mb-3"></i>
@@ -71,7 +68,6 @@
             </div>
         </div>
 
-        <!-- VISTA 2: PANEL DE USUARIOS -->
         <div id="tab-usuarios" class="tab-content-panel">
             <div class="card card-custom p-4">
                 <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users me-2 text-primary"></i>Verificación de Credenciales y Cuentas</h5>
@@ -85,15 +81,12 @@
                                 <th class="text-end">Acciones Jurídicas</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-usuarios">
-                            <!-- Datos de la API -->
-                        </tbody>
+                        <tbody id="tabla-usuarios"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA 3: SUBIR NOTICIAS -->
         <div id="tab-noticias" class="tab-content-panel">
             <div class="row">
                 <div class="col-md-5">
@@ -111,8 +104,9 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Enlace de Imagen Ilustrativa (Opcional)</label>
-                            <input type="url" id="noticia-img" class="form-control" placeholder="https://ejemplo.com/imagen.jpg">
+                            <label class="form-label">Subir Imagen desde PC (Opcional)</label>
+                            <input type="file" id="noticia-file" class="form-control" accept="image/*" onchange="previewImage(this, 'preview-noticia')">
+                            <img id="preview-noticia" class="preview-img-box" src="">
                         </div>
 
                         <button class="btn btn-primary w-100 fw-semibold" onclick="agregarNoticia()"><i class="fa-solid fa-paper-plane me-2"></i>Emitir Boletín</button>
@@ -127,7 +121,6 @@
             </div>
         </div>
 
-        <!-- VISTA 4: SUBIR BUSCADOS -->
         <div id="tab-buscados" class="tab-content-panel">
             <div class="row">
                 <div class="col-md-5">
@@ -161,8 +154,9 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">URL Fotografía Criminal (Opcional)</label>
-                            <input type="url" id="buscado-img" class="form-control" placeholder="https://ejemplo.com/sujeto.jpg">
+                            <label class="form-label">Subir Fotografía Criminal desde PC (Opcional)</label>
+                            <input type="file" id="buscado-file" class="form-control" accept="image/*" onchange="previewImage(this, 'preview-buscado')">
+                            <img id="preview-buscado" class="preview-img-box" src="">
                         </div>
 
                         <button class="btn btn-danger w-100 fw-semibold" onclick="agregarBuscado()"><i class="fa-solid fa-shield-virus me-2"></i>Desplegar Orden</button>
@@ -180,17 +174,29 @@
     </div>
 
     <script>
-        // Carga el nombre de usuario de forma dinámica desde las variables de sesión
+        // Cambia dinámicamente al usuario logueado en la sesión activa
         function establecerNombreUsuario() {
-            const usuarioGuardado = localStorage.getItem('username') || localStorage.getItem('email') || 'Usuario Autorizado';
+            const usuarioGuardado = localStorage.getItem('username') || localStorage.getItem('email') || 'fiscaliageneralrpg@gmail.com';
             document.getElementById('display-username').innerText = `Bienvenido, ${usuarioGuardado}`;
             document.getElementById('hero-welcome').innerText = `Bienvenido, ${usuarioGuardado}`;
+        }
+
+        // Previsualización de imágenes locales
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content-panel').forEach(panel => panel.classList.remove('active'));
             document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
-            
             document.getElementById('tab-' + tabId).classList.add('active');
             document.getElementById('link-' + tabId).classList.add('active');
         }
@@ -239,7 +245,7 @@
                         </li>`;
                 });
 
-            } catch (err) { console.error("Error cargando flujos de datos:", err); }
+            } catch (err) { console.error("Error cargando datos:", err); }
         }
 
         async function ejecutarOperacion(url, payload) {
@@ -252,19 +258,25 @@
         }
 
         function aceptarUsuario(username) { ejecutarOperacion('/api/admin/accept-user', { username }); }
-        function eliminarUsuario(username) { if(confirm("¿Remover acceso a esta identidad?")) ejecutarOperacion('/api/admin/delete-user', { username }); }
+        function eliminarUsuario(username) { if(confirm("¿Remover acceso?")) ejecutarOperacion('/api/admin/delete-user', { username }); }
         
         function agregarNoticia() { 
             const titular = document.getElementById('noticia-titulo').value;
             const descripcion = document.getElementById('noticia-desc').value;
-            const imagen = document.getElementById('noticia-img').value;
+            const imgElement = document.getElementById('preview-noticia');
+            const imagen = imgElement.style.display === 'block' ? imgElement.src : '';
+            
+            // Captura fecha local del PC
+            const fecha = new Date().toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
-            if(!titular) { alert("El titular es obligatorio."); return; }
-            ejecutarOperacion('/api/admin/add-noticia', { titular, descripcion, imagen });
+            if(!titular || !descripcion) { alert("El titular y la descripción son obligatorios."); return; }
+            
+            ejecutarOperacion('/api/admin/add-noticia', { titular, descripcion, imagen, fecha });
             
             document.getElementById('noticia-titulo').value = '';
             document.getElementById('noticia-desc').value = '';
-            document.getElementById('noticia-img').value = '';
+            document.getElementById('noticia-file').value = '';
+            imgElement.style.display = 'none';
         }
         function eliminarNoticia(id) { ejecutarOperacion('/api/admin/delete-noticia', { id }); }
 
@@ -273,7 +285,8 @@
             const peligro = document.getElementById('buscado-peligro').value;
             const hechos = document.getElementById('buscado-hechos').value;
             const recompensa = document.getElementById('buscado-recompensa').value;
-            const imagen = document.getElementById('buscado-img').value;
+            const imgElement = document.getElementById('preview-buscado');
+            const imagen = imgElement.style.display === 'block' ? imgElement.src : '';
 
             if(!nombre || !peligro) { alert("El nombre y nivel de peligro son obligatorios."); return; }
             ejecutarOperacion('/api/admin/add-búscado', { nombre, peligro, hechos, recompensa, imagen });
@@ -282,12 +295,13 @@
             document.getElementById('buscado-peligro').value = '';
             document.getElementById('buscado-hechos').value = '';
             document.getElementById('buscado-recompensa').value = '';
-            document.getElementById('buscado-img').value = '';
+            document.getElementById('buscado-file').value = '';
+            imgElement.style.display = 'none';
         }
         function eliminarBuscado(id) { ejecutarOperacion('/api/admin/delete-buscado', { id }); }
 
         function cerrarSesion() {
-            if(confirm("¿Cerrar sesión del sistema?")) {
+            if(confirm("¿Cerrar sesión?")) {
                 localStorage.clear();
                 window.location.href = 'index.html';
             }
