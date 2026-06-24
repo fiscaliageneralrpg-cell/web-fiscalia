@@ -3,101 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fiscalía General - Noticias Recientes</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>Noticias - Fiscalía General de la Nación</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar-custom { background-color: #0b1d3a; }
-        .news-card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; background: white; }
-        .news-card:hover { transform: translateY(-5px); }
-        .icon-badge { background-color: #e3f2fd; color: #0d6efd; padding: 10px; border-radius: 50%; }
-        .footer-custom { background-color: #0b1d3a; color: white; padding: 15px 0; font-size: 0.9rem; }
+        :root {
+            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;
+            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;        
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Barra de Navegación Exacta */
+        .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
+        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
+        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
+        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
+        .nav-menu { display: flex; list-style: none; gap: 28px; }
+        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; }
+        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
+        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; }
+
+        /* Estructura de Contenido */
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; flex: 1; }
+        .page-header { text-align: center; margin-bottom: 40px; }
+        .page-title { font-size: 32px; font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
+        .page-subtitle { font-size: 16px; color: var(--text-muted); }
+        
+        /* Grid de Noticias Estilo Premium */
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-top: 20px; }
+        .news-card { background: var(--white); border-radius: var(--radius); padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+        .news-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
+        .news-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--blue-light); }
+        
+        .news-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+        .news-icon { color: var(--blue-light); font-size: 22px; background: #eef4fa; padding: 10px; border-radius: 10px; }
+        .news-badge { display: inline-block; background: #eef4fa; color: var(--blue-light); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin-bottom: 6px; text-transform: uppercase; }
+        .news-title { font-size: 17px; font-weight: 600; color: var(--text-dark); line-height: 1.4; }
+        
+        .news-footer { border-top: 1px solid #f2f2f7; pt-16px; margin-top: 16px; padding-top: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); }
+        .read-more { color: var(--blue-light); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+        /* Estados */
+        .loading, .empty { text-align: center; padding: 60px 0; grid-column: 1 / -1; color: var(--text-muted); }
+        .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(29, 112, 184, 0.1); border-radius: 50%; border-top-color: var(--blue-light); animation: spin 1s infinite; margin-bottom: 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-scale-balanced me-2"></i>FISCALÍA GENERAL</a>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
+                <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="buscados.html">Buscados</a></li>
+                <li><a href="noticias.html" class="active">Noticias</a></li>
+                <li><a href="denuncias.html">Denuncias</a></li>
+            </ul>
+            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
         </div>
     </nav>
 
-    <div class="container my-5" style="min-height: 75vh;">
-        <div class="row mb-4 text-center">
-            <div class="col">
-                <h1 class="fw-bold text-dark"><i class="fa-solid fa-newspaper text-primary me-2"></i>Boletines y Noticias</h1>
-                <p class="text-muted">Información oficial actualizada del sistema judicial de la nación.</p>
-                <hr class="w-25 mx-auto text-primary" style="height: 3px;">
-            </div>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Boletines y Prensa Oficial</h1>
+            <p class="page-subtitle">Comunicados e informativos emitidos por los despachos fiscales de la nación.</p>
         </div>
 
-        <div class="row g-4" id="contenedor-noticias">
-            <div class="text-center col-12" id="cargando">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">Cargando boletines oficiales...</p>
+        <div class="news-grid" id="contenedor-noticias">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Sincronizando comunicados oficiales...</p>
             </div>
         </div>
     </div>
 
-    <footer class="footer-custom text-center mt-auto">
-        <div class="container">
-            <p class="mb-0">&copy; 2026 Fiscalía General de la Nación RP - Todos los derechos reservados.</p>
-        </div>
-    </footer>
-
     <script>
         async function cargarNoticias() {
             try {
-                // Llamamos a la API que creamos en el servidor
                 const response = await fetch('/api/admin/data');
                 const data = await response.json();
-                
                 const contenedor = document.getElementById('contenedor-noticias');
-                contenedor.innerHTML = ''; // Limpiar el cargando
+                contenedor.innerHTML = '';
 
                 if (data.noticias.length === 0) {
                     contenedor.innerHTML = `
-                        <div class="col-12 text-center my-5">
-                            <i class="fa-solid fa-folder-open fa-3x text-muted mb-3"></i>
-                            <p class="text-muted fs-5">No hay noticias o comunicados emitidos en este momento.</p>
+                        <div class="empty">
+                            <i class="fa-solid fa-folder-open" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
+                            <p>No se registran comunicados emitidos el día de hoy.</p>
                         </div>`;
                     return;
                 }
 
-                // Recorrer cada noticia y renderizarla con diseño decorado
                 data.noticias.forEach(noticia => {
-                    const html = `
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card news-card p-4 h-100 d-flex flex-column justify-content-between">
-                                <div class="d-flex align-items-start mb-3">
-                                    <div class="icon-badge me-3">
-                                        <i class="fa-solid fa-bullhorn fa-lg"></i>
-                                    </div>
+                    contenedor.innerHTML += `
+                        <div class="news-card">
+                            <div>
+                                <div class="news-header">
+                                    <i class="fa-solid fa-bullhorn news-icon"></i>
                                     <div>
-                                        <span class="badge bg-primary mb-2">Comunicado Oficial</span>
-                                        <h5 class="card-title fw-bold text-dark mb-0">${noticia.titular}</h5>
+                                        <span class="news-badge">Oficial</span>
+                                        <h3 class="news-title">${noticia.titular}</h3>
                                     </div>
-                                </div>
-                                <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center text-muted small">
-                                    <span><i class="fa-regular fa-calendar me-1"></i> Emitido Hoy</span>
-                                    <span class="text-primary fw-semibold">Leer más <i class="fa-solid fa-arrow-right ms-1"></i></span>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                    contenedor.innerHTML += html;
+                            <div class="news-footer">
+                                <span><i class="fa-regular fa-clock me-1"></i> Publicado reciente</span>
+                                <span class="read-more">Ver boletín <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></span>
+                            </div>
+                        </div>`;
                 });
             } catch (error) {
-                console.error("Error cargando noticias:", error);
-                document.getElementById('contenedor-noticias').innerHTML = `
-                    <div class="alert alert-danger text-center col-12" role="alert">
-                        <i class="fa-solid fa-circle-exclamation me-2"></i> Error al conectar con el servidor judicial.
-                    </div>`;
+                document.getElementById('contenedor-noticias').innerHTML = `<div class="empty"><p style="color: #dc3545;">Error al cargar el canal de noticias.</p></div>`;
             }
         }
-
-        // Ejecutar la función apenas abra la página
         window.onload = cargarNoticias;
     </script>
 </body>
