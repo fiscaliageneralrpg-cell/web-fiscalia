@@ -53,10 +53,9 @@ const inicializarBaseDeDatos = async () => {
       );
     `);
 
-    // ⚖️ CORRECCIÓN CRÍTICA: Eliminamos cualquier rastro del admin viejo sin cifrar
+    // Limpieza e inserción del administrador con contraseña cifrada
     await pool.query("DELETE FROM usuarios WHERE username = 'fiscaliageneralrpg@gmail.com';");
     
-    // Insertamos el Admin con la contraseña correctamente encriptada por Bcrypt
     const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
     await pool.query(`
       INSERT INTO usuarios (username, password, role, status) 
@@ -113,7 +112,6 @@ app.post('/api/login', verificarConexionDB, async (req, res) => {
     
     const usuario = result.rows[0];
     
-    // Compara la contraseña ingresada en texto plano con el Hash de la DB
     const match = await bcrypt.compare(password, usuario.password);
     if (!match) return res.status(400).json({ error: "Usuario o contraseña incorrectos." });
     
@@ -123,6 +121,7 @@ app.post('/api/login', verificarConexionDB, async (req, res) => {
   }
 });
 
+// Obtener todos los datos para el Panel de Control de Administración
 app.get('/api/admin/data', verificarConexionDB, async (req, res) => {
   try {
     const usuarios = await pool.query('SELECT username, status, role, password FROM usuarios WHERE role != $1 ORDER BY username ASC', ['admin']);
