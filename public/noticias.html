@@ -29,9 +29,8 @@
         .page-title { font-size: 32px; font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
         .page-subtitle { font-size: 16px; color: var(--text-muted); }
         
-        /* Grid Principal */
         .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-top: 20px; }
-        .news-card { background: var(--white); border-radius: var(--radius); padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+        .news-card { background: var(--white); border-radius: var(--radius); padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: transform 0.2s; }
         .news-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
         .news-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--blue-light); }
         
@@ -43,12 +42,10 @@
         .news-footer { border-top: 1px solid #f2f2f7; margin-top: 16px; padding-top: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); }
         .read-more { color: var(--blue-light); font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; background: none; border: none; font-size: 13px; }
 
-        /* Vista Detallada de la Noticia */
         .single-news-view { display: none; background: var(--white); border-radius: var(--radius); padding: 40px; box-shadow: 0 4px 25px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03); max-width: 800px; margin: 0 auto; }
         .single-news-view.active { display: block; }
-        .btn-back { background: #eef4fa; color: var(--blue-dark); border: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; transition: 0.2s; }
-        .btn-back:hover { background: #dce7f5; }
-        .full-news-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 10px; margin: 20px 0; display: none; }
+        .btn-back { background: #eef4fa; color: var(--blue-dark); border: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+        .full-news-img { width: 100%; max-height: 440px; object-fit: contain; background-color: #f5f5f7; border-radius: 10px; margin: 20px 0; display: none; border: 1px solid rgba(0,0,0,0.05); }
         .full-news-body { font-size: 16px; line-height: 1.7; color: #3a3a3c; white-space: pre-line; }
 
         .loading, .empty { text-align: center; padding: 60px 0; grid-column: 1 / -1; color: var(--text-muted); }
@@ -74,7 +71,6 @@
     </nav>
 
     <div class="container">
-        <!-- VISTA DE CUADRÍCULA GENERAL -->
         <div id="vista-lista-noticias">
             <div class="page-header">
                 <h1 class="page-title">Boletines y Prensa Oficial</h1>
@@ -88,29 +84,29 @@
             </div>
         </div>
 
-        <!-- VISTA DETALLADA (OCULTA POR DEFECTO) -->
         <div id="vista-noticia-completa" class="single-news-view">
             <button class="btn-back" onclick="mostrarListaNoticias()"><i class="fa-solid fa-arrow-left"></i> Volver a las noticias</button>
             <span class="news-badge">Comunicado Oficial</span>
             <h1 id="full-news-title" class="page-title" style="text-align: left; margin-top: 10px; font-size: 28px;"></h1>
-            <img id="full-news-image" class="full-news-img" src="" alt="Imagen Noticia">
+            <p id="full-news-date" style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;"></p>
+            <img id="full-news-image" class="full-news-img" src="" alt="Imagen del caso">
             <p id="full-news-text" class="full-news-body"></p>
         </div>
     </div>
 
     <script>
-        let noticiasCache = []; // Para guardar temporalmente las noticias cargadas de la API
+        let noticiasCache = [];
 
         async function cargarNoticias() {
             try {
                 const response = await fetch('/api/admin/data');
                 const data = await response.json();
-                noticiasCache = data.noticias; // Guardamos las noticias en memoria
+                noticiasCache = data.noticias; 
                 
                 const contenedor = document.getElementById('contenedor-noticias');
                 contenedor.innerHTML = '';
 
-                if (noticiasCache.length === 0) {
+                if (!noticiasCache || noticiasCache.length === 0) {
                     contenedor.innerHTML = `
                         <div class="empty">
                             <i class="fa-solid fa-folder-open" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
@@ -120,6 +116,8 @@
                 }
 
                 noticiasCache.forEach((noticia, index) => {
+                    // Si no tiene fecha en BD usa una por defecto legible
+                    const fechaAMostrar = noticia.fecha || "Reciente";
                     contenedor.innerHTML += `
                         <div class="news-card">
                             <div>
@@ -132,7 +130,7 @@
                                 </div>
                             </div>
                             <div class="news-footer">
-                                <span><i class="fa-regular fa-clock"></i> Reciente</span>
+                                <span><i class="fa-regular fa-clock"></i> ${fechaAMostrar}</span>
                                 <button class="read-more" onclick="verNoticiaCompleta(${index})">Ver boletín <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></button>
                             </div>
                         </div>`;
@@ -142,32 +140,30 @@
             }
         }
 
-        // Función para abrir y leer una noticia entera
         function verNoticiaCompleta(index) {
             const noticia = noticiasCache[index];
             if(!noticia) return;
 
             document.getElementById('full-news-title').innerText = noticia.titular;
+            document.getElementById('full-news-date').innerHTML = `<i class="fa-solid fa-calendar-day"></i> Fecha de emisión: <b>${noticia.fecha || 'No registrada'}</b>`;
             
-            // Si la noticia tiene descripción, la pone; si no, deja un mensaje de relleno informativo
-            document.getElementById('full-news-text').innerText = noticia.descripcion || "No se ha anexado descripción ampliada para este boletín de prensa judicial.";
+            // Corrige la lectura de las propiedades desde la API
+            document.getElementById('full-news-text').innerText = noticia.descripcion || noticia.desc || "No se ha anexado descripción ampliada para este boletín de prensa judicial.";
             
-            // Manejo dinámico de imagen opcional
             const imgElement = document.getElementById('full-news-image');
-            if (noticia.imagen && noticia.imagen.trim() !== "") {
-                imgElement.src = noticia.imagen;
+            const urlImagen = noticia.imagen || noticia.img;
+            if (urlImagen && urlImagen.trim() !== "") {
+                imgElement.src = urlImagen;
                 imgElement.style.display = "block";
             } else {
                 imgElement.style.display = "none";
             }
 
-            // Transición de vistas
             document.getElementById('vista-lista-noticias').style.display = "none";
             document.getElementById('vista-noticia-completa').classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Función para regresar a la normalidad
         function mostrarListaNoticias() {
             document.getElementById('vista-noticia-completa').classList.remove('active');
             document.getElementById('vista-lista-noticias').style.display = "block";
