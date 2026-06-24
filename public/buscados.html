@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los Más Buscados - Fiscalía General de la Nación</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;
+            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;            
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; }
+        
+        .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
+        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
+        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
+        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
+        .nav-menu { display: flex; list-style: none; gap: 28px; }
+        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; }
+        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
+        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; }
+
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; text-align: center; }
+        .page-title { font-size: 32px; font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
+        .page-subtitle { font-size: 16px; color: var(--text-muted); margin-bottom: 30px; }
+        
+        .empty-state { background: var(--white); padding: 60px 40px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03); }
+        .empty-icon { font-size: 50px; color: #a1a1a6; margin-bottom: 20px; }
+        .empty-state h2 { font-size: 22px; margin-bottom: 10px; color: var(--text-dark); }
+        .empty-state p { color: var(--text-muted); font-size: 15px; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
+                <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="buscados.html" class="active">Buscados</a></li>
+                <li><a href="noticias.html">Noticias</a></li>
+                <li><a href="denuncias.html">Denuncias</a></li>
+            </ul>
+            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="page-title">Cartel de los Más Buscados</h1>
+        <p class="page-subtitle">Orden de captura y requerimientos judiciales vigentes en el territorio nacional.</p>
+        <div class="empty-state">
+            <i class="fa-solid fa-user-shield empty-icon"></i>
+            <h2>Sin reportes por el momento</h2>
+            <p>Actualmente no se registran ciudadanos con órdenes de captura pendientes en la base de datos pública.</p>
+        </div>
+    </div>
+</body>
+</html>

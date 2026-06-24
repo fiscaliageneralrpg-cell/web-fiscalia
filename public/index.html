@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalía General de la Nación - RP Colombia</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;       
+            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;            
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 54px; overflow-x: hidden; }
+
+        .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
+        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
+        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
+        .nav-menu { display: flex; list-style: none; gap: 28px; }
+        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; position: relative; padding: 4px 0; transition: all 0.2s; }
+        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
+        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .btn-login:hover { background-color: #38bdf8; color: var(--white); }
+
+        .hero-section { background: linear-gradient(135deg, #011627 0%, #003366 50%, #1d70b8 100%); min-height: 460px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 80px 20px; color: var(--white); background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 0); background-size: 24px 24px; }
+        .hero-content { max-width: 750px; animation: fadeInUp 0.8s ease; }
+        .badge { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px); padding: 6px 16px; border-radius: 30px; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; margin-bottom: 24px; display: inline-block; border: 1px solid rgba(255,255,255,0.15); }
+        .hero-section h1 { font-size: 46px; font-weight: 800; margin-bottom: 18px; }
+        .hero-section p { font-size: 19px; color: #cbd5e1; margin-bottom: 35px; font-weight: 300; }
+        .hero-buttons { display: flex; justify-content: center; gap: 18px; }
+        .btn-primary { background-color: var(--white); color: var(--blue-dark); padding: 14px 28px; border-radius: var(--radius); text-decoration: none; font-weight: 600; transition: all 0.2s; }
+        .btn-secondary { background-color: rgba(255, 255, 255, 0.08); color: var(--white); padding: 14px 28px; border-radius: var(--radius); text-decoration: none; border: 1px solid rgba(255,255,255,0.25); transition: all 0.2s; }
+        .btn-primary:hover, .btn-secondary:hover { transform: translateY(-2px); }
+
+        .main-content { max-width: 1200px; margin: -50px auto 50px auto; padding: 0 20px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0,0,0,0.03); transition: all 0.3s; text-decoration: none; display: block; color: inherit; border: 1px solid rgba(0,0,0,0.02); }
+        .card:hover { transform: translateY(-6px); border-color: rgba(29, 112, 184, 0.2); }
+        .card-icon-wrapper { width: 60px; height: 60px; background-color: rgba(29, 112, 184, 0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .card-icon { font-size: 26px; color: var(--blue-light); }
+        .card h3 { font-size: 21px; margin-bottom: 12px; color: var(--blue-dark); }
+        .card p { color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
+        .card-footer-link { margin-top: 20px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--blue-light); }
+        footer { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
+                <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="active">Inicio</a></li>
+                <li><a href="buscados.html">Buscados</a></li>
+                <li><a href="noticias.html">Noticias</a></li>
+                <li><a href="denuncias.html">Denuncias</a></li>
+            </ul>
+            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="hero-content">
+            <span class="badge">SISTEMA INTEGRADO CRIMINAL</span>
+            <h1>Fiscalía General de la Nación</h1>
+            <p>Portal Institucional de Investigaciones y Consultas del Servidor Roleplay Colombia.</p>
+            <div class="hero-buttons">
+                <a href="denuncias.html" class="btn-primary">Radicar Denuncia</a>
+                <a href="buscados.html" class="btn-secondary">Cartel de Buscados</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="cards-grid">
+            <a href="noticias.html" class="card">
+                <div class="card-icon-wrapper"><i class="fa-solid fa-gavel card-icon"></i></div>
+                <h3>Justicia Eficaz</h3>
+                <p>Infórmate sobre los boletines de prensa, sentencias judiciales y los últimos operativos realizados en el país.</p>
+                <div class="card-footer-link">Ver boletines e informativos <i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+            <a href="denuncias.html" class="card">
+                <div class="card-icon-wrapper"><i class="fa-solid fa-shield-halved card-icon"></i></div>
+                <h3>Denuncia Fácil</h3>
+                <p>Reporta actos delictivos de manera digital. Los fiscales asignados abrirán una investigación formal de inmediato.</p>
+                <div class="card-footer-link">Iniciar radicación <i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+            <a href="buscados.html" class="card">
+                <div class="card-icon-wrapper"><i class="fa-solid fa-bullseye card-icon"></i></div>
+                <h3>Los Más Buscados</h3>
+                <p>Revisa la base de datos de ciudadanos con orden de captura vigente y reporta pistas de forma anónima.</p>
+                <div class="card-footer-link">Ver cartel nacional <i class="fa-solid fa-arrow-right"></i></div>
+            </a>
+        </section>
+    </main>
+    <footer><p>&copy; 2026 Fiscalía General de la Nación - Servidor RP Colombia.</p></footer>
+</body>
+</html>

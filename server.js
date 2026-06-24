@@ -1,160 +1,183 @@
-require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
-const session = require('express-session');
-const path = require('path');
+require('dotenv').config();
 
 const app = express();
 
-// Configuración de la Base de Datos en Render
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-});
-
-// Verificación y Creación de Tablas al iniciar
-const setupDB = async () => {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(50) UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                biografia TEXT DEFAULT 'Sin biografía',
-                es_premium BOOLEAN DEFAULT false,
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE TABLE IF NOT EXISTS codigos (
-                id SERIAL PRIMARY KEY,
-                titulo VARCHAR(100) NOT NULL,
-                contenido TEXT NOT NULL,
-                lenguaje VARCHAR(50) NOT NULL,
-                autor VARCHAR(50),
-                usuario_id INTEGER REFERENCES usuarios(id),
-                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log("-----------------------------------------");
-        console.log("✅ SISTEMA DE BASE DE DATOS CONECTADO");
-        console.log("-----------------------------------------");
-    } catch (err) {
-        console.error("❌ ERROR CRÍTICO DB:", err.message);
-    }
-};
-setupDB();
-
-// Middlewares
-app.set('view engine', 'ejs');
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-    secret: 'codepass_ultra_secret_2026',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 3600000 } // 1 hora de sesión
-}));
+app.use(express.static('public'));
 
-// Middleware de Protección de Rutas
-const checkAuth = (req, res, next) => {
-    if (req.session.userId) return next();
-    res.redirect('/login');
+// Configuración de la conexión a Render Postgres
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // Obligatorio para Render
+});
+
+// ==========================================
+// 🚀 AUTO-CREACIÓN DE TABLAS AL INICIAR
+// ==========================================
+const inicializarBaseDeDatos = async () => {
+  try {
+    // 1. Crear tabla de usuarios
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        username VARCHAR(100) PRIMARY KEY,
+        password VARCHAR(100) NOT NULL,
+        role VARCHAR(20) NOT NULL,
+        status VARCHAR(20) NOT NULL
+      );
+    `);
+
+    // 2. Crear tabla de buscados
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS buscados (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(250) NOT NULL
+      );
+    `);
+
+    // 3. Crear tabla de noticias
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS noticias (
+        id SERIAL PRIMARY KEY,
+        titular VARCHAR(250) NOT NULL
+      );
+    `);
+
+    // 4. Insertar la cuenta del Administrador Supremo automáticamente si no existe
+    await pool.query(`
+      INSERT INTO usuarios (username, password, role, status) 
+      VALUES ('fiscaliageneralrpg@gmail.com', 'Fiscalia2026*', 'admin', 'aceptado')
+      ON CONFLICT (username) DO NOTHING;
+    `);
+
+    console.log("✅ Base de datos verificada, tablas listas y cuenta Admin asegurada.");
+  } catch (err) {
+    console.error("❌ ERROR AL INICIALIZAR LA BASE DE DATOS:", err.message);
+  }
 };
 
-// --- RUTAS DE NAVEGACIÓN ---
+// Ejecutar la inicialización
+inicializarBaseDeDatos();
 
-app.get('/', (req, res) => {
-    res.render('index', { user: req.session.userName || null });
-});
+// Middleware para verificar si la base de datos está caída en tiempo real
+const verificarConexionDB = async (req, res, next) => {
+  try {
+    await pool.query('SELECT 1');
+    next();
+  } catch (err) {
+    console.error("❌ SOLICITUD RECHAZADA: La base de datos está desconectada.");
+    return res.status(500).json({ error: "La base de datos no está conectada. Intente de nuevo en unos minutos." });
+  }
+};
 
-app.get('/registro', (req, res) => {
-    if (req.session.userId) return res.redirect('/');
-    res.render('registro', { error: null });
-});
+// ==========================================
+// 🛠️ RUTAS DE LA API
+// ==========================================
 
-app.get('/login', (req, res) => {
-    if (req.session.userId) return res.redirect('/');
-    res.render('login', { error: null });
-});
-
-// --- LÓGICA DE USUARIOS ---
-
-app.post('/auth/register', async (req, res) => {
-    const { nombre, password, confirmPassword } = req.body;
+// Registro de cuentas
+app.post('/api/register', verificarConexionDB, async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const userExists = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ error: "Este usuario ya se encuentra registrado." });
+    }
     
-    if (password !== confirmPassword) {
-        return res.render('registro', { error: 'Las contraseñas no coinciden' });
-    }
-
-    try {
-        const userExists = await pool.query('SELECT * FROM usuarios WHERE nombre = $1', [nombre]);
-        if (userExists.rows.length > 0) {
-            return res.render('registro', { error: 'El nombre de usuario ya está en uso' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 12);
-        await pool.query(
-            'INSERT INTO usuarios (nombre, password) VALUES ($1, $2)',
-            [nombre, hashedPassword]
-        );
-        res.redirect('/login');
-    } catch (err) {
-        res.render('registro', { error: 'Error interno del servidor' });
-    }
+    await pool.query(
+      'INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, $3, $4)',
+      [username, password, 'user', 'pendiente']
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Error interno en el servidor al registrar cuenta." });
+  }
 });
 
-app.post('/auth/login', async (req, res) => {
-    const { nombre, password } = req.body;
-    try {
-        const result = await pool.query('SELECT * FROM usuarios WHERE nombre = $1', [nombre]);
-        if (result.rows.length === 0) {
-            return res.render('login', { error: 'Usuario no encontrado' });
-        }
-
-        const validPass = await bcrypt.compare(password, result.rows[0].password);
-        if (!validPass) {
-            return res.render('login', { error: 'Contraseña incorrecta' });
-        }
-
-        req.session.userId = result.rows[0].id;
-        req.session.userName = result.rows[0].nombre;
-        res.redirect('/');
-    } catch (err) {
-        res.render('login', { error: 'Error al intentar iniciar sesión' });
+// Inicio de Sesión
+app.post('/api/login', verificarConexionDB, async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM usuarios WHERE username = $1 AND password = $2', [username, password]);
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: "Usuario o contraseña incorrectos." });
     }
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Error en el servidor al autenticar." });
+  }
 });
 
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
+// Obtener datos del Admin (Usuarios, Buscados, Noticias)
+app.get('/api/admin/data', verificarConexionDB, async (req, res) => {
+  try {
+    const usuarios = await pool.query('SELECT username, status, role FROM usuarios WHERE role != $1 ORDER BY username ASC', ['admin']);
+    const buscados = await pool.query('SELECT id, nombre FROM buscados ORDER BY id DESC');
+    const noticias = await pool.query('SELECT id, titular FROM noticias ORDER BY id DESC');
+    res.json({ users: usuarios.rows, buscados: buscados.rows, noticias: noticias.rows });
+  } catch (err) {
+    res.status(500).json({ error: "Error al extraer datos de administración." });
+  }
 });
 
-// --- GESTIÓN DE CÓDIGOS ---
-
-app.get('/publicados', async (req, res) => {
-    const result = await pool.query(`
-        SELECT codigos.*, usuarios.nombre as creador 
-        FROM codigos 
-        LEFT JOIN usuarios ON codigos.usuario_id = usuarios.id 
-        ORDER BY fecha_creacion DESC
-    `);
-    res.render('publicados', { lista: result.rows, user: req.session.userName });
+// Aceptar Usuario
+app.post('/api/admin/accept-user', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al actualizar usuario." }); }
 });
 
-app.post('/post/save', checkAuth, async (req, res) => {
-    const { titulo, contenido, lenguaje } = req.body;
-    try {
-        await pool.query(
-            'INSERT INTO codigos (titulo, contenido, lenguaje, autor, usuario_id) VALUES ($1, $2, $3, $4, $5)',
-            [titulo, contenido, lenguaje, req.session.userName, req.session.userId]
-        );
-        res.redirect('/publicados');
-    } catch (err) {
-        res.send("Error al guardar el código");
-    }
+// Eliminar Usuario
+app.post('/api/admin/delete-user', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al borrar usuario." }); }
+});
+
+// Añadir Buscado
+app.post('/api/admin/add-buscado', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('INSERT INTO buscados (nombre) VALUES ($1)', [req.body.nombre]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al guardar buscado." }); }
+});
+
+// Eliminar Buscado
+app.post('/api/admin/delete-buscado', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al remover requerido." }); }
+});
+
+// Añadir Noticia
+app.post('/api/admin/add-noticia', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('INSERT INTO noticias (titular) VALUES ($1)', [req.body.titular]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al guardar boletín." }); }
+});
+
+// Eliminar Noticia
+app.post('/api/admin/delete-noticia', verificarConexionDB, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al remover boletín." }); }
+});
+
+// Consultar estado en vivo de un usuario común
+app.get('/api/user-status/:username', verificarConexionDB, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT status FROM usuarios WHERE username = $1', [req.params.username]);
+    res.json({ status: result.rows[0]?.status || 'pendiente' });
+  } catch (err) { res.status(500).json({ error: "Error de consulta." }); }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 SERVIDOR ACTIVO EN PORT ${PORT}`);
+  console.log(`⚖️ Servidor corriendo en el puerto ${PORT}`);
 });
