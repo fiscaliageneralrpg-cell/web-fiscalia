@@ -1,11 +1,12 @@
 const express = require('express');
 const { Pool } = require('pg');
 const session = require('express-session');
-const bcrypt = require('bcrypt'); // Aseguramos el uso de bcrypt para comparar contraseñas cifradas
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 const app = express();
 
+// Configuración del motor de vistas por si usas archivos .ejs
 app.set('view engine', 'ejs');
 
 app.use(express.json());
@@ -23,8 +24,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Inicialización limpia de la Base de Datos con Bcrypt forzado para el Admin
 const inicializarBaseDeDatos = async () => {
   try {
+    // 1. Tabla de Usuarios
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         username VARCHAR(100) PRIMARY KEY,
@@ -34,6 +37,7 @@ const inicializarBaseDeDatos = async () => {
       );
     `);
 
+    // 2. Tabla de Buscados
     await pool.query(`
       CREATE TABLE IF NOT EXISTS buscados (
         id SERIAL PRIMARY KEY,
@@ -41,6 +45,7 @@ const inicializarBaseDeDatos = async () => {
       );
     `);
 
+    // 3. Tabla de Noticias
     await pool.query(`
       CREATE TABLE IF NOT EXISTS noticias (
         id SERIAL PRIMARY KEY,
@@ -48,17 +53,17 @@ const inicializarBaseDeDatos = async () => {
       );
     `);
 
-    // Cuenta administradora por defecto (creada con contraseña cifrada si no existe)
-    const adminExists = await pool.query('SELECT * FROM usuarios WHERE username = $1', ['fiscaliageneralrpg@gmail.com']);
-    if (adminExists.rows.length === 0) {
-      const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
-      await pool.query(`
-        INSERT INTO usuarios (username, password, role, status) 
-        VALUES ('fiscaliageneralrpg@gmail.com', $1, 'admin', 'aceptado');
-      `, [hashedPassword]);
-    }
+    // ⚖️ CORRECCIÓN CRÍTICA: Eliminamos cualquier rastro del admin viejo sin cifrar
+    await pool.query("DELETE FROM usuarios WHERE username = 'fiscaliageneralrpg@gmail.com';");
+    
+    // Insertamos el Admin con la contraseña correctamente encriptada por Bcrypt
+    const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
+    await pool.query(`
+      INSERT INTO usuarios (username, password, role, status) 
+      VALUES ('fiscaliageneralrpg@gmail.com', $1, 'admin', 'aceptado');
+    `, [hashedPassword]);
 
-    console.log("⚖️ BASE DE DATOS: Tablas configuradas correctamente con Bcrypt.");
+    console.log("⚖️ BASE DE DATOS: Tablas configuradas y Administrador actualizado con Bcrypt.");
   } catch (err) {
     console.error("❌ ERROR CRÍTICO AL CREAR TABLAS:", err.message);
   }
@@ -66,30 +71,40 @@ const inicializarBaseDeDatos = async () => {
 
 inicializarBaseDeDatos();
 
+// Middleware de verificación de conexión en tiempo real
 const verificarConexionDB = async (req, res, next) => {
   try {
     await pool.query('SELECT 1');
     next();
   } catch (err) {
     console.error("❌ DB CAÍDA:", err.message);
-    return res.status(500).json({ error: "La base de datos no está conectada." });
+    return res.status(500).json({ error: "La base de datos no está conectada. Intente de nuevo en unos minutos." });
   }
 };
 
+// ==========================================
+// 🛠️ API RUTAS
+// ==========================================
+
+// Registro de usuarios con cifrado Bcrypt obligatorio
 app.post('/api/register', verificarConexionDB, async (req, res) => {
   const { username, password } = req.body;
   try {
     const userExists = await pool.query('SELECT * FROM usuarios WHERE username = $1', [username]);
     if (userExists.rows.length > 0) return res.status(400).json({ error: "Este usuario ya existe." });
     
-    // Ciframos la contraseña al registrar por seguridad
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, $3, $4)', [username, hashedPassword, 'user', 'pendiente']);
+    await pool.query(
+      'INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, $3, $4)',
+      [username, hashedPassword, 'user', 'pendiente']
+    );
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error en el servidor." }); }
+  } catch (err) { 
+    res.status(500).json({ error: "Error en el servidor al registrar." }); 
+  }
 });
 
-// 🔑 LOGIN CORREGIDO COMPATIBLE CON CONTRASEÑAS CIFRADAS
+// Login seguro con desencriptación y comparación de Bcrypt
 app.post('/api/login', verificarConexionDB, async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -98,12 +113,14 @@ app.post('/api/login', verificarConexionDB, async (req, res) => {
     
     const usuario = result.rows[0];
     
-    // Comparamos la contraseña ingresada con el hash guardado en la base de datos
+    // Compara la contraseña ingresada en texto plano con el Hash de la DB
     const match = await bcrypt.compare(password, usuario.password);
     if (!match) return res.status(400).json({ error: "Usuario o contraseña incorrectos." });
     
     res.json({ success: true, user: usuario });
-  } catch (err) { res.status(500).json({ error: "Error en el servidor." }); }
+  } catch (err) { 
+    res.status(500).json({ error: "Error en el servidor al iniciar sesión." }); 
+  }
 });
 
 app.get('/api/admin/data', verificarConexionDB, async (req, res) => {
@@ -112,56 +129,56 @@ app.get('/api/admin/data', verificarConexionDB, async (req, res) => {
     const buscados = await pool.query('SELECT id, nombre FROM buscados ORDER BY id DESC');
     const noticias = await pool.query('SELECT id, titular FROM noticias ORDER BY id DESC');
     res.json({ users: usuarios.rows, buscados: buscados.rows, noticias: noticias.rows });
-  } catch (err) { res.status(500).json({ error: "Error en base de datos." }); }
+  } catch (err) { res.status(500).json({ error: "Error en base de datos al obtener info." }); }
 });
 
 app.post('/api/admin/accept-user', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al aceptar usuario." }); }
 });
 
 app.post('/api/admin/delete-user', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al eliminar usuario." }); }
 });
 
 app.post('/api/admin/add-buscado', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('INSERT INTO buscados (nombre) VALUES ($1)', [req.body.nombre]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al añadir buscado." }); }
 });
 
 app.post('/api/admin/delete-buscado', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al eliminar buscado." }); }
 });
 
 app.post('/api/admin/add-noticia', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('INSERT INTO noticias (titular) VALUES ($1)', [req.body.titular]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al añadir noticia." }); }
 });
 
 app.post('/api/admin/delete-noticia', verificarConexionDB, async (req, res) => {
   try {
     await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error." }); }
+  } catch (err) { res.status(500).json({ error: "Error al eliminar noticia." }); }
 });
 
 app.get('/api/user-status/:username', verificarConexionDB, async (req, res) => {
   try {
-    const result = await pool.query('SELECT status FROM usuarios WHERE username = $1', [username]);
+    const result = await pool.query('SELECT status FROM usuarios WHERE username = $1', [req.params.username]);
     res.json({ status: result.rows[0]?.status || 'pendiente' });
-  } catch (err) { res.status(500).json({ error: "Error" }); }
+  } catch (err) { res.status(500).json({ error: "Error al consultar estado." }); }
 });
 
 const PORT = process.env.PORT || 10000;
