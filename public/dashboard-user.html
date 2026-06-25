@@ -73,6 +73,10 @@
         .plain-stat-card { background: var(--panel-2) !important; border: 1px solid var(--border) !important; }
         .plain-stat-card p { color: var(--muted) !important; }
 
+        /* Ficha personal */
+        .ficha-label { display: block; font-size: 11px; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+        .ficha-value { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text); min-height: 20px; word-break: break-word; }
+
         /* Denuncias List */
         .denuncia-card { border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: var(--panel-2); }
         .denuncia-card:hover { border-color: var(--red); transform: translateY(-2px); }
@@ -153,6 +157,20 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card-custom">
+                <h4 class="fw-bold mb-4" style="color: var(--gold);"><i class="fa-solid fa-id-card-clip me-2"></i>Mi Ficha Personal</h4>
+                <div class="row" id="ficha-personal">
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Nombre completo</span><div class="ficha-value" id="f-nombre">—</div></div>
+                    <div class="col-md-3 mb-3"><span class="ficha-label">Sexo</span><div class="ficha-value" id="f-sexo">—</div></div>
+                    <div class="col-md-3 mb-3"><span class="ficha-label">Nacionalidad</span><div class="ficha-value" id="f-nacionalidad">—</div></div>
+                    <div class="col-md-4 mb-3"><span class="ficha-label">Lugar de nacimiento</span><div class="ficha-value" id="f-lugar">—</div></div>
+                    <div class="col-md-4 mb-3"><span class="ficha-label">Fecha de nacimiento</span><div class="ficha-value" id="f-fecha-nac">—</div></div>
+                    <div class="col-md-4 mb-3"><span class="ficha-label">Cédula</span><div class="ficha-value" id="f-cedula">—</div></div>
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Usuario de Roblox</span><div class="ficha-value" id="f-roblox">—</div></div>
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Correo (usuario)</span><div class="ficha-value" id="f-correo">—</div></div>
+                </div>
+            </div>
         </div>
 
         <!-- FORMULARIO DENUNCIA -->
@@ -193,6 +211,18 @@
         if (!user) window.location.href = 'iniciar-sesion.html';
         document.getElementById('user-greeting').innerText = `Hola, ${user.username}`;
         document.getElementById('hero-welcome').innerText = `¡Hola, ${user.username}!`;
+
+        function fillFicha() {
+            document.getElementById('f-nombre').innerText = user.nombre_completo || '—';
+            document.getElementById('f-sexo').innerText = user.sexo || '—';
+            document.getElementById('f-nacionalidad').innerText = user.nacionalidad || '—';
+            document.getElementById('f-lugar').innerText = user.lugar_nacimiento || '—';
+            document.getElementById('f-fecha-nac').innerText = user.fecha_nacimiento || '—';
+            document.getElementById('f-cedula').innerText = user.cedula || '—';
+            document.getElementById('f-roblox').innerText = user.roblox_user || '—';
+            document.getElementById('f-correo').innerText = user.username || '—';
+        }
+        fillFicha();
 
         function switchTab(t) {
             document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
