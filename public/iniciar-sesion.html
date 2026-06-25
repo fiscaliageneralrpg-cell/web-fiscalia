@@ -39,7 +39,7 @@
         .auth-card {
             background: var(--panel); border: 1px solid var(--border);
             border-radius: 20px; padding: 44px 40px;
-            width: 100%; max-width: 400px;
+            width: 100%; max-width: 440px;
         }
         .auth-header { text-align: center; margin-bottom: 32px; }
         .auth-icon {
@@ -56,6 +56,16 @@
         .tab-btn { flex: 1; border: none; background: none; padding: 8px; font-size: 13px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
         .tab-btn.active { background: var(--red); color: #fff; }
 
+        /* ALERTA DISCORD */
+        .discord-alert {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: rgba(240, 192, 64, 0.08); border: 1px solid rgba(240, 192, 64, 0.3);
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 22px;
+        }
+        .discord-alert i { color: var(--gold); font-size: 18px; margin-top: 2px; flex-shrink: 0; }
+        .discord-alert p { font-size: 13px; color: var(--text); line-height: 1.5; }
+        .discord-alert strong { color: var(--gold); }
+
         /* FORM */
         .auth-form { display: none; }
         .auth-form.active { display: block; }
@@ -63,14 +73,20 @@
         .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.5px; text-transform: uppercase; font-family: var(--mono); }
         .input-wrap { position: relative; }
         .input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
-        .input-wrap input {
+        .input-wrap input, .input-wrap select {
             width: 100%; padding: 12px 14px 12px 40px;
             background: rgba(255,255,255,0.04); border: 1px solid var(--border);
             border-radius: 10px; color: var(--text); font-size: 15px;
             font-family: inherit; outline: none; transition: border-color 0.2s;
+            appearance: none;
         }
+        .input-wrap select { cursor: pointer; }
         .input-wrap input::placeholder { color: var(--muted); }
-        .input-wrap input:focus { border-color: var(--red); }
+        .input-wrap input:focus, .input-wrap select:focus { border-color: var(--red); }
+        .input-wrap input[type="date"] { color-scheme: dark; }
+        .input-wrap .chevron { right: 14px; left: auto; }
+
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .btn-submit {
             width: 100%; background: var(--red); color: #fff;
@@ -92,6 +108,7 @@
         }
         @media (max-width: 480px) {
             .auth-card { padding: 32px 22px; }
+            .row-2 { grid-template-columns: 1fr; gap: 0; }
         }
     </style>
 </head>
@@ -132,10 +149,10 @@
 
             <form id="loginForm" class="auth-form active" onsubmit="handleLogin(event)">
                 <div class="input-group">
-                    <label>Usuario / Correo</label>
+                    <label>Correo (Gmail)</label>
                     <div class="input-wrap">
-                        <i class="fa-solid fa-user"></i>
-                        <input type="text" id="loginUser" placeholder="Tu correo o usuario" required>
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="text" id="loginUser" placeholder="tucorreo@gmail.com" required>
                     </div>
                 </div>
                 <div class="input-group">
@@ -149,11 +166,80 @@
             </form>
 
             <form id="registerForm" class="auth-form" onsubmit="handleRegister(event)">
+                <div class="discord-alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p><strong>Importante:</strong> antes de registrarte aquí debes crear tu cédula en el Discord del servidor. Sin la cédula generada en Discord, tu registro no será válido.</p>
+                </div>
+
                 <div class="input-group">
-                    <label>Usuario / Correo</label>
+                    <label>Nombre completo</label>
                     <div class="input-wrap">
-                        <i class="fa-solid fa-user"></i>
-                        <input type="text" id="regUser" placeholder="Crea tu usuario o correo" required>
+                        <i class="fa-solid fa-id-card"></i>
+                        <input type="text" id="regNombreCompleto" placeholder="Ej: Juan Carlos Pérez Gómez" required>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Sexo</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-venus-mars"></i>
+                            <select id="regSexo" required>
+                                <option value="" disabled selected>Selecciona</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Nacionalidad</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-flag"></i>
+                            <input type="text" id="regNacionalidad" placeholder="Ej: Colombiana" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Lugar de nacimiento</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <input type="text" id="regLugarNacimiento" placeholder="Ej: Bogotá" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Fecha de nacimiento</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-cake-candles"></i>
+                            <input type="date" id="regFechaNacimiento" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Usuario de Roblox</label>
+                        <div class="input-wrap">
+                            <i class="fa-brands fa-roblox"></i>
+                            <input type="text" id="regRobloxUser" placeholder="Tu usuario en Roblox" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Número de cédula</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-id-badge"></i>
+                            <input type="text" id="regCedula" placeholder="Generada en Discord" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Correo (Gmail)</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="text" id="regUser" placeholder="tucorreo@gmail.com" required>
                     </div>
                 </div>
                 <div class="input-group">
@@ -181,14 +267,34 @@
             document.getElementById('tab-register').classList.toggle('active', type === 'register');
             document.getElementById('loginForm').classList.toggle('active', type === 'login');
             document.getElementById('registerForm').classList.toggle('active', type === 'register');
+            if (type === 'register') {
+                alert("⚠️ Recuerda: debes crear tu cédula en el Discord del servidor antes de registrarte aquí.");
+            }
         }
 
         async function handleRegister(e) {
             e.preventDefault();
             const username = document.getElementById('regUser').value;
             const password = document.getElementById('regPass').value;
+            const nombre_completo = document.getElementById('regNombreCompleto').value;
+            const sexo = document.getElementById('regSexo').value;
+            const nacionalidad = document.getElementById('regNacionalidad').value;
+            const lugar_nacimiento = document.getElementById('regLugarNacimiento').value;
+            const fecha_nacimiento = document.getElementById('regFechaNacimiento').value;
+            const roblox_user = document.getElementById('regRobloxUser').value;
+            const cedula = document.getElementById('regCedula').value;
+
             try {
-                const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username, password,
+                        nombre_completo, sexo, nacionalidad,
+                        lugar_nacimiento, fecha_nacimiento,
+                        roblox_user, cedula
+                    })
+                });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 alert("¡Cuenta creada! Ya puedes iniciar sesión.");
