@@ -153,7 +153,10 @@ app.get('/api/admin/data', async (req, res) => {
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
     const a = await pool.query('SELECT * FROM arrestos ORDER BY id DESC');
     res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows, arrestos: a.rows });
-  } catch (err) { res.status(500).json({ error: "Error" }); }
+  } catch (err) {
+    console.error("❌ ERROR EN /api/admin/data:", err);
+    res.status(500).json({ error: err.message || "Error" });
+  }
 });
 
 // --- ARRESTOS ---
@@ -166,7 +169,10 @@ app.post('/api/admin/add-arresto', async (req, res) => {
       [usuario, razon, delito, tiempo, foto || '', arrestado_por, fecha]
     );
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al registrar el arresto" }); }
+  } catch (err) {
+    console.error("❌ ERROR AL REGISTRAR ARRESTO:", err);
+    res.status(500).json({ error: err.message || "Error al registrar el arresto" });
+  }
 });
 
 app.post('/api/admin/delete-arresto', async (req, res) => {
