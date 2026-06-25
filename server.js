@@ -56,42 +56,65 @@ app.get('/api/admin/data', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Error al obtener datos." }); }
 });
 
-// RUTA CORREGIDA: Recibe todos los campos
+// RUTA: Recibe todos los campos de una noticia
 app.post('/api/admin/add-noticia', async (req, res) => {
   try {
     const { titular, descripcion, imagen, fecha } = req.body;
+    if (!titular || !descripcion) {
+      return res.status(400).json({ error: "El titular y la descripción son obligatorios." });
+    }
     await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar noticia" }); }
+  } catch (err) {
+    console.error("Error al guardar noticia:", err.message);
+    res.status(500).json({ error: "Error al guardar noticia" });
+  }
 });
 
-// RUTA CORREGIDA: Recibe todos los campos
-app.post('/api/admin/add-búscado', async (req, res) => {
+// RUTA CORREGIDA: Sin tilde en la URL para evitar problemas de codificación
+app.post('/api/admin/add-buscado', async (req, res) => {
   try {
     const { nombre, peligro, hechos, recompensa, imagen } = req.body;
-    await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [nombre, peligro, hechos, recompensa, imagen]);
+    if (!nombre || !peligro) {
+      return res.status(400).json({ error: "El nombre y el nivel de peligro son obligatorios." });
+    }
+    await pool.query(
+      'INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)',
+      [nombre, peligro, hechos, recompensa, imagen]
+    );
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar buscado" }); }
+  } catch (err) {
+    console.error("Error al guardar buscado:", err.message);
+    res.status(500).json({ error: "Error al guardar buscado" });
+  }
 });
 
 app.post('/api/admin/delete-noticia', async (req, res) => {
-  await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar noticia" }); }
 });
 
 app.post('/api/admin/delete-buscado', async (req, res) => {
-  await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar buscado" }); }
 });
 
 app.post('/api/admin/accept-user', async (req, res) => {
-  await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al aceptar usuario" }); }
 });
 
 app.post('/api/admin/delete-user', async (req, res) => {
-  await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar usuario" }); }
 });
 
 app.listen(process.env.PORT || 10000, () => console.log('🚀 SERVIDOR ONLINE'));
