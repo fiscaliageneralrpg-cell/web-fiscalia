@@ -290,6 +290,13 @@
             try {
                 const res = await fetch('/api/admin/data');
                 const d = await res.json();
+
+                if (!res.ok || !d.users) {
+                    console.error('[loadData] el servidor respondió con error:', d);
+                    alert("⚠️ No se pudieron cargar los datos del panel.\n\nError del servidor: " + (d.error || 'Desconocido') + "\n\nEsto suele pasar si la base de datos aún no tiene la tabla 'arrestos' creada (revisa los logs de Render) o si el servidor desplegado no es la versión más reciente.");
+                    return;
+                }
+
                 document.getElementById('c-users').innerText = d.users.length;
                 document.getElementById('c-news').innerText = d.noticias.length;
                 document.getElementById('c-wanted').innerText = d.buscados.length;
@@ -328,7 +335,10 @@
                             </div>`;
                     });
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                console.error('[loadData] excepción inesperada:', e);
+                alert("⚠️ Error inesperado cargando el panel: " + e.message);
+            }
         }
 
         async function openGestion(id) {
@@ -399,24 +409,42 @@
             document.getElementById('ar-razon').value = '';
             document.getElementById('ar-delito').value = '';
             document.getElementById('ar-tiempo').value = '';
+            document.getElementById('ar-file').value = '';
             document.getElementById('p-arresto').style.display = 'none';
             document.getElementById('p-arresto').src = '';
             const sel = document.getElementById('ar-usuario');
             sel.innerHTML = '<option value="" disabled selected>Selecciona un usuario registrado</option>';
-            (window.__usersCache || []).forEach(u => {
-                sel.innerHTML += `<option value="${u.username}">${u.nombre_completo ? u.nombre_completo + ' — ' : ''}${u.username}</option>`;
-            });
+            const users = window.__usersCache || [];
+            if (users.length === 0) {
+                sel.innerHTML = '<option value="" disabled selected>⚠️ No hay usuarios cargados — recarga la página</option>';
+            } else {
+                users.forEach(u => {
+                    sel.innerHTML += `<option value="${u.username}">${u.nombre_completo ? u.nombre_completo + ' — ' : ''}${u.username}</option>`;
+                });
+            }
             new bootstrap.Modal(document.getElementById('modalNuevoArresto')).show();
         }
 
         async function postArresto() {
             const usuario = document.getElementById('ar-usuario').value;
-            const razon = document.getElementById('ar-razon').value;
-            const delito = document.getElementById('ar-delito').value;
-            const tiempo = document.getElementById('ar-tiempo').value;
-            const foto = document.getElementById('p-arresto').style.display === 'block' ? document.getElementById('p-arresto').src : '';
+            const razon = document.getElementById('ar-razon').value.trim();
+            const delito = document.getElementById('ar-delito').value.trim();
+            const tiempo = document.getElementById('ar-tiempo').value.trim();
+            const fotoImg = document.getElementById('p-arresto');
+            const foto = (fotoImg.style.display === 'block' && fotoImg.src && fotoImg.src.startsWith('data:')) ? fotoImg.src : '';
             const fecha = new Date().toLocaleString('es-ES');
-            if (!usuario || !razon || !delito || !tiempo) return alert("Completa todos los campos.");
+
+            console.log('[postArresto] payload:', { usuario, razon, delito, tiempo, fotoLength: foto.length, arrestado_por: user.username, fecha });
+
+            if (!usuario) return alert("⚠️ Debes seleccionar un usuario.");
+            if (!razon) return alert("⚠️ Falta la razón del arresto.");
+            if (!delito) return alert("⚠️ Falta el delito.");
+            if (!tiempo) return alert("⚠️ Falta el tiempo de arresto.");
+
+            const btn = document.querySelector('#modalNuevoArresto .btn-danger');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Registrando...';
 
             try {
                 const res = await fetch('/api/admin/add-arresto', {
@@ -424,9 +452,25 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ usuario, razon, delito, tiempo, foto, arrestado_por: user.username, fecha })
                 });
-                if (res.ok) { alert("Arresto registrado correctamente."); location.reload(); }
-                else { const r = await res.json(); alert("❌ Error: " + (r.error || "Desconocido")); }
-            } catch (e) { alert("❌ Error de conexión: " + e.message); }
+
+                let result = {};
+                try { result = await res.json(); } catch (parseErr) { console.error('[postArresto] respuesta no es JSON', parseErr); }
+
+                if (res.ok) {
+                    alert("✅ Arresto registrado correctamente.");
+                    location.reload();
+                } else {
+                    console.error('[postArresto] error del servidor', res.status, result);
+                    alert("❌ ERROR DEL SERVIDOR (" + res.status + "): " + (result.error || "Desconocido. Revisa la consola (F12) para más detalles."));
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            } catch (e) {
+                console.error('[postArresto] error de conexión', e);
+                alert("❌ ERROR DE CONEXIÓN: " + e.message + "\n\nEsto puede significar que el servidor no tiene la ruta /api/admin/add-arresto desplegada, o que la base de datos no tiene la tabla 'arrestos'.");
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         }
 
         function verDetalleArresto(id) {
