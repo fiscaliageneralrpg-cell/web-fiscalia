@@ -8,125 +8,61 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            --primary-color: #003366;
-            --secondary-color: #1d70b8;
-            --accent-color: #38bdf8;
-            --bg-light: #f5f5f7;
-            --text-dark: #1d1d1f;
-            --white: #ffffff;
+            --primary: #003366; --secondary: #1d70b8; --accent: #38bdf8;
+            --bg: #f5f5f7; --white: #ffffff; --text: #1d1d1f;
         }
 
-        body { 
-            background-color: var(--bg-light); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            color: var(--text-dark);
-            overflow-x: hidden;
-        }
+        body { background-color: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
 
-        /* Sidebar Responsiva */
-        .sidebar { 
-            background-color: var(--primary-color); 
-            min-height: 100vh; 
-            color: white; 
-            position: fixed; 
-            width: 260px; 
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
+        /* Sidebar */
+        .sidebar { background-color: var(--primary); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
+        .sidebar a i { width: 30px; font-size: 18px; }
+        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent); }
 
-        .sidebar-header { padding: 25px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-menu { padding: 15px 0; }
-        .sidebar a { 
-            color: #cbd5e1; 
-            text-decoration: none; 
-            display: flex;
-            align-items: center;
-            padding: 14px 25px; 
-            font-size: 15px; 
-            transition: 0.2s; 
-            cursor: pointer; 
-            border-left: 4px solid transparent;
-        }
-        .sidebar a i { width: 25px; font-size: 18px; margin-right: 10px; }
-        .sidebar a:hover, .sidebar a.active { 
-            background-color: rgba(255,255,255,0.1); 
-            color: white; 
-            border-left: 4px solid var(--accent-color); 
-        }
+        /* Main */
+        .main-content { margin-left: 260px; padding: 30px; transition: 0.3s; }
+        .top-bar { background: white; padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* Contenido Principal */
-        .main-content { margin-left: 260px; padding: 30px; transition: all 0.3s ease; }
-
-        .top-bar {
-            background: white;
-            padding: 15px 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-custom { 
-            border: none; 
-            border-radius: 18px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.04); 
-            background: white; 
-            margin-bottom: 25px; 
-            padding: 25px;
-            border: 1px solid rgba(0,0,0,0.02);
-        }
-
+        /* Cards */
+        .card-custom { background: white; border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.02); }
         .tab-content-panel { display: none; animation: fadeIn 0.4s ease; }
         .tab-content-panel.active { display: block; }
 
-        /* Timeline de Estados */
-        .timeline { position: relative; padding: 20px 0; }
-        .timeline-item { position: relative; padding-left: 40px; margin-bottom: 30px; }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 2px;
-            height: 100%;
-            background: #e2e8f0;
-        }
-        .timeline-dot {
-            position: absolute;
-            left: -7px;
-            top: 0;
-            width: 16px;
-            height: 16px;
-            background: var(--secondary-color);
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 0 3px rgba(29, 112, 184, 0.2);
-        }
-        .timeline-content {
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
+        /* Forms */
+        .form-label { font-weight: 600; font-size: 13px; color: var(--primary); margin-bottom: 8px; }
+        .form-control { border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
+
+        /* Denuncias List */
+        .denuncia-card { border: 1px solid #e2e8f0; border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: white; }
+        .denuncia-card:hover { border-color: var(--secondary); transform: translateY(-2px); }
+        .status-tag { padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+
+        /* Timeline */
+        .timeline { position: relative; padding: 10px 0; }
+        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 25px; border-left: 2px solid var(--accent); }
+        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid white; }
+        .timeline-box { background: #f1f5f9; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .timeline-date { font-size: 10px; color: #64748b; margin-top: 5px; }
 
         /* Responsive */
         @media (max-width: 992px) {
             .sidebar { width: 80px; }
-            .sidebar-header h5, .sidebar a span { display: none; }
+            .sidebar-header span, .sidebar a span { display: none; }
             .main-content { margin-left: 80px; padding: 15px; }
             .sidebar a { justify-content: center; padding: 20px; }
             .sidebar a i { margin: 0; }
         }
 
         @media (max-width: 576px) {
-            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 60px; flex-direction: row; display: flex; }
+            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; border-top: 1px solid rgba(255,255,255,0.1); }
             .sidebar-header { display: none; }
-            .sidebar-menu { display: flex; width: 100%; justify-content: space-around; padding: 0; }
-            .sidebar a { border-left: none; border-top: 4px solid transparent; padding: 10px; }
-            .sidebar a.active { border-left: none; border-top: 4px solid var(--accent-color); }
-            .main-content { margin-left: 0; margin-bottom: 70px; padding: 10px; }
+            .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; }
+            .sidebar a i { margin-bottom: 4px; }
+            .sidebar a.active { border-top-color: var(--accent); }
+            .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; }
             .top-bar { flex-direction: column; gap: 10px; text-align: center; }
         }
 
@@ -135,7 +71,6 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar shadow">
         <div class="sidebar-header">
             <h5 class="fw-bold m-0"><i class="fa-solid fa-user-tie text-info me-2"></i><span>PORTAL CIVIL</span></h5>
@@ -147,80 +82,64 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main-content">
-        
         <div class="top-bar shadow-sm">
-            <h5 class="m-0 fw-bold text-primary" id="welcome-title">Hola, Ciudadano</h5>
-            <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="cerrarSesion()">Cerrar Sesión</button>
+            <h5 class="m-0 fw-bold text-primary" id="user-greeting">Hola, Ciudadano</h5>
+            <button class="btn btn-outline-danger btn-sm rounded-pill px-4" onclick="cerrarSesion()">Cerrar Sesión</button>
         </div>
 
-        <!-- TAB: INICIO -->
+        <!-- INICIO -->
         <div id="tab-inicio" class="tab-content-panel active">
             <div class="card-custom text-center p-5">
-                <i class="fa-solid fa-shield-heart fa-4x text-primary mb-4"></i>
-                <h2 class="fw-bold" id="hero-welcome">¡Bienvenido!</h2>
-                <p class="text-muted">Este es su portal seguro para interactuar con la Fiscalía General de la Nación. Su colaboración es vital para la justicia.</p>
-                <div class="row mt-4">
+                <i class="fa-solid fa-shield-heart fa-5x text-primary mb-4"></i>
+                <h1 class="fw-bold" id="hero-welcome">¡Bienvenido al Portal!</h1>
+                <p class="text-muted fs-5">Tu seguridad y justicia son nuestra prioridad.</p>
+                <div class="row mt-5">
                     <div class="col-md-6 mb-3">
                         <div class="card p-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #003366, #1d70b8); color: white;">
-                            <h4>Enviar Denuncia</h4>
-                            <p class="small">Reporte hechos delictivos de forma segura.</p>
-                            <button class="btn btn-light btn-sm" onclick="switchTab('denunciar')">Comenzar</button>
+                            <h3>Reportar Delito</h3>
+                            <p>Envía una denuncia oficial de forma segura.</p>
+                            <button class="btn btn-light btn-sm fw-bold rounded-pill" onclick="switchTab('denunciar')">NUEVA DENUNCIA</button>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="card p-4 border-0 shadow-sm">
-                            <h4>Mis Trámites</h4>
-                            <p class="small text-muted">Siga el estado de sus reportes enviados.</p>
-                            <button class="btn btn-primary btn-sm" onclick="switchTab('mis-denuncias')">Ver Estados</button>
+                            <h3>Seguimiento</h3>
+                            <p class="text-muted">Revisa el estado de tus trámites enviados.</p>
+                            <button class="btn btn-primary btn-sm fw-bold rounded-pill" onclick="switchTab('mis-denuncias')">VER MIS REPORTES</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: DENUNCIAR -->
+        <!-- FORMULARIO DENUNCIA -->
         <div id="tab-denunciar" class="tab-content-panel">
             <div class="card-custom mx-auto" style="max-width: 700px;">
-                <h4 class="fw-bold mb-4 text-center">Formulario de Denuncia</h4>
-                <div class="mb-3">
-                    <label class="form-label">Título del Hecho</label>
-                    <input type="text" id="d-titulo" class="form-control" placeholder="Ej: Hurto en vía pública">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Descripción Detallada</label>
-                    <textarea id="d-desc" class="form-control" rows="6" placeholder="Describa lugar, hora y hechos..."></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Evidencia Fotográfica (Opcional)</label>
-                    <input type="file" id="d-file" class="form-control" accept="image/*" onchange="previewImage(this, 'p-denuncia')">
-                    <img id="p-denuncia" class="preview-img-box" style="max-width: 100%; height: 200px; object-fit: cover; display: none; margin-top: 10px; border-radius: 10px;">
-                </div>
-                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="enviarDenuncia()">ENVIAR REPORTE OFICIAL</button>
+                <h4 class="fw-bold mb-4 text-center">Formulario de Denuncia Oficial</h4>
+                <div class="mb-3"><label class="form-label">Título del Reporte</label><input type="text" id="d-titulo" class="form-control" placeholder="Ej: Hurto en Comuna 4"></div>
+                <div class="mb-3"><label class="form-label">Descripción de los Hechos</label><textarea id="d-desc" class="form-control" rows="6" placeholder="Detalla lugar, hora y lo sucedido..."></textarea></div>
+                <div class="mb-3"><label class="form-label">Evidencia Fotográfica (Opcional)</label><input type="file" id="d-file" class="form-control" accept="image/*" onchange="preview(this, 'p-denuncia')"><img id="p-denuncia" style="display:none; width:100%; margin-top:15px; border-radius:15px; max-height:300px; object-fit:cover;"></div>
+                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="postDenuncia()">ENVIAR DENUNCIA A FISCALÍA</button>
             </div>
         </div>
 
-        <!-- TAB: MIS DENUNCIAS -->
+        <!-- MIS DENUNCIAS -->
         <div id="tab-mis-denuncias" class="tab-content-panel">
             <div class="card-custom">
                 <h4 class="fw-bold mb-4">Seguimiento de mis Denuncias</h4>
                 <div id="lista-mis-denuncias" class="row"></div>
             </div>
         </div>
-
     </div>
 
-    <!-- MODAL HISTORIAL ESTADOS -->
-    <div class="modal fade" id="modalEstados" tabindex="-1">
+    <!-- MODAL HISTORIAL -->
+    <div class="modal fade" id="modalHistory" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0 p-4">
-                    <h5 class="fw-bold m-0">Historial de Seguimiento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header border-0 p-4"><h5 class="fw-bold m-0">Historial de Seguimiento Judicial</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
-                    <div id="timeline-estados" class="timeline"></div>
+                    <div id="timeline-user" class="timeline"></div>
                 </div>
             </div>
         </div>
@@ -230,48 +149,42 @@
     <script>
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user) window.location.href = 'iniciar-sesion.html';
-        document.getElementById('welcome-title').innerText = `Hola, ${user.username}`;
+        document.getElementById('user-greeting').innerText = `Hola, ${user.username}`;
         document.getElementById('hero-welcome').innerText = `¡Hola, ${user.username}!`;
 
-        function switchTab(tabId) {
+        function switchTab(t) {
             document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            document.getElementById('link-' + tabId).classList.add('active');
-            if(tabId === 'mis-denuncias') cargarMisDenuncias();
+            document.getElementById('tab-' + t).classList.add('active');
+            document.getElementById('link-' + t).classList.add('active');
+            if(t === 'mis-denuncias') loadMyReports();
         }
 
-        function previewImage(input, previewId) {
-            const preview = document.getElementById(previewId);
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; }
-                reader.readAsDataURL(input.files[0]);
+        function preview(i, pId) {
+            const p = document.getElementById(pId);
+            if (i.files && i.files[0]) {
+                const r = new FileReader();
+                r.onload = e => { p.src = e.target.result; p.style.display = 'block'; }
+                r.readAsDataURL(i.files[0]);
             }
         }
 
-        async function enviarDenuncia() {
+        async function postDenuncia() {
             const titulo = document.getElementById('d-titulo').value;
             const descripcion = document.getElementById('d-desc').value;
-            const imgElem = document.getElementById('p-denuncia');
-            const evidencia = imgElem.style.display === 'block' ? imgElem.src : '';
+            const img = document.getElementById('p-denuncia').style.display === 'block' ? document.getElementById('p-denuncia').src : '';
             const fecha = new Date().toLocaleString('es-ES');
-
-            if(!titulo || !descripcion) return alert("Completa los campos obligatorios.");
+            if(!titulo || !descripcion) return alert("Completa los campos.");
 
             const res = await fetch('/api/denuncias/enviar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario: user.username, titulo, descripcion, evidencia, fecha })
+                body: JSON.stringify({ usuario: user.username, titulo, descripcion, evidencia: img, fecha })
             });
-
-            if(res.ok) {
-                alert("✅ Denuncia enviada con éxito.");
-                location.reload();
-            }
+            if(res.ok) { alert("✅ Denuncia enviada correctamente."); location.reload(); }
         }
 
-        async function cargarMisDenuncias() {
+        async function loadMyReports() {
             const res = await fetch(`/api/denuncias/mis-denuncias/${user.username}`);
             const data = await res.json();
             const container = document.getElementById('lista-mis-denuncias');
@@ -285,36 +198,34 @@
             data.forEach(d => {
                 container.innerHTML += `
                     <div class="col-md-6 mb-3">
-                        <div class="card p-3 border shadow-sm h-100">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="denuncia-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h6 class="fw-bold m-0 text-primary">${d.titulo}</h6>
-                                <span class="badge bg-warning text-dark" style="font-size:10px;">${d.estado_actual}</span>
+                                <span class="status-tag bg-warning text-dark">${d.estado_actual}</span>
                             </div>
-                            <p class="small text-muted mb-3">${d.descripcion.substring(0, 100)}...</p>
-                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100" onclick="verHistorial(${d.id})">VER SEGUIMIENTO</button>
+                            <p class="small text-muted mb-3">${d.descripcion.substring(0, 120)}...</p>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold" onclick="showHistory(${d.id})">VER HISTORIAL DE ESTADOS</button>
                         </div>
                     </div>`;
             });
         }
 
-        async function verHistorial(id) {
+        async function showHistory(id) {
             const res = await fetch(`/api/denuncias/estados/${id}`);
             const data = await res.json();
-            const container = document.getElementById('timeline-estados');
+            const container = document.getElementById('timeline-user');
             container.innerHTML = '';
-
             data.forEach(e => {
                 container.innerHTML += `
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
-                        <div class="timeline-content">
-                            <div class="fw-bold text-primary" style="font-size: 14px;">${e.mensaje}</div>
-                            <div class="text-muted" style="font-size: 11px;">${e.fecha}</div>
+                        <div class="timeline-box">
+                            <div class="fw-bold text-primary" style="font-size:13px;">${e.mensaje}</div>
+                            <div class="timeline-date">${e.fecha}</div>
                         </div>
                     </div>`;
             });
-
-            new bootstrap.Modal(document.getElementById('modalEstados')).show();
+            new bootstrap.Modal(document.getElementById('modalHistory')).show();
         }
 
         function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
