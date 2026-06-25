@@ -55,7 +55,13 @@ const inicializarBaseDeDatos = async () => {
         descripcion TEXT,
         evidencia TEXT,
         fecha VARCHAR(50),
-        estado VARCHAR(20) DEFAULT 'pendiente'
+        estado_actual VARCHAR(100) DEFAULT 'Enviada'
+      );
+      CREATE TABLE IF NOT EXISTS estados_denuncias (
+        id SERIAL PRIMARY KEY,
+        denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE,
+        mensaje TEXT,
+        fecha VARCHAR(50)
       );
     `);
 
@@ -70,21 +76,14 @@ const inicializarBaseDeDatos = async () => {
 };
 inicializarBaseDeDatos();
 
-// --- RUTAS DE AUTENTICACIÓN ---
-
+// --- AUTENTICACIÓN ---
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Registro automático como 'user' y 'aceptado'
-    await pool.query(
-      "INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'user', 'aceptado')",
-      [username, hashedPassword]
-    );
+    await pool.query("INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'user', 'aceptado')", [username, hashedPassword]);
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "El usuario ya existe o error en el servidor." });
-  }
+  } catch (err) { res.status(500).json({ error: "El usuario ya existe." }); }
 });
 
 app.post('/api/login', async (req, res) => {
@@ -92,83 +91,81 @@ app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     const result = await pool.query("SELECT * FROM usuarios WHERE username = $1", [username]);
     if (result.rows.length === 0) return res.status(401).json({ error: "Usuario no encontrado." });
-    
     const user = result.rows[0];
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Contraseña incorrecta." });
-    
     req.session.user = { username: user.username, role: user.role };
     res.json({ success: true, user: { username: user.username, role: user.role } });
-  } catch (err) {
-    res.status(500).json({ error: "Error en el login." });
-  }
+  } catch (err) { res.status(500).json({ error: "Error en el login." }); }
 });
 
-// --- RUTAS DE DENUNCIAS ---
-
+// --- DENUNCIAS ---
 app.post('/api/denuncias/enviar', async (req, res) => {
   try {
     const { usuario, titulo, descripcion, evidencia, fecha } = req.body;
-    await pool.query(
-      "INSERT INTO denuncias (usuario, titulo, descripcion, evidencia, fecha) VALUES ($1, $2, $3, $4, $5)",
+    const result = await pool.query(
+      "INSERT INTO denuncias (usuario, titulo, descripcion, evidencia, fecha) VALUES ($1, $2, $3, $4, $5) RETURNING id",
       [usuario, titulo, descripcion, evidencia, fecha]
     );
+    // Primer estado por defecto
+    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [result.rows[0].id, 'Denuncia recibida en el sistema.', fecha]);
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Error al enviar denuncia" });
-  }
+  } catch (err) { res.status(500).json({ error: "Error al enviar denuncia" }); }
 });
 
-// --- RUTAS DE ADMINISTRACIÓN ---
+app.get('/api/denuncias/mis-denuncias/:usuario', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM denuncias WHERE usuario = $1 ORDER BY id DESC", [req.params.usuario]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: "Error al obtener denuncias" }); }
+});
 
+app.get('/api/denuncias/estados/:id', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM estados_denuncias WHERE denuncia_id = $1 ORDER BY id ASC", [req.params.id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: "Error al obtener estados" }); }
+});
+
+// --- ADMIN ---
 app.get('/api/admin/data', async (req, res) => {
   try {
-    const u = await pool.query('SELECT username, status, role, password FROM usuarios');
+    const u = await pool.query('SELECT username, role FROM usuarios');
     const b = await pool.query('SELECT * FROM buscados ORDER BY id DESC');
     const n = await pool.query('SELECT * FROM noticias ORDER BY id DESC');
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
     res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows });
-  } catch (err) { res.status(500).json({ error: "Error al obtener datos." }); }
+  } catch (err) { res.status(500).json({ error: "Error" }); }
+});
+
+app.post('/api/admin/actualizar-estado', async (req, res) => {
+  try {
+    const { denuncia_id, mensaje, fecha } = req.body;
+    await pool.query("UPDATE denuncias SET estado_actual = $1 WHERE id = $2", [mensaje, denuncia_id]);
+    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denuncia_id, mensaje, fecha]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
 app.post('/api/admin/make-admin', async (req, res) => {
-  try {
-    await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al ascender usuario" }); }
-});
-
-app.post('/api/admin/add-noticia', async (req, res) => {
-  try {
-    const { titular, descripcion, imagen, fecha } = req.body;
-    await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar noticia" }); }
-});
-
-app.post('/api/admin/add-buscado', async (req, res) => {
-  try {
-    const { nombre, peligro, hechos, recompensa, imagen } = req.body;
-    await pool.query(
-      'INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', 
-      [nombre, peligro, hechos, recompensa, imagen]
-    );
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar buscado" }); }
-});
-
-app.post('/api/admin/delete-noticia', async (req, res) => {
-  await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
-});
-
-app.post('/api/admin/delete-buscado', async (req, res) => {
-  await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
+  await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]);
   res.json({ success: true });
 });
 
 app.post('/api/admin/delete-user', async (req, res) => {
   await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
+  res.json({ success: true });
+});
+
+app.post('/api/admin/add-noticia', async (req, res) => {
+  const { titular, descripcion, imagen, fecha } = req.body;
+  await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
+  res.json({ success: true });
+});
+
+app.post('/api/admin/add-buscado', async (req, res) => {
+  const { nombre, peligro, hechos, recompensa, imagen } = req.body;
+  await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [nombre, peligro, hechos, recompensa, imagen]);
   res.json({ success: true });
 });
 
