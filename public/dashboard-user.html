@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Ciudadano - Fiscalía</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background-color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .sidebar { background-color: #003366; min-height: 100vh; color: white; position: fixed; width: 240px; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 14px 20px; font-size: 14px; transition: 0.2s; cursor: pointer; }
+        .sidebar a:hover, .sidebar a.active { background-color: #1d70b8; color: white; border-left: 4px solid #38bdf8; }
+        .main-content { margin-left: 240px; padding: 24px; }
+        .card-custom { border: none; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); background: white; margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.03); }
+        .tab-content-panel { display: none; }
+        .tab-content-panel.active { display: block; }
+        .status-line { border-left: 3px solid #1d70b8; padding-left: 15px; margin-bottom: 15px; position: relative; }
+        .status-line::before { content: ''; position: absolute; left: -8px; top: 0; width: 13px; height: 13px; background: #1d70b8; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar shadow-sm">
+        <div class="p-4 text-center border-bottom border-secondary border-opacity-25">
+            <h5 class="fw-bold m-0"><i class="fa-solid fa-user me-2 text-info"></i>PORTAL CIUDADANO</h5>
+        </div>
+        <div class="py-3">
+            <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house me-2"></i>Inicio</a>
+            <a onclick="switchTab('denunciar')" id="link-denunciar"><i class="fa-solid fa-bullhorn me-2"></i>Denunciar</a>
+            <a onclick="switchTab('mis-denuncias')" id="link-mis-denuncias"><i class="fa-solid fa-list-check me-2"></i>Mis Denuncias</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 id="display-username" class="fw-bold">Hola, Cargando...</h4>
+            <button class="btn btn-danger btn-sm" onclick="cerrarSesion()">Cerrar Sesión</button>
+        </div>
+
+        <div id="tab-inicio" class="tab-content-panel active">
+            <div class="card card-custom p-5 text-center">
+                <i class="fa-solid fa-shield-halved fa-3x text-primary mb-3"></i>
+                <h2 id="welcome-text">¡Bienvenido!</h2>
+                <p>Desde este portal puedes realizar denuncias y seguir su estado en tiempo real.</p>
+            </div>
+        </div>
+
+        <div id="tab-denunciar" class="tab-content-panel">
+            <div class="card card-custom p-4 mx-auto" style="max-width: 600px;">
+                <h5>Enviar Nueva Denuncia</h5>
+                <input type="text" id="d-titulo" class="form-control mb-2" placeholder="Título">
+                <textarea id="d-desc" class="form-control mb-2" rows="4" placeholder="Descripción"></textarea>
+                <input type="file" id="d-file" class="form-control mb-2">
+                <button class="btn btn-primary w-100" onclick="enviarDenuncia()">Enviar</button>
+            </div>
+        </div>
+
+        <div id="tab-mis-denuncias" class="tab-content-panel">
+            <div class="card card-custom p-4">
+                <h5>Seguimiento de mis Denuncias</h5>
+                <div id="lista-mis-denuncias"></div>
+            </div>
+        </div>
+
+        <!-- MODAL VER ESTADOS -->
+        <div class="modal fade" id="modalVerEstados" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><h5>Historial de Estados</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body" id="historial-estados-body"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) window.location.href = 'iniciar-sesion.html';
+        document.getElementById('display-username').innerText = `Hola, ${user.username}`;
+        document.getElementById('welcome-text').innerText = `¡Hola, ${user.username}!`;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('link-' + tabId).classList.add('active');
+            if(tabId === 'mis-denuncias') cargarMisDenuncias();
+        }
+
+        async function enviarDenuncia() {
+            const titulo = document.getElementById('d-titulo').value;
+            const descripcion = document.getElementById('d-desc').value;
+            const fecha = new Date().toLocaleString();
+            const res = await fetch('/api/denuncias/enviar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario: user.username, titulo, descripcion, fecha })
+            });
+            if(res.ok) { alert("Enviada"); switchTab('mis-denuncias'); }
+        }
+
+        async function cargarMisDenuncias() {
+            const res = await fetch(`/api/denuncias/mis-denuncias/${user.username}`);
+            const data = await res.json();
+            const container = document.getElementById('lista-mis-denuncias');
+            container.innerHTML = '';
+            data.forEach(d => {
+                container.innerHTML += `<div class="card mb-2 p-3 border">
+                    <h6><strong>${d.titulo}</strong> <span class="badge bg-primary">${d.estado_actual}</span></h6>
+                    <p class="small text-muted mb-2">Fecha: ${d.fecha}</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="verEstados(${d.id})">Ver Historial de Estados</button>
+                </div>`;
+            });
+        }
+
+        async function verEstados(id) {
+            const res = await fetch(`/api/denuncias/estados/${id}`);
+            const data = await res.json();
+            const body = document.getElementById('historial-estados-body');
+            body.innerHTML = '';
+            data.forEach(e => {
+                body.innerHTML += `<div class="status-line">
+                    <div class="fw-bold">${e.mensaje}</div>
+                    <div class="small text-muted">${e.fecha}</div>
+                </div>`;
+            });
+            new bootstrap.Modal(document.getElementById('modalVerEstados')).show();
+        }
+
+        function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
+    </script>
+</body>
+</html>
