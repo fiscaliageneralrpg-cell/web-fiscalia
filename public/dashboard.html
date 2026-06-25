@@ -248,13 +248,26 @@
             } catch (err) { console.error("Error cargando datos:", err); }
         }
 
+        // CORREGIDO: Ahora maneja errores y muestra alertas al usuario
         async function ejecutarOperacion(url, payload) {
-            await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            cargarDatosDashboard();
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || result.error) {
+                    alert('❌ Error: ' + (result.error || 'Ocurrió un problema en el servidor.'));
+                    return false;
+                }
+                cargarDatosDashboard();
+                return true;
+            } catch (err) {
+                console.error("Error en operación:", err);
+                alert('❌ No se pudo conectar con el servidor. Revisa la consola.');
+                return false;
+            }
         }
 
         function aceptarUsuario(username) { ejecutarOperacion('/api/admin/accept-user', { username }); }
@@ -271,12 +284,14 @@
 
             if(!titular || !descripcion) { alert("El titular y la descripción son obligatorios."); return; }
             
-            ejecutarOperacion('/api/admin/add-noticia', { titular, descripcion, imagen, fecha });
-            
-            document.getElementById('noticia-titulo').value = '';
-            document.getElementById('noticia-desc').value = '';
-            document.getElementById('noticia-file').value = '';
-            imgElement.style.display = 'none';
+            ejecutarOperacion('/api/admin/add-noticia', { titular, descripcion, imagen, fecha }).then(ok => {
+                if (ok) {
+                    document.getElementById('noticia-titulo').value = '';
+                    document.getElementById('noticia-desc').value = '';
+                    document.getElementById('noticia-file').value = '';
+                    imgElement.style.display = 'none';
+                }
+            });
         }
         function eliminarNoticia(id) { ejecutarOperacion('/api/admin/delete-noticia', { id }); }
 
@@ -289,14 +304,18 @@
             const imagen = imgElement.style.display === 'block' ? imgElement.src : '';
 
             if(!nombre || !peligro) { alert("El nombre y nivel de peligro son obligatorios."); return; }
-            ejecutarOperacion('/api/admin/add-búscado', { nombre, peligro, hechos, recompensa, imagen });
-            
-            document.getElementById('buscado-nombre').value = '';
-            document.getElementById('buscado-peligro').value = '';
-            document.getElementById('buscado-hechos').value = '';
-            document.getElementById('buscado-recompensa').value = '';
-            document.getElementById('buscado-file').value = '';
-            imgElement.style.display = 'none';
+
+            // CORREGIDO: URL sin tilde para coincidir con el servidor
+            ejecutarOperacion('/api/admin/add-buscado', { nombre, peligro, hechos, recompensa, imagen }).then(ok => {
+                if (ok) {
+                    document.getElementById('buscado-nombre').value = '';
+                    document.getElementById('buscado-peligro').value = '';
+                    document.getElementById('buscado-hechos').value = '';
+                    document.getElementById('buscado-recompensa').value = '';
+                    document.getElementById('buscado-file').value = '';
+                    imgElement.style.display = 'none';
+                }
+            });
         }
         function eliminarBuscado(id) { ejecutarOperacion('/api/admin/delete-buscado', { id }); }
 
