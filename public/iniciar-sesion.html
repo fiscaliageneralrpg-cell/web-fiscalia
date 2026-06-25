@@ -11,23 +11,29 @@
             --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;            
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; }
+        html { -webkit-text-size-adjust: 100%; }
+        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; width: 100%; overflow-x: hidden; }
         
         .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
-        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
-        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
-        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; gap: 12px; }
+        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; flex-shrink: 1; }
+        .logo-img { height: 36px; flex-shrink: 0; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
+        .logo-text { min-width: 0; overflow: hidden; }
+        .logo-text strong { color: var(--white); font-size: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .nav-menu { display: flex; list-style: none; gap: 28px; }
-        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; }
-        .nav-menu a:hover { color: #38bdf8; }
-        .btn-login { background-color: rgba(255, 255, 255, 0.2); color: var(--white); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; border: 1px solid rgba(255,255,255,0.3); }
+        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; white-space: nowrap; }
+        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
+        .nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .btn-login { background-color: rgba(255, 255, 255, 0.2); color: var(--white); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; border: 1px solid rgba(255,255,255,0.3); white-space: nowrap; flex-shrink: 0; }
+
+        .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 20px; cursor: pointer; padding: 6px 8px; line-height: 1; border-radius: 6px; }
+        .nav-toggle:active { background: rgba(255,255,255,0.1); }
 
         .auth-container { max-width: 420px; width: 100%; margin: auto; padding: 20px; animation: fadeIn 0.5s ease; }
         .auth-card { background: var(--white); padding: 40px 35px; border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02); text-align: center; }
         .auth-logo { height: 60px; margin-bottom: 20px; }
-        .auth-card h2 { font-size: 24px; color: var(--blue-dark); font-weight: 700; margin-bottom: 8px; }
+        .auth-card h2 { font-size: clamp(20px, 5vw, 24px); color: var(--blue-dark); font-weight: 700; margin-bottom: 8px; }
         .auth-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
 
         .auth-tabs { display: flex; background: #e8e8ed; padding: 4px; border-radius: 10px; margin-bottom: 25px; }
@@ -48,23 +54,117 @@
 
         footer { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 13px; margin-top: auto; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* =========================================================
+           RESPONSIVE
+           Breakpoints: 1024px (tablet/laptop chico), 768px (menú
+           hamburguesa), 600px (móvil grande), 420px (móvil estándar),
+           340px (móvil muy pequeño), hover:none (pantallas táctiles)
+           ========================================================= */
+
+        /* ----- Tablet / pantallas medianas ----- */
+        @media (max-width: 1024px) {
+            .auth-container { max-width: 400px; }
+        }
+
+        /* ----- Activación del menú hamburguesa ----- */
+        @media (max-width: 768px) {
+            .nav-container { padding: 0 16px; }
+            .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+
+            .nav-menu {
+                position: fixed; top: 54px; left: 0; right: 0;
+                background-color: rgba(0, 51, 102, 0.97);
+                backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+                flex-direction: column; align-items: stretch; gap: 0;
+                max-height: 0; overflow: hidden;
+                transition: max-height 0.3s ease;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+            .nav-menu.open { max-height: 320px; }
+            .nav-menu li { width: 100%; }
+            .nav-menu a {
+                display: block; width: 100%; padding: 15px 22px;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                font-size: 15px;
+            }
+            .nav-menu a.active { background: rgba(56, 189, 248, 0.08); }
+
+            .logo-text span { display: none; }
+            .logo-text strong { font-size: 14px; }
+        }
+
+        /* ----- Móviles grandes ----- */
+        @media (max-width: 600px) {
+            body { padding-top: 64px; }
+            .auth-container { padding: 16px; }
+            .auth-card { padding: 32px 26px; }
+            .auth-logo { height: 50px; margin-bottom: 16px; }
+            .auth-card h2 { margin-bottom: 6px; }
+            .auth-card p { margin-bottom: 24px; }
+            .input-group i { top: 37px; }
+        }
+
+        /* ----- Móviles estándar ----- */
+        @media (max-width: 420px) {
+            .navbar { height: 56px; }
+            .nav-container { height: 56px; padding: 0 12px; gap: 8px; }
+            .logo { gap: 8px; }
+            .logo-img { height: 30px; }
+            .logo-text strong { font-size: 13px; }
+            .btn-login { padding: 5px 12px; font-size: 12px; }
+            .nav-toggle { font-size: 18px; padding: 5px 7px; }
+
+            body { padding-top: 56px; }
+            .auth-container { padding: 12px; }
+            .auth-card { padding: 26px 18px; border-radius: 12px; }
+            .auth-tabs { margin-bottom: 20px; }
+            .tab-btn { font-size: 13px; padding: 7px; }
+            .input-group { margin-bottom: 15px; }
+            .input-group input { padding: 11px 14px 11px 40px; font-size: 14px; }
+            .input-group i { left: 13px; top: 36px; font-size: 14px; }
+            .btn-submit { padding: 12px; font-size: 14px; }
+        }
+
+        /* ----- Pantallas muy pequeñas (ej. iPhone SE) ----- */
+        @media (max-width: 340px) {
+            .nav-actions { gap: 6px; }
+            .btn-login { padding: 4px 10px; font-size: 11px; }
+            .logo-text strong { font-size: 12px; }
+            .auth-card { padding: 22px 14px; }
+            .auth-logo { height: 44px; }
+            .auth-card h2 { font-size: 18px; }
+            .tab-btn { font-size: 12px; padding: 6px; }
+        }
+
+        /* ----- Pantallas táctiles: hover deshabilitado, feedback al tocar ----- */
+        @media (hover: none) {
+            .btn-submit:hover { transform: none; box-shadow: 0 4px 12px rgba(29, 112, 184, 0.2); }
+            .btn-submit:active { transform: scale(0.98); }
+            .tab-btn:active { opacity: 0.8; }
+        }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'">
+            <div class="logo" onclick="window.location.href='/index.html'">
                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
                 <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
             </div>
-            <ul class="nav-menu">
-                <li><a href="index.html">Inicio</a></li>
-                <li><a href="buscados.html">Buscados</a></li>
-                <li><a href="noticias.html">Noticias</a></li>
-                <li><a href="denuncias.html">Denuncias</a></li>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="/index.html">Inicio</a></li>
+                <li><a href="/buscados.html">Buscados</a></li>
+                <li><a href="/noticias.html">Noticias</a></li>
             </ul>
-            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
+            <div class="nav-actions">
+                <a href="/iniciar-sesion.html" class="btn-login">Acceder</a>
+                <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -115,6 +215,27 @@
     </footer>
 
     <script>
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        navToggle.addEventListener('click', () => {
+            const isOpen = navMenu.classList.toggle('open');
+            navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                navMenu.classList.remove('open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
         function switchTab(type) {
             const tabLogin = document.getElementById('tab-login');
             const tabRegister = document.getElementById('tab-register');
@@ -174,9 +295,9 @@
                 
                 // Redirección según rol
                 if (data.user.role === 'admin') {
-                    window.location.href = 'dashboard-admin.html';
+                    window.location.href = '/dashboard-admin.html';
                 } else {
-                    window.location.href = 'dashboard-user.html';
+                    window.location.href = '/dashboard-user.html';
                 }
             } catch (err) {
                 alert("❌ ERROR: " + err.message);
