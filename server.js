@@ -6,14 +6,11 @@ require('dotenv').config();
 
 const app = express();
 
-// Configuración de límites para imágenes Base64 grandes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
-
 app.set('view engine', 'ejs');
 
-// Configuración de sesión
 app.use(session({
   secret: 'fiscalia_secret_key_rp',
   resave: false,
@@ -26,46 +23,22 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// AUTO-REPARACIÓN DE BASE DE DATOS
 const inicializarBaseDeDatos = async () => {
   try {
+    // 1. Crear tablas si no existen
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
-        username VARCHAR(100) PRIMARY KEY, 
-        password VARCHAR(250) NOT NULL, 
-        role VARCHAR(20) NOT NULL, 
-        status VARCHAR(20) NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS buscados (
-        id SERIAL PRIMARY KEY, 
-        nombre VARCHAR(250) NOT NULL,
-        peligro VARCHAR(50), 
-        descripcion TEXT, 
-        recompensa VARCHAR(100), 
-        imagen TEXT
-      );
-      CREATE TABLE IF NOT EXISTS noticias (
-        id SERIAL PRIMARY KEY, 
-        titular VARCHAR(250) NOT NULL,
-        descripcion TEXT, 
-        imagen TEXT, 
-        fecha VARCHAR(50)
-      );
-      CREATE TABLE IF NOT EXISTS denuncias (
-        id SERIAL PRIMARY KEY,
-        usuario VARCHAR(100),
-        titulo VARCHAR(250),
-        descripcion TEXT,
-        evidencia TEXT,
-        fecha VARCHAR(50),
-        estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada'
-      );
-      CREATE TABLE IF NOT EXISTS estados_denuncias (
-        id SERIAL PRIMARY KEY,
-        denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE,
-        mensaje TEXT,
-        fecha VARCHAR(50)
-      );
+      CREATE TABLE IF NOT EXISTS usuarios (username VARCHAR(100) PRIMARY KEY, password VARCHAR(250) NOT NULL, role VARCHAR(20) NOT NULL, status VARCHAR(20) NOT NULL);
+      CREATE TABLE IF NOT EXISTS buscados (id SERIAL PRIMARY KEY, nombre VARCHAR(250) NOT NULL, peligro VARCHAR(50), descripcion TEXT, recompensa VARCHAR(100), imagen TEXT);
+      CREATE TABLE IF NOT EXISTS noticias (id SERIAL PRIMARY KEY, titular VARCHAR(250) NOT NULL, descripcion TEXT, imagen TEXT, fecha VARCHAR(50));
+      CREATE TABLE IF NOT EXISTS denuncias (id SERIAL PRIMARY KEY, usuario VARCHAR(100), titulo VARCHAR(250), descripcion TEXT, evidencia TEXT, fecha VARCHAR(50), estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada');
+      CREATE TABLE IF NOT EXISTS estados_denuncias (id SERIAL PRIMARY KEY, denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE, mensaje TEXT, fecha VARCHAR(50));
     `);
+
+    // 2. REPARAR: Asegurar que la columna 'estado_actual' exista (por si la tabla se creó antes)
+    try {
+        await pool.query("ALTER TABLE denuncias ADD COLUMN IF NOT EXISTS estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada'");
+    } catch (e) { /* Ya existe */ }
 
     const adminEmail = 'fiscaliageneralrpg@gmail.com';
     const checkAdmin = await pool.query("SELECT * FROM usuarios WHERE username = $1", [adminEmail]);
@@ -73,12 +46,12 @@ const inicializarBaseDeDatos = async () => {
         const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
         await pool.query("INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'admin', 'aceptado')", [adminEmail, hashedPassword]);
     }
-    console.log("⚖️ BASE DE DATOS: Lista y actualizada.");
-  } catch (err) { console.error("❌ ERROR BD:", err.message); }
+    console.log("⚖️ SISTEMA BD: Verificado y Reparado.");
+  } catch (err) { console.error("❌ ERROR CRÍTICO BD:", err.message); }
 };
 inicializarBaseDeDatos();
 
-// --- AUTENTICACIÓN ---
+// --- RUTAS API ---
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -101,7 +74,6 @@ app.post('/api/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Error en el login." }); }
 });
 
-// --- DENUNCIAS Y ESTADOS ---
 app.post('/api/denuncias/enviar', async (req, res) => {
   try {
     const { usuario, titulo, descripcion, evidencia, fecha } = req.body;
@@ -109,9 +81,7 @@ app.post('/api/denuncias/enviar', async (req, res) => {
       "INSERT INTO denuncias (usuario, titulo, descripcion, evidencia, fecha) VALUES ($1, $2, $3, $4, $5) RETURNING id",
       [usuario, titulo, descripcion, evidencia, fecha]
     );
-    const denunciaId = result.rows[0].id;
-    // Insertar el primer estado en el historial
-    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denunciaId, 'Denuncia enviada exitosamente al sistema.', fecha]);
+    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [result.rows[0].id, 'Denuncia enviada exitosamente.', fecha]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: "Error al enviar denuncia" }); }
 });
@@ -120,17 +90,16 @@ app.get('/api/denuncias/mis-denuncias/:usuario', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM denuncias WHERE usuario = $1 ORDER BY id DESC", [req.params.usuario]);
     res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: "Error al obtener denuncias" }); }
+  } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
 app.get('/api/denuncias/estados/:id', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM estados_denuncias WHERE denuncia_id = $1 ORDER BY id ASC", [req.params.id]);
     res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: "Error al obtener historial de estados" }); }
+  } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- ADMINISTRACIÓN ---
 app.get('/api/admin/data', async (req, res) => {
   try {
     const u = await pool.query('SELECT username, role FROM usuarios');
@@ -138,64 +107,34 @@ app.get('/api/admin/data', async (req, res) => {
     const n = await pool.query('SELECT * FROM noticias ORDER BY id DESC');
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
     res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows });
-  } catch (err) { res.status(500).json({ error: "Error al cargar datos administrativos" }); }
+  } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
 app.post('/api/admin/actualizar-estado', async (req, res) => {
   try {
     const { denuncia_id, mensaje, fecha } = req.body;
-    if (!denuncia_id || !mensaje) return res.status(400).json({ error: "Faltan datos" });
+    if (!denuncia_id || !mensaje) return res.status(400).json({ error: "Faltan datos (ID o Mensaje)" });
     
-    // Actualizar el estado actual en la tabla principal
-    await pool.query("UPDATE denuncias SET estado_actual = $1 WHERE id = $2", [mensaje, denuncia_id]);
-    // Insertar el nuevo mensaje en el historial
+    // 1. Actualizar tabla principal
+    const updateRes = await pool.query("UPDATE denuncias SET estado_actual = $1 WHERE id = $2", [mensaje, denuncia_id]);
+    if (updateRes.rowCount === 0) return res.status(404).json({ error: "No se encontró la denuncia con ese ID" });
+
+    // 2. Insertar en historial
     await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denuncia_id, mensaje, fecha]);
     
     res.json({ success: true });
   } catch (err) { 
-    console.error("Error al actualizar estado:", err);
-    res.status(500).json({ error: "Error interno al actualizar estado" }); 
+    console.error("❌ ERROR ACTUALIZAR ESTADO:", err);
+    res.status(500).json({ error: err.message }); 
   }
 });
 
-app.post('/api/admin/make-admin', async (req, res) => {
-  try {
-    await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al ascender usuario" }); }
-});
-
-app.post('/api/admin/delete-user', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al eliminar usuario" }); }
-});
-
-app.post('/api/admin/add-noticia', async (req, res) => {
-  try {
-    const { titular, descripcion, imagen, fecha } = req.body;
-    await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar noticia" }); }
-});
-
-app.post('/api/admin/add-buscado', async (req, res) => {
-  try {
-    const { nombre, peligro, hechos, recompensa, imagen } = req.body;
-    await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [nombre, peligro, hechos, recompensa, imagen]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error al guardar buscado" }); }
-});
-
-app.post('/api/admin/delete-noticia', async (req, res) => {
-  await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
-});
-
-app.post('/api/admin/delete-buscado', async (req, res) => {
-  await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
-});
+// Otras rutas de admin...
+app.post('/api/admin/make-admin', async (req, res) => { await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]); res.json({ success: true }); });
+app.post('/api/admin/delete-user', async (req, res) => { await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]); res.json({ success: true }); });
+app.post('/api/admin/add-noticia', async (req, res) => { await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [req.body.titular, req.body.descripcion, req.body.imagen, req.body.fecha]); res.json({ success: true }); });
+app.post('/api/admin/add-buscado', async (req, res) => { await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [req.body.nombre, req.body.peligro, req.body.hechos, req.body.recompensa, req.body.imagen]); res.json({ success: true }); });
+app.post('/api/admin/delete-noticia', async (req, res) => { await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]); res.json({ success: true }); });
+app.post('/api/admin/delete-buscado', async (req, res) => { await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]); res.json({ success: true }); });
 
 app.listen(process.env.PORT || 10000, () => console.log('🚀 SERVIDOR ONLINE'));
