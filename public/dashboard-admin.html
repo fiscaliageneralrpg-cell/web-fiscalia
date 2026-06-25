@@ -7,32 +7,101 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root { --primary: #003366; --secondary: #1d70b8; --accent: #38bdf8; --bg: #f5f5f7; --text: #1d1d1f; }
-        body { background-color: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
-        .sidebar { background-color: var(--primary); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; }
-        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar a { color: #cbd5e1; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
+        :root {
+            --black:    #0a0a0f;
+            --surface:  #111118;
+            --panel:    #16161f;
+            --panel-2:  #1c1c26;
+            --border:   #2a2a3a;
+            --red:      #c0392b;
+            --red-glow: rgba(192, 57, 43, 0.25);
+            --gold:     #f0c040;
+            --gold-dim: rgba(240, 192, 64, 0.15);
+            --text:     #e8e8f0;
+            --muted:    #6b6b80;
+            --mono:     'Courier New', 'Lucida Console', monospace;
+            --radius:   6px;
+
+            /* Alias para compatibilidad con nombres usados originalmente */
+            --primary: #c0392b;
+            --secondary: #f0c040;
+            --accent: #f0c040;
+            --bg: #0a0a0f;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { background-color: var(--black); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
+
+        .sidebar { background-color: var(--surface); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; border-right: 1px solid var(--border); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--border); }
+        .sidebar-header h5 { font-family: var(--mono); letter-spacing: 1px; font-size: 14px; }
+        .sidebar a { color: var(--muted); text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
         .sidebar a i { width: 30px; font-size: 18px; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent); }
+        .sidebar a:hover, .sidebar a.active { background: rgba(192,57,43,0.12); color: var(--gold); border-left-color: var(--red); }
+
         .main-content { margin-left: 260px; padding: 30px; transition: 0.3s; }
-        .top-bar { background: white; padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .card-custom { background: white; border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.02); }
+        .top-bar { background: var(--panel); border: 1px solid var(--border); padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar h5 { color: var(--text) !important; }
+
+        .card-custom { background: var(--panel); border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); margin-bottom: 25px; border: 1px solid var(--border); }
+        .card-custom h4 { font-family: var(--mono); letter-spacing: 0.5px; font-size: 18px; color: var(--gold); margin-bottom: 20px; }
+
         .tab-content-panel { display: none; animation: fadeIn 0.4s ease; }
         .tab-content-panel.active { display: block; }
-        .denuncia-card { border: 1px solid #e2e8f0; border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; }
+
+        .denuncia-card { border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: var(--panel-2); }
+        .denuncia-card:hover { border-color: var(--red); }
         .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+
         .timeline { position: relative; padding: 15px 0; }
-        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 20px; border-left: 2px solid #e2e8f0; }
-        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--secondary); border-radius: 50%; border: 3px solid white; }
+        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 20px; border-left: 2px solid var(--border); }
+        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--red); border-radius: 50%; border: 3px solid var(--panel); }
+
+        /* Encabezado de consola estilo hero oscuro */
+        .console-hero { background: var(--surface); border: 1px solid var(--border); }
+        .console-hero i { color: var(--red); text-shadow: 0 0 18px var(--red-glow); }
+        .console-hero h1 { letter-spacing: -1px; font-weight: 700; }
+        .stat-card { background: var(--panel-2) !important; border: 1px solid var(--border) !important; }
+        .stat-card h6 { color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+        .stat-card h2 { color: var(--text); }
+        .stat-card.accent-red h2 { color: var(--red); }
+        .stat-card.accent-gold h2 { color: var(--gold); }
+        .stat-card.accent-warn h2 { color: #e0a93f; }
+
+        /* Tablas y listas */
+        .table { color: var(--text); }
+        .table-light { background: var(--panel-2); color: var(--muted); }
+        .table-hover > tbody > tr:hover { background-color: rgba(192,57,43,0.08); color: var(--text); }
+        .table > :not(caption) > * > * { border-bottom-color: var(--border); background-color: transparent; color: var(--text); }
+
+        .list-group-item { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+
+        .form-label { font-weight: 600; font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+        .form-control, .form-select { border-radius: 10px; padding: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+        .form-control:focus, .form-select:focus { background: var(--surface); color: var(--text); border-color: var(--red); box-shadow: 0 0 0 0.2rem var(--red-glow); }
+        .form-control::placeholder { color: var(--muted); }
+
+        .btn-primary { background: var(--red); border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
+        .btn-primary:hover { background: #a93224; }
+        .btn-danger { background: var(--red); border: none; }
+        .btn-danger:hover { background: #a93224; }
+        .btn-outline-danger { color: var(--red); border-color: var(--red); }
+        .btn-outline-danger:hover { background: var(--red); color: #fff; }
+
+        .modal-content { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+        .modal-header { border-bottom: 1px solid var(--border) !important; }
+        .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+
         @media (max-width: 992px) { .sidebar { width: 80px; } .sidebar-header span, .sidebar a span { display: none; } .main-content { margin-left: 80px; padding: 15px; } .sidebar a { justify-content: center; padding: 20px; } }
-        @media (max-width: 576px) { .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; } .sidebar-header { display: none; } .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; } .sidebar a.active { border-top-color: var(--accent); } .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; } .top-bar { flex-direction: column; gap: 10px; text-align: center; } }
+        @media (max-width: 576px) { .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; } .sidebar-header { display: none; } .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; } .sidebar a.active { border-top-color: var(--red); } .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; } .top-bar { flex-direction: column; gap: 10px; text-align: center; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="sidebar shadow">
-        <div class="sidebar-header"><h5 class="fw-bold m-0"><i class="fa-solid fa-building-shield text-info me-2"></i><span>FISCALÍA GN</span></h5></div>
+        <div class="sidebar-header"><h5 class="fw-bold m-0"><i class="fa-solid fa-building-shield text-warning me-2"></i><span>FISCALÍA GN</span></h5></div>
         <div class="sidebar-menu">
             <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
             <a onclick="switchTab('usuarios')" id="link-usuarios"><i class="fa-solid fa-users-gear"></i><span>Usuarios</span></a>
@@ -44,19 +113,19 @@
 
     <div class="main-content">
         <div class="top-bar shadow-sm">
-            <h5 class="m-0 fw-bold text-primary" id="admin-greeting">Hola, Admin</h5>
+            <h5 class="m-0 fw-bold" id="admin-greeting">Hola, Admin</h5>
             <button class="btn btn-outline-danger btn-sm rounded-pill px-4" onclick="cerrarSesion()">Salir</button>
         </div>
 
         <div id="tab-inicio" class="tab-content-panel active">
-            <div class="card-custom text-center p-5">
-                <i class="fa-solid fa-shield-halved fa-5x text-primary mb-4"></i>
+            <div class="card-custom console-hero text-center p-5">
+                <i class="fa-solid fa-shield-halved fa-5x mb-4"></i>
                 <h1 class="fw-bold">Consola de Mando Superior</h1>
                 <div class="row mt-5">
-                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm"><h6>Usuarios</h6><h2 id="c-users">0</h2></div></div>
-                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-primary"><h6>Noticias</h6><h2 id="c-news">0</h2></div></div>
-                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-danger"><h6>Buscados</h6><h2 id="c-wanted">0</h2></div></div>
-                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-warning"><h6>Denuncias</h6><h2 id="c-reports">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card stat-card p-4 border-0 shadow-sm"><h6>Usuarios</h6><h2 id="c-users">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card stat-card accent-gold p-4 border-0 shadow-sm"><h6>Noticias</h6><h2 id="c-news">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card stat-card accent-red p-4 border-0 shadow-sm"><h6>Buscados</h6><h2 id="c-wanted">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card stat-card accent-warn p-4 border-0 shadow-sm"><h6>Denuncias</h6><h2 id="c-reports">0</h2></div></div>
                 </div>
             </div>
         </div>
@@ -90,7 +159,7 @@
                     <input type="hidden" id="current-d-id">
                     <div class="mb-3"><label class="form-label">Nuevo Estado</label><textarea id="new-status-msg" class="form-control" rows="4" placeholder="Ej: Su denuncia está siendo analizada..."></textarea></div>
                     <button class="btn btn-primary w-100 py-3" onclick="saveStatus()">REGISTRAR CAMBIO</button>
-                    <hr><h6 class="fw-bold mb-3">Historial:</h6><div id="current-timeline" class="timeline"></div>
+                    <hr style="border-color: var(--border);"><h6 class="fw-bold mb-3" style="color: var(--gold);">Historial:</h6><div id="current-timeline" class="timeline"></div>
                 </div>
             </div>
         </div>
@@ -138,7 +207,7 @@
 
                 const lD = document.getElementById('lista-denuncias-admin'); lD.innerHTML = '';
                 d.denuncias.forEach(r => {
-                    lD.innerHTML += `<div class="denuncia-card"><div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="fw-bold m-0 text-primary">${r.titulo}</h5><small>De: ${r.usuario} | ${r.fecha}</small></div><span class="status-badge bg-warning text-dark">${r.estado_actual}</span></div><p class="mb-3">${r.descripcion}</p>${r.evidencia ? `<img src="${r.evidencia}" class="rounded mb-3" style="max-width:120px;">` : ''}<div class="border-top pt-3"><button class="btn btn-primary btn-sm rounded-pill" onclick="openGestion(${r.id})">GESTIONAR</button></div></div>`;
+                    lD.innerHTML += `<div class="denuncia-card"><div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="fw-bold m-0" style="color: var(--gold);">${r.titulo}</h5><small>De: ${r.usuario} | ${r.fecha}</small></div><span class="status-badge bg-warning text-dark">${r.estado_actual}</span></div><p class="mb-3">${r.descripcion}</p>${r.evidencia ? `<img src="${r.evidencia}" class="rounded mb-3" style="max-width:120px;">` : ''}<div class="border-top pt-3" style="border-color: var(--border) !important;"><button class="btn btn-primary btn-sm rounded-pill" onclick="openGestion(${r.id})">GESTIONAR</button></div></div>`;
                 });
             } catch(e) { console.error(e); }
         }
