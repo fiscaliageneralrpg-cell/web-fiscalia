@@ -3,153 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo Superior - Fiscalía General</title>
+    <title>Administración Superior - Fiscalía General</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            --primary-color: #003366;
-            --secondary-color: #1d70b8;
-            --accent-color: #38bdf8;
-            --bg-light: #f5f5f7;
-            --text-dark: #1d1d1f;
-            --white: #ffffff;
+            --primary: #003366; --secondary: #1d70b8; --accent: #38bdf8;
+            --bg: #f5f5f7; --white: #ffffff; --text: #1d1d1f;
         }
 
-        body { 
-            background-color: var(--bg-light); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            color: var(--text-dark);
-            overflow-x: hidden;
-        }
+        body { background-color: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
 
-        /* Sidebar Responsiva */
-        .sidebar { 
-            background-color: var(--primary-color); 
-            min-height: 100vh; 
-            color: white; 
-            position: fixed; 
-            width: 260px; 
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
+        /* Sidebar */
+        .sidebar { background-color: var(--primary); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
+        .sidebar a i { width: 30px; font-size: 18px; }
+        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent); }
 
-        .sidebar-header {
-            padding: 25px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
+        /* Main */
+        .main-content { margin-left: 260px; padding: 30px; transition: 0.3s; }
+        .top-bar { background: white; padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
 
-        .sidebar-menu {
-            padding: 15px 0;
-        }
-
-        .sidebar a { 
-            color: #cbd5e1; 
-            text-decoration: none; 
-            display: flex;
-            align-items: center;
-            padding: 14px 25px; 
-            font-size: 15px; 
-            transition: 0.2s; 
-            cursor: pointer; 
-            border-left: 4px solid transparent;
-        }
-
-        .sidebar a i { width: 25px; font-size: 18px; margin-right: 10px; }
-
-        .sidebar a:hover, .sidebar a.active { 
-            background-color: rgba(255,255,255,0.1); 
-            color: white; 
-            border-left: 4px solid var(--accent-color); 
-        }
-
-        /* Contenido Principal */
-        .main-content { 
-            margin-left: 260px; 
-            padding: 30px; 
-            transition: all 0.3s ease;
-        }
-
-        .top-bar {
-            background: white;
-            padding: 15px 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-custom { 
-            border: none; 
-            border-radius: 18px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.04); 
-            background: white; 
-            margin-bottom: 25px; 
-            padding: 25px;
-            border: 1px solid rgba(0,0,0,0.02);
-        }
-
-        .form-label { font-weight: 600; color: var(--primary-color); font-size: 14px; }
-        .form-control, .form-select {
-            border-radius: 10px;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            background-color: #f8fafc;
-        }
-
-        .btn-primary { background: var(--primary-color); border: none; padding: 12px; border-radius: 10px; font-weight: 600; }
-        .btn-danger { background: #dc2626; border: none; padding: 12px; border-radius: 10px; font-weight: 600; }
-
+        /* Cards */
+        .card-custom { background: white; border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.02); }
         .tab-content-panel { display: none; animation: fadeIn 0.4s ease; }
         .tab-content-panel.active { display: block; }
 
-        .preview-img-box { 
-            max-width: 100%; 
-            max-height: 200px; 
-            object-fit: cover; 
-            border-radius: 12px; 
-            margin-top: 15px; 
-            display: none; 
-            border: 2px dashed #cbd5e1; 
-        }
+        /* Forms */
+        .form-label { font-weight: 600; font-size: 13px; color: var(--primary); margin-bottom: 8px; }
+        .form-control, .form-select { border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
+        .btn-danger { background: #dc2626; border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
 
-        /* Estilos de Denuncias */
-        .denuncia-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: 0.2s;
-        }
-        .denuncia-item:hover { border-color: var(--secondary-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        /* Denuncias */
+        .denuncia-card { border: 1px solid #e2e8f0; border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; }
+        .denuncia-card:hover { border-color: var(--secondary); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
+        /* Timeline */
+        .timeline { position: relative; padding: 15px 0; }
+        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 20px; border-left: 2px solid #e2e8f0; }
+        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--secondary); border-radius: 50%; border: 3px solid white; }
+        .timeline-date { font-size: 11px; color: #888; }
+        .timeline-msg { font-size: 13px; font-weight: 500; }
 
         /* Responsive */
         @media (max-width: 992px) {
             .sidebar { width: 80px; }
-            .sidebar-header h5, .sidebar a span { display: none; }
+            .sidebar-header span, .sidebar a span { display: none; }
             .main-content { margin-left: 80px; padding: 15px; }
             .sidebar a { justify-content: center; padding: 20px; }
             .sidebar a i { margin: 0; }
         }
 
         @media (max-width: 576px) {
-            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 60px; flex-direction: row; display: flex; }
+            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; border-top: 1px solid rgba(255,255,255,0.1); }
             .sidebar-header { display: none; }
-            .sidebar-menu { display: flex; width: 100%; justify-content: space-around; padding: 0; }
-            .sidebar a { border-left: none; border-top: 4px solid transparent; padding: 10px; }
-            .sidebar a.active { border-left: none; border-top: 4px solid var(--accent-color); }
-            .main-content { margin-left: 0; margin-bottom: 70px; padding: 10px; }
+            .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; }
+            .sidebar a i { margin-bottom: 4px; }
+            .sidebar a.active { border-top-color: var(--accent); }
+            .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; }
             .top-bar { flex-direction: column; gap: 10px; text-align: center; }
         }
 
@@ -158,161 +72,113 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar shadow">
         <div class="sidebar-header">
-            <h5 class="fw-bold m-0"><i class="fa-solid fa-shield-halved text-info me-2"></i><span>FISCALÍA GN</span></h5>
+            <h5 class="fw-bold m-0"><i class="fa-solid fa-building-shield text-info me-2"></i><span>FISCALÍA GN</span></h5>
         </div>
         <div class="sidebar-menu">
             <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
             <a onclick="switchTab('usuarios')" id="link-usuarios"><i class="fa-solid fa-users-gear"></i><span>Usuarios</span></a>
             <a onclick="switchTab('noticias')" id="link-noticias"><i class="fa-solid fa-newspaper"></i><span>Noticias</span></a>
-            <a onclick="switchTab('buscados')" id="link-buscados"><i class="fa-solid fa-person-military-pointing"></i><span>Buscados</span></a>
-            <a onclick="switchTab('denuncias')" id="link-denuncias"><i class="fa-solid fa-file-invoice"></i><span>Denuncias</span></a>
+            <a onclick="switchTab('buscados')" id="link-buscados"><i class="fa-solid fa-user-ninja"></i><span>Buscados</span></a>
+            <a onclick="switchTab('denuncias')" id="link-denuncias"><i class="fa-solid fa-file-shield"></i><span>Denuncias</span></a>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main-content">
-        
         <div class="top-bar shadow-sm">
-            <h5 class="m-0 fw-bold text-primary" id="welcome-title">Hola, Administrador</h5>
+            <h5 class="m-0 fw-bold text-primary" id="admin-greeting">Hola, Administrador</h5>
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-success">Servidor Activo</span>
-                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="cerrarSesion()">Cerrar Sesión</button>
+                <span class="badge bg-success rounded-pill px-3">Sistema Online</span>
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-4" onclick="cerrarSesion()">Salir</button>
             </div>
         </div>
 
-        <!-- TAB: INICIO -->
+        <!-- INICIO -->
         <div id="tab-inicio" class="tab-content-panel active">
             <div class="card-custom text-center p-5">
-                <i class="fa-solid fa-user-shield fa-4x text-primary mb-4"></i>
-                <h2 class="fw-bold">Centro de Comando Superior</h2>
-                <p class="text-muted">Bienvenido al panel de administración de la Fiscalía General de la Nación. Desde aquí puedes controlar la información pública y judicial del estado.</p>
+                <i class="fa-solid fa-shield-halved fa-5x text-primary mb-4"></i>
+                <h1 class="fw-bold">Consola de Mando Superior</h1>
+                <p class="text-muted fs-5">Bienvenido al núcleo de gestión de la Fiscalía General de la Nación.</p>
                 <div class="row mt-5">
-                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Noticias</h5><h3 id="count-noticias">0</h3></div></div>
-                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Buscados</h5><h3 id="count-buscados">0</h3></div></div>
-                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Denuncias</h5><h3 id="count-denuncias">0</h3></div></div>
+                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm"><h6>Usuarios</h6><h2 id="c-users">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-primary"><h6>Noticias</h6><h2 id="c-news">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-danger"><h6>Buscados</h6><h2 id="c-wanted">0</h2></div></div>
+                    <div class="col-md-3 mb-3"><div class="card p-4 border-0 shadow-sm text-warning"><h6>Denuncias</h6><h2 id="c-reports">0</h2></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: USUARIOS -->
+        <!-- USUARIOS -->
         <div id="tab-usuarios" class="tab-content-panel">
             <div class="card-custom">
-                <h4 class="fw-bold mb-4"><i class="fa-solid fa-users me-2"></i>Gestión de Personal y Ciudadanos</h4>
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-users-viewfinder me-2"></i>Control de Cuentas</h4>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr><th>Usuario</th><th>Rol Actual</th><th>Acciones</th></tr>
-                        </thead>
+                        <thead class="table-light"><tr><th>Usuario</th><th>Rango</th><th>Acciones</th></tr></thead>
                         <tbody id="tabla-usuarios"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: NOTICIAS -->
+        <!-- NOTICIAS -->
         <div id="tab-noticias" class="tab-content-panel">
             <div class="row">
                 <div class="col-lg-5">
                     <div class="card-custom">
-                        <h4 class="fw-bold mb-4">Publicar Noticia Oficial</h4>
-                        <div class="mb-3">
-                            <label class="form-label">Titular de la Noticia</label>
-                            <input type="text" id="n-titulo" class="form-control" placeholder="Ej: Operativo en Comuna 13">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Cuerpo de la Noticia</label>
-                            <textarea id="n-desc" class="form-control" rows="5" placeholder="Detalles de la noticia..."></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Imagen (Opcional)</label>
-                            <input type="file" id="n-file" class="form-control" accept="image/*" onchange="previewImage(this, 'p-noticia')">
-                            <img id="p-noticia" class="preview-img-box">
-                        </div>
-                        <button class="btn btn-primary w-100" onclick="publicarNoticia()">EMITIR BOLETÍN</button>
+                        <h4 class="fw-bold mb-4">Emitir Noticia</h4>
+                        <div class="mb-3"><label class="form-label">Titular</label><input type="text" id="n-titulo" class="form-control"></div>
+                        <div class="mb-3"><label class="form-label">Contenido</label><textarea id="n-desc" class="form-control" rows="6"></textarea></div>
+                        <div class="mb-3"><label class="form-label">Imagen</label><input type="file" id="n-file" class="form-control" onchange="preview(this, 'p-news')"><img id="p-news" style="display:none; width:100%; margin-top:10px; border-radius:10px;"></div>
+                        <button class="btn btn-primary w-100" onclick="postNoticia()">PUBLICAR</button>
                     </div>
                 </div>
-                <div class="col-lg-7">
-                    <div class="card-custom">
-                        <h4 class="fw-bold mb-4">Noticias en el Sistema</h4>
-                        <div id="lista-noticias" class="list-group"></div>
-                    </div>
-                </div>
+                <div class="col-lg-7"><div class="card-custom"><h4>Boletines Activos</h4><div id="lista-noticias" class="list-group"></div></div></div>
             </div>
         </div>
 
-        <!-- TAB: BUSCADOS -->
+        <!-- BUSCADOS -->
         <div id="tab-buscados" class="tab-content-panel">
             <div class="row">
                 <div class="col-lg-5">
                     <div class="card-custom">
-                        <h4 class="fw-bold mb-4">Emitir Orden de Captura</h4>
-                        <div class="mb-3">
-                            <label class="form-label">Nombre del Objetivo</label>
-                            <input type="text" id="b-nombre" class="form-control" placeholder="Nombre completo o alias">
-                        </div>
+                        <h4 class="fw-bold mb-4 text-danger">Orden de Captura</h4>
+                        <div class="mb-3"><label class="form-label">Nombre</label><input type="text" id="b-nombre" class="form-control"></div>
                         <div class="row mb-3">
-                            <div class="col-6">
-                                <label class="form-label">Peligrosidad</label>
-                                <select id="b-peligro" class="form-select">
-                                    <option value="Muy Alto">Muy Alto</option>
-                                    <option value="Medio">Medio</option>
-                                    <option value="Bajo">Bajo</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Recompensa</label>
-                                <input type="text" id="b-recompensa" class="form-control" placeholder="$0.00">
-                            </div>
+                            <div class="col-6"><label class="form-label">Peligro</label><select id="b-peligro" class="form-select"><option>Muy Alto</option><option>Medio</option><option>Bajo</option></select></div>
+                            <div class="col-6"><label class="form-label">Recompensa</label><input type="text" id="b-recompensa" class="form-control"></div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Hechos Delictivos</label>
-                            <textarea id="b-hechos" class="form-control" rows="3" placeholder="Delitos cometidos..."></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fotografía</label>
-                            <input type="file" id="b-file" class="form-control" accept="image/*" onchange="previewImage(this, 'p-buscado')">
-                            <img id="p-buscado" class="preview-img-box">
-                        </div>
-                        <button class="btn btn-danger w-100" onclick="publicarBuscado()">DESPLEGAR ORDEN</button>
+                        <div class="mb-3"><label class="form-label">Delitos</label><textarea id="b-hechos" class="form-control" rows="3"></textarea></div>
+                        <div class="mb-3"><label class="form-label">Foto</label><input type="file" id="b-file" class="form-control" onchange="preview(this, 'p-wanted')"><img id="p-wanted" style="display:none; width:100%; margin-top:10px; border-radius:10px;"></div>
+                        <button class="btn btn-danger w-100" onclick="postBuscado()">DESPLEGAR</button>
                     </div>
                 </div>
-                <div class="col-lg-7">
-                    <div class="card-custom">
-                        <h4 class="fw-bold mb-4">Objetivos de Interés</h4>
-                        <div id="lista-buscados" class="list-group"></div>
-                    </div>
-                </div>
+                <div class="col-lg-7"><div class="card-custom"><h4>Cartel de Buscados</h4><div id="lista-buscados" class="list-group"></div></div></div>
             </div>
         </div>
 
-        <!-- TAB: DENUNCIAS -->
+        <!-- DENUNCIAS -->
         <div id="tab-denuncias" class="tab-content-panel">
             <div class="card-custom">
-                <h4 class="fw-bold mb-4"><i class="fa-solid fa-folder-open me-2"></i>Denuncias Ciudadanas</h4>
+                <h4 class="fw-bold mb-4">Denuncias y Seguimiento Judicial</h4>
                 <div id="lista-denuncias-admin"></div>
             </div>
         </div>
-
     </div>
 
-    <!-- MODAL GESTIONAR ESTADO -->
-    <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <!-- MODAL GESTIÓN -->
+    <div class="modal fade" id="modalGestion" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0 p-4">
-                    <h5 class="fw-bold m-0">Actualizar Estado de Denuncia</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header border-0 p-4"><h5 class="fw-bold m-0">Gestionar Denuncia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
-                    <input type="hidden" id="denuncia-id-actual">
-                    <div class="mb-3">
-                        <label class="form-label">Mensaje para el Ciudadano</label>
-                        <textarea id="nuevo-estado-mensaje" class="form-control" rows="4" placeholder="Ej: Su denuncia ha sido remitida al cuerpo técnico de investigación..."></textarea>
-                    </div>
-                    <button class="btn btn-primary w-100 py-3" onclick="guardarNuevoEstado()">REGISTRAR ACTUALIZACIÓN</button>
+                    <input type="hidden" id="current-d-id">
+                    <div class="mb-3"><label class="form-label">Actualizar Estado (Historial)</label><textarea id="new-status-msg" class="form-control" rows="4" placeholder="Ej: Su denuncia está siendo analizada..."></textarea></div>
+                    <button class="btn btn-primary w-100 py-3" onclick="saveStatus()">REGISTRAR CAMBIO</button>
+                    <hr>
+                    <h6 class="fw-bold mb-3">Historial Actual:</h6>
+                    <div id="current-timeline" class="timeline"></div>
                 </div>
             </div>
         </div>
@@ -322,172 +188,127 @@
     <script>
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user || user.role !== 'admin') window.location.href = 'iniciar-sesion.html';
-        document.getElementById('welcome-title').innerText = `Hola, ${user.username}`;
+        document.getElementById('admin-greeting').innerText = `Hola, ${user.username}`;
 
-        function switchTab(tabId) {
+        function switchTab(t) {
             document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            document.getElementById('link-' + tabId).classList.add('active');
+            document.getElementById('tab-' + t).classList.add('active');
+            document.getElementById('link-' + t).classList.add('active');
         }
 
-        function previewImage(input, previewId) {
-            const preview = document.getElementById(previewId);
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; }
-                reader.readAsDataURL(input.files[0]);
+        function preview(i, pId) {
+            const p = document.getElementById(pId);
+            if (i.files && i.files[0]) {
+                const r = new FileReader();
+                r.onload = e => { p.src = e.target.result; p.style.display = 'block'; }
+                r.readAsDataURL(i.files[0]);
             }
         }
 
-        async function cargarDatos() {
-            try {
-                const res = await fetch('/api/admin/data');
-                const data = await res.json();
+        async function loadData() {
+            const res = await fetch('/api/admin/data');
+            const d = await res.json();
 
-                // Contadores
-                document.getElementById('count-noticias').innerText = data.noticias.length;
-                document.getElementById('count-buscados').innerText = data.buscados.length;
-                document.getElementById('count-denuncias').innerText = data.denuncias.length;
+            document.getElementById('c-users').innerText = d.users.length;
+            document.getElementById('c-news').innerText = d.noticias.length;
+            document.getElementById('c-wanted').innerText = d.buscados.length;
+            document.getElementById('c-reports').innerText = d.denuncias.length;
 
-                // Render Usuarios
-                const tU = document.getElementById('tabla-usuarios');
-                tU.innerHTML = '';
-                data.users.forEach(u => {
-                    tU.innerHTML += `
-                        <tr>
-                            <td class="fw-bold">${u.username}</td>
-                            <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role.toUpperCase()}</span></td>
-                            <td>
-                                ${u.role === 'user' ? `<button class="btn btn-sm btn-success me-2" onclick="hacerAdmin('${u.username}')"><i class="fa-solid fa-arrow-up"></i> Ascender</button>` : ''}
-                                <button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario('${u.username}')"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>`;
-                });
+            const tU = document.getElementById('tabla-usuarios');
+            tU.innerHTML = '';
+            d.users.forEach(u => {
+                tU.innerHTML += `<tr><td>${u.username}</td><td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role}</span></td><td>
+                    ${u.role === 'user' ? `<button class="btn btn-sm btn-success" onclick="makeAdmin('${u.username}')">Ascender</button>` : ''}
+                    <button class="btn btn-sm btn-outline-danger" onclick="delUser('${u.username}')">X</button>
+                </td></tr>`;
+            });
 
-                // Render Noticias
-                const lN = document.getElementById('lista-noticias');
-                lN.innerHTML = '';
-                data.noticias.forEach(n => {
-                    lN.innerHTML += `
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
-                            <div><h6 class="m-0 fw-bold">${n.titular}</h6><small class="text-muted">${n.fecha}</small></div>
-                            <button class="btn btn-sm text-danger" onclick="eliminarNoticia(${n.id})"><i class="fa-solid fa-circle-minus fa-lg"></i></button>
-                        </div>`;
-                });
+            const lN = document.getElementById('lista-noticias');
+            lN.innerHTML = '';
+            d.noticias.forEach(n => {
+                lN.innerHTML += `<div class="list-group-item d-flex justify-content-between"><div><b>${n.titular}</b><br><small>${n.fecha}</small></div><button class="btn btn-sm text-danger" onclick="delNews(${n.id})">X</button></div>`;
+            });
 
-                // Render Buscados
-                const lB = document.getElementById('lista-buscados');
-                lB.innerHTML = '';
-                data.buscados.forEach(b => {
-                    lB.innerHTML += `
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
-                            <div><h6 class="m-0 fw-bold">${b.nombre}</h6><span class="badge bg-danger">${b.peligro}</span></div>
-                            <button class="btn btn-sm text-danger" onclick="eliminarBuscado(${b.id})"><i class="fa-solid fa-circle-minus fa-lg"></i></button>
-                        </div>`;
-                });
+            const lB = document.getElementById('lista-buscados');
+            lB.innerHTML = '';
+            d.buscados.forEach(b => {
+                lB.innerHTML += `<div class="list-group-item d-flex justify-content-between"><div><b>${b.nombre}</b> <span class="badge bg-danger">${b.peligro}</span></div><button class="btn btn-sm text-danger" onclick="delWanted(${b.id})">X</button></div>`;
+            });
 
-                // Render Denuncias
-                const lD = document.getElementById('lista-denuncias-admin');
-                lD.innerHTML = '';
-                data.denuncias.forEach(d => {
-                    lD.innerHTML += `
-                        <div class="denuncia-item">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="fw-bold m-0 text-primary">${d.titulo}</h5>
-                                    <small class="text-muted">Enviado por: ${d.usuario} | ${d.fecha}</small>
-                                </div>
-                                <span class="status-badge bg-warning text-dark">${d.estado_actual}</span>
-                            </div>
-                            <p class="text-dark">${d.descripcion}</p>
-                            ${d.evidencia ? `<img src="${d.evidencia}" class="rounded mb-3" style="max-width: 150px;">` : ''}
-                            <div class="mt-3 pt-3 border-top">
-                                <button class="btn btn-primary btn-sm rounded-pill px-4" onclick="abrirModalEstado(${d.id})">GESTIONAR ESTADO</button>
-                            </div>
-                        </div>`;
-                });
-
-            } catch (err) { console.error("Error al cargar datos:", err); }
+            const lD = document.getElementById('lista-denuncias-admin');
+            lD.innerHTML = '';
+            d.denuncias.forEach(r => {
+                lD.innerHTML += `
+                    <div class="denuncia-card">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div><h5 class="fw-bold m-0 text-primary">${r.titulo}</h5><small>De: ${r.usuario} | ${r.fecha}</small></div>
+                            <span class="status-badge bg-warning text-dark">${r.estado_actual}</span>
+                        </div>
+                        <p class="mb-3">${r.descripcion}</p>
+                        ${r.evidencia ? `<img src="${r.evidencia}" class="rounded mb-3" style="max-width:120px;">` : ''}
+                        <div class="border-top pt-3"><button class="btn btn-primary btn-sm rounded-pill" onclick="openGestion(${r.id})">GESTIONAR HISTORIAL</button></div>
+                    </div>`;
+            });
         }
 
-        function abrirModalEstado(id) {
-            document.getElementById('denuncia-id-actual').value = id;
-            document.getElementById('nuevo-estado-mensaje').value = '';
-            new bootstrap.Modal(document.getElementById('modalEstado')).show();
+        async function openGestion(id) {
+            document.getElementById('current-d-id').value = id;
+            document.getElementById('new-status-msg').value = '';
+            const res = await fetch(`/api/denuncias/estados/${id}`);
+            const data = await res.json();
+            const container = document.getElementById('current-timeline');
+            container.innerHTML = '';
+            data.forEach(e => {
+                container.innerHTML += `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-msg">${e.mensaje}</div><div class="timeline-date">${e.fecha}</div></div>`;
+            });
+            new bootstrap.Modal(document.getElementById('modalGestion')).show();
         }
 
-        async function guardarNuevoEstado() {
-            const id = document.getElementById('denuncia-id-actual').value;
-            const mensaje = document.getElementById('nuevo-estado-mensaje').value;
-            const fecha = new Date().toLocaleString('es-ES');
-
-            if (!mensaje) return alert("Escribe un mensaje de estado.");
+        async function saveStatus() {
+            const id = document.getElementById('current-d-id').value;
+            const msg = document.getElementById('new-status-msg').value;
+            const date = new Date().toLocaleString('es-ES');
+            if(!msg) return alert("Escribe un mensaje");
 
             const res = await fetch('/api/admin/actualizar-estado', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ denuncia_id: id, mensaje, fecha })
+                body: JSON.stringify({ denuncia_id: id, mensaje: msg, fecha: date })
             });
 
-            if (res.ok) {
-                alert("✅ Historial actualizado correctamente.");
-                location.reload();
-            } else {
-                alert("❌ Error al actualizar.");
-            }
+            if(res.ok) { alert("Estado registrado"); location.reload(); }
+            else { alert("Error al actualizar."); }
         }
 
-        async function publicarNoticia() {
+        async function postNoticia() {
             const titular = document.getElementById('n-titulo').value;
             const descripcion = document.getElementById('n-desc').value;
-            const imgElem = document.getElementById('p-noticia');
-            const imagen = imgElem.style.display === 'block' ? imgElem.src : '';
+            const img = document.getElementById('p-news').style.display === 'block' ? document.getElementById('p-news').src : '';
             const fecha = new Date().toLocaleString('es-ES');
-
-            if(!titular || !descripcion) return alert("Completa los campos.");
-
-            const res = await fetch('/api/admin/add-noticia', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titular, descripcion, imagen, fecha })
-            });
-
-            if(res.ok) { alert("Publicada."); location.reload(); }
+            if(!titular || !descripcion) return alert("Completa campos");
+            const res = await fetch('/api/admin/add-noticia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titular, descripcion, imagen: img, fecha }) });
+            if(res.ok) location.reload();
         }
 
-        async function publicarBuscado() {
+        async function postBuscado() {
             const nombre = document.getElementById('b-nombre').value;
             const peligro = document.getElementById('b-peligro').value;
             const hechos = document.getElementById('b-hechos').value;
             const recompensa = document.getElementById('b-recompensa').value;
-            const imgElem = document.getElementById('p-buscado');
-            const imagen = imgElem.style.display === 'block' ? imgElem.src : '';
-
-            if(!nombre || !hechos) return alert("Completa los campos.");
-
-            const res = await fetch('/api/admin/add-buscado', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, peligro, hechos, recompensa, imagen })
-            });
-
-            if(res.ok) { alert("Orden Desplegada."); location.reload(); }
-        }
-
-        async function ejecutarOperacion(url, payload) {
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const img = document.getElementById('p-wanted').style.display === 'block' ? document.getElementById('p-wanted').src : '';
+            if(!nombre || !hechos) return alert("Completa campos");
+            const res = await fetch('/api/admin/add-buscado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, peligro, hechos, recompensa, imagen: img }) });
             if(res.ok) location.reload();
         }
 
-        function hacerAdmin(username) { if(confirm("¿Ascender a Admin?")) ejecutarOperacion('/api/admin/make-admin', { username }); }
-        function eliminarUsuario(username) { if(confirm("¿Eliminar usuario?")) ejecutarOperacion('/api/admin/delete-user', { username }); }
-        function eliminarNoticia(id) { if(confirm("¿Eliminar noticia?")) ejecutarOperacion('/api/admin/delete-noticia', { id }); }
-        function eliminarBuscado(id) { if(confirm("¿Eliminar orden?")) ejecutarOperacion('/api/admin/delete-buscado', { id }); }
-
+        async function op(u, p) { const res = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if(res.ok) location.reload(); }
+        function makeAdmin(username) { if(confirm("¿Ascender?")) op('/api/admin/make-admin', { username }); }
+        function delUser(username) { if(confirm("¿Eliminar?")) op('/api/admin/delete-user', { username }); }
+        function delNews(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-noticia', { id }); }
+        function delWanted(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-buscado', { id }); }
         function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
-
-        window.onload = cargarDatos;
+        window.onload = loadData;
     </script>
 </body>
 </html>
