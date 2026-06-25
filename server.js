@@ -33,6 +33,7 @@ const inicializarBaseDeDatos = async () => {
       CREATE TABLE IF NOT EXISTS noticias (id SERIAL PRIMARY KEY, titular VARCHAR(250) NOT NULL, descripcion TEXT, imagen TEXT, fecha VARCHAR(50));
       CREATE TABLE IF NOT EXISTS denuncias (id SERIAL PRIMARY KEY, usuario VARCHAR(100), titulo VARCHAR(250), descripcion TEXT, evidencia TEXT, fecha VARCHAR(50), estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada');
       CREATE TABLE IF NOT EXISTS estados_denuncias (id SERIAL PRIMARY KEY, denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE, mensaje TEXT, fecha VARCHAR(50));
+      CREATE TABLE IF NOT EXISTS arrestos (id SERIAL PRIMARY KEY, usuario VARCHAR(100), razon TEXT, delito TEXT, tiempo VARCHAR(100), foto TEXT, arrestado_por VARCHAR(100), fecha VARCHAR(50));
     `);
 
     // 2. REPARAR: Asegurar que la columna 'estado_actual' exista (por si la tabla se creó antes)
@@ -150,7 +151,35 @@ app.get('/api/admin/data', async (req, res) => {
     const b = await pool.query('SELECT * FROM buscados ORDER BY id DESC');
     const n = await pool.query('SELECT * FROM noticias ORDER BY id DESC');
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
-    res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows });
+    const a = await pool.query('SELECT * FROM arrestos ORDER BY id DESC');
+    res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows, arrestos: a.rows });
+  } catch (err) { res.status(500).json({ error: "Error" }); }
+});
+
+// --- ARRESTOS ---
+app.post('/api/admin/add-arresto', async (req, res) => {
+  try {
+    const { usuario, razon, delito, tiempo, foto, arrestado_por, fecha } = req.body;
+    if (!usuario || !razon || !delito || !tiempo) return res.status(400).json({ error: "Completa todos los campos." });
+    await pool.query(
+      "INSERT INTO arrestos (usuario, razon, delito, tiempo, foto, arrestado_por, fecha) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [usuario, razon, delito, tiempo, foto || '', arrestado_por, fecha]
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al registrar el arresto" }); }
+});
+
+app.post('/api/admin/delete-arresto', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM arrestos WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error" }); }
+});
+
+app.get('/api/arrestos/mis-antecedentes/:usuario', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM arrestos WHERE usuario = $1 ORDER BY id DESC", [req.params.usuario]);
+    res.json(result.rows);
   } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
