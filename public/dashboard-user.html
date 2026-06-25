@@ -8,44 +8,86 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            --primary: #003366; --secondary: #1d70b8; --accent: #38bdf8;
-            --bg: #f5f5f7; --white: #ffffff; --text: #1d1d1f;
+            --black:    #0a0a0f;
+            --surface:  #111118;
+            --panel:    #16161f;
+            --panel-2:  #1c1c26;
+            --border:   #2a2a3a;
+            --red:      #c0392b;
+            --red-glow: rgba(192, 57, 43, 0.25);
+            --gold:     #f0c040;
+            --gold-dim: rgba(240, 192, 64, 0.15);
+            --text:     #e8e8f0;
+            --muted:    #6b6b80;
+            --mono:     'Courier New', 'Lucida Console', monospace;
+            --radius:   6px;
+
+            /* Alias para compatibilidad con nombres usados originalmente */
+            --primary: #c0392b;
+            --secondary: #f0c040;
+            --accent: #f0c040;
+            --bg: #0a0a0f;
+            --white: #16161f;
         }
 
-        body { background-color: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
+        * { box-sizing: border-box; }
+
+        body { background-color: var(--black); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow-x: hidden; }
 
         /* Sidebar */
-        .sidebar { background-color: var(--primary); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; }
-        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar a { color: #cbd5e1; text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
+        .sidebar { background-color: var(--surface); min-height: 100vh; color: white; position: fixed; width: 260px; z-index: 1000; transition: 0.3s; border-right: 1px solid var(--border); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--border); }
+        .sidebar-header h5 { font-family: var(--mono); letter-spacing: 1px; font-size: 14px; }
+        .sidebar a { color: var(--muted); text-decoration: none; display: flex; align-items: center; padding: 15px 25px; font-size: 15px; border-left: 4px solid transparent; transition: 0.2s; cursor: pointer; }
         .sidebar a i { width: 30px; font-size: 18px; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent); }
+        .sidebar a:hover, .sidebar a.active { background: rgba(192,57,43,0.12); color: var(--gold); border-left-color: var(--red); }
 
         /* Main */
         .main-content { margin-left: 260px; padding: 30px; transition: 0.3s; }
-        .top-bar { background: white; padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar { background: var(--panel); border: 1px solid var(--border); padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar h5 { color: var(--text) !important; }
 
         /* Cards */
-        .card-custom { background: white; border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.02); }
+        .card-custom { background: var(--panel); border-radius: 18px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); margin-bottom: 25px; border: 1px solid var(--border); }
         .tab-content-panel { display: none; animation: fadeIn 0.4s ease; }
         .tab-content-panel.active { display: block; }
 
         /* Forms */
-        .form-label { font-weight: 600; font-size: 13px; color: var(--primary); margin-bottom: 8px; }
-        .form-control { border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
-        .btn-primary { background: var(--primary); border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
+        .form-label { font-weight: 600; font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+        .form-control, .form-select { border-radius: 10px; padding: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+        .form-control:focus { background: var(--surface); color: var(--text); border-color: var(--red); box-shadow: 0 0 0 0.2rem var(--red-glow); }
+        .form-control::placeholder { color: var(--muted); }
+        .btn-primary { background: var(--red); border: none; border-radius: 10px; padding: 12px; font-weight: 600; }
+        .btn-primary:hover { background: #a93224; }
+        .btn-outline-danger { color: var(--red); border-color: var(--red); }
+        .btn-outline-danger:hover { background: var(--red); color: #fff; }
+        .btn-outline-primary { color: var(--gold); border-color: var(--gold); }
+        .btn-outline-primary:hover { background: var(--gold); color: #1d1d1f; }
+        .btn-light { background: var(--gold); border: none; color: #1d1d1f; }
+        .btn-light:hover { background: #e0ab1f; }
+
+        /* Hero card en inicio */
+        .hero-icon { color: var(--red); text-shadow: 0 0 18px var(--red-glow); }
+        .gradient-card { background: linear-gradient(135deg, var(--red), #7a1f15) !important; color: #fff !important; }
+        .gradient-card p { color: rgba(255,255,255,0.85); }
+        .plain-stat-card { background: var(--panel-2) !important; border: 1px solid var(--border) !important; }
+        .plain-stat-card p { color: var(--muted) !important; }
 
         /* Denuncias List */
-        .denuncia-card { border: 1px solid #e2e8f0; border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: white; }
-        .denuncia-card:hover { border-color: var(--secondary); transform: translateY(-2px); }
+        .denuncia-card { border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: var(--panel-2); }
+        .denuncia-card:hover { border-color: var(--red); transform: translateY(-2px); }
         .status-tag { padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 
         /* Timeline */
         .timeline { position: relative; padding: 10px 0; }
-        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 25px; border-left: 2px solid var(--accent); }
-        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid white; }
-        .timeline-box { background: #f1f5f9; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
-        .timeline-date { font-size: 10px; color: #64748b; margin-top: 5px; }
+        .timeline-item { position: relative; padding-left: 35px; margin-bottom: 25px; border-left: 2px solid var(--gold-dim); }
+        .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--red); border-radius: 50%; border: 3px solid var(--panel); }
+        .timeline-box { background: var(--surface); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
+        .timeline-date { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+        .modal-content { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+        .modal-header { border-bottom: 1px solid var(--border) !important; }
+        .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
         /* Responsive */
         @media (max-width: 992px) {
@@ -57,11 +99,11 @@
         }
 
         @media (max-width: 576px) {
-            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; border-top: 1px solid rgba(255,255,255,0.1); }
+            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; border-top: 1px solid var(--border); }
             .sidebar-header { display: none; }
             .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; }
             .sidebar a i { margin-bottom: 4px; }
-            .sidebar a.active { border-top-color: var(--accent); }
+            .sidebar a.active { border-top-color: var(--red); }
             .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; }
             .top-bar { flex-direction: column; gap: 10px; text-align: center; }
         }
@@ -73,7 +115,7 @@
 
     <div class="sidebar shadow">
         <div class="sidebar-header">
-            <h5 class="fw-bold m-0"><i class="fa-solid fa-user-tie text-info me-2"></i><span>PORTAL CIVIL</span></h5>
+            <h5 class="fw-bold m-0"><i class="fa-solid fa-user-tie text-warning me-2"></i><span>PORTAL CIVIL</span></h5>
         </div>
         <div class="sidebar-menu">
             <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
@@ -84,28 +126,28 @@
 
     <div class="main-content">
         <div class="top-bar shadow-sm">
-            <h5 class="m-0 fw-bold text-primary" id="user-greeting">Hola, Ciudadano</h5>
+            <h5 class="m-0 fw-bold" id="user-greeting">Hola, Ciudadano</h5>
             <button class="btn btn-outline-danger btn-sm rounded-pill px-4" onclick="cerrarSesion()">Cerrar Sesión</button>
         </div>
 
         <!-- INICIO -->
         <div id="tab-inicio" class="tab-content-panel active">
             <div class="card-custom text-center p-5">
-                <i class="fa-solid fa-shield-heart fa-5x text-primary mb-4"></i>
+                <i class="fa-solid fa-shield-heart fa-5x mb-4 hero-icon"></i>
                 <h1 class="fw-bold" id="hero-welcome">¡Bienvenido al Portal!</h1>
-                <p class="text-muted fs-5">Tu seguridad y justicia son nuestra prioridad.</p>
+                <p class="fs-5" style="color: var(--muted);">Tu seguridad y justicia son nuestra prioridad.</p>
                 <div class="row mt-5">
                     <div class="col-md-6 mb-3">
-                        <div class="card p-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #003366, #1d70b8); color: white;">
+                        <div class="card gradient-card p-4 border-0 shadow-sm">
                             <h3>Reportar Delito</h3>
                             <p>Envía una denuncia oficial de forma segura.</p>
                             <button class="btn btn-light btn-sm fw-bold rounded-pill" onclick="switchTab('denunciar')">NUEVA DENUNCIA</button>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <div class="card p-4 border-0 shadow-sm">
+                        <div class="card plain-stat-card p-4 border-0 shadow-sm">
                             <h3>Seguimiento</h3>
-                            <p class="text-muted">Revisa el estado de tus trámites enviados.</p>
+                            <p>Revisa el estado de tus trámites enviados.</p>
                             <button class="btn btn-primary btn-sm fw-bold rounded-pill" onclick="switchTab('mis-denuncias')">VER MIS REPORTES</button>
                         </div>
                     </div>
@@ -116,7 +158,7 @@
         <!-- FORMULARIO DENUNCIA -->
         <div id="tab-denunciar" class="tab-content-panel">
             <div class="card-custom mx-auto" style="max-width: 700px;">
-                <h4 class="fw-bold mb-4 text-center">Formulario de Denuncia Oficial</h4>
+                <h4 class="fw-bold mb-4 text-center" style="color: var(--gold);">Formulario de Denuncia Oficial</h4>
                 <div class="mb-3"><label class="form-label">Título del Reporte</label><input type="text" id="d-titulo" class="form-control" placeholder="Ej: Hurto en Comuna 4"></div>
                 <div class="mb-3"><label class="form-label">Descripción de los Hechos</label><textarea id="d-desc" class="form-control" rows="6" placeholder="Detalla lugar, hora y lo sucedido..."></textarea></div>
                 <div class="mb-3"><label class="form-label">Evidencia Fotográfica (Opcional)</label><input type="file" id="d-file" class="form-control" accept="image/*" onchange="preview(this, 'p-denuncia')"><img id="p-denuncia" style="display:none; width:100%; margin-top:15px; border-radius:15px; max-height:300px; object-fit:cover;"></div>
@@ -127,7 +169,7 @@
         <!-- MIS DENUNCIAS -->
         <div id="tab-mis-denuncias" class="tab-content-panel">
             <div class="card-custom">
-                <h4 class="fw-bold mb-4">Seguimiento de mis Denuncias</h4>
+                <h4 class="fw-bold mb-4" style="color: var(--gold);">Seguimiento de mis Denuncias</h4>
                 <div id="lista-mis-denuncias" class="row"></div>
             </div>
         </div>
@@ -191,7 +233,7 @@
             container.innerHTML = '';
 
             if(data.length === 0) {
-                container.innerHTML = '<div class="text-center p-5 text-muted">Aún no has enviado ninguna denuncia.</div>';
+                container.innerHTML = '<div class="text-center p-5" style="color: var(--muted);">Aún no has enviado ninguna denuncia.</div>';
                 return;
             }
 
@@ -200,10 +242,10 @@
                     <div class="col-md-6 mb-3">
                         <div class="denuncia-card h-100">
                             <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h6 class="fw-bold m-0 text-primary">${d.titulo}</h6>
+                                <h6 class="fw-bold m-0" style="color: var(--gold);">${d.titulo}</h6>
                                 <span class="status-tag bg-warning text-dark">${d.estado_actual}</span>
                             </div>
-                            <p class="small text-muted mb-3">${d.descripcion.substring(0, 120)}...</p>
+                            <p class="small mb-3" style="color: var(--muted);">${d.descripcion.substring(0, 120)}...</p>
                             <button class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold" onclick="showHistory(${d.id})">VER HISTORIAL DE ESTADOS</button>
                         </div>
                     </div>`;
@@ -220,7 +262,7 @@
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
                         <div class="timeline-box">
-                            <div class="fw-bold text-primary" style="font-size:13px;">${e.mensaje}</div>
+                            <div class="fw-bold" style="font-size:13px; color: var(--gold);">${e.mensaje}</div>
                             <div class="timeline-date">${e.fecha}</div>
                         </div>
                     </div>`;
