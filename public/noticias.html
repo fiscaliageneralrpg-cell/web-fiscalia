@@ -3,88 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noticias - Fiscalía General de la Nación</title>
+    <title>Noticias — Base de datos Colombia RPG</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --blue-dark: #003366; --blue-light: #1d70b8; --bg-apple: #f5f5f7;
-            --text-dark: #1d1d1f; --text-muted: #86868b; --white: #ffffff; --radius: 14px;        
+            --black:  #0a0a0f; --surface: #111118; --panel: #16161f;
+            --border: #2a2a3a; --red: #c0392b; --red-glow: rgba(192,57,43,0.25);
+            --gold: #f0c040; --text: #e8e8f0; --muted: #6b6b80;
+            --mono: 'Courier New', monospace; --radius: 6px;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        html { -webkit-text-size-adjust: 100%; }
-        body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; width: 100%; overflow-x: hidden; }
-        
-        .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--black); color: var(--text); padding-top: 54px; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+        /* NAVBAR */
+        .navbar { background: rgba(10,10,15,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid var(--border); }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
         .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; }
-        .logo-img { height: 36px; flex-shrink: 0; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
-        .logo-text { min-width: 0; overflow: hidden; }
-        .logo-text strong { color: var(--white); font-size: 15px; display: block; white-space: nowrap; }
-        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .nav-menu { display: flex; list-style: none; gap: 28px; }
-        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; white-space: nowrap; }
-        .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
-        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+        .logo-badge { width: 36px; height: 36px; flex-shrink: 0; background: linear-gradient(135deg, var(--red), #8b1a12); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--gold); }
+        .logo-text strong { color: var(--text); font-size: 13px; font-family: var(--mono); letter-spacing: 1px; display: block; white-space: nowrap; }
+        .logo-text span { font-size: 9px; display: block; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+        .nav-menu { display: flex; list-style: none; gap: 24px; }
+        .nav-menu a { color: var(--muted); text-decoration: none; font-size: 12px; font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; transition: color 0.2s; }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--gold); }
+        .btn-login { background: transparent; border: 1px solid var(--red); color: var(--red); padding: 6px 16px; border-radius: var(--radius); text-decoration: none; font-size: 11px; font-weight: 600; font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; white-space: nowrap; }
+        .btn-login:hover { background: var(--red); color: var(--text); }
+        .nav-toggle { display: none; background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; padding: 6px 8px; }
 
-        .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 20px; cursor: pointer; padding: 6px 10px; }
+        /* CONTENT */
+        .container { max-width: 1100px; margin: 0 auto; padding: 60px 24px 80px; flex: 1; }
+        .page-header { text-align: center; margin-bottom: 52px; }
+        .page-header h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 700; letter-spacing: -1px; margin-bottom: 12px; }
+        .page-header p { color: var(--muted); font-size: 16px; }
 
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; flex: 1; width: 100%; }
-        .page-header { text-align: center; margin-bottom: 40px; }
-        .page-title { font-size: clamp(24px, 5vw, 32px); font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
-        .page-subtitle { font-size: clamp(14px, 2.5vw, 16px); color: var(--text-muted); padding: 0 10px; }
-        
-        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 20px; }
-        .news-card { background: var(--white); border-radius: var(--radius); padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: transform 0.2s; }
-        .news-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
-        .news-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--blue-light); }
-        
-        .news-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
-        .news-icon { color: var(--blue-light); font-size: 22px; background: #eef4fa; padding: 10px; border-radius: 10px; flex-shrink: 0; }
-        .news-badge { display: inline-block; background: #eef4fa; color: var(--blue-light); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin-bottom: 6px; text-transform: uppercase; }
-        .news-title { font-size: 17px; font-weight: 600; color: var(--text-dark); line-height: 1.4; word-break: break-word; }
-        
-        .news-footer { border-top: 1px solid #f2f2f7; margin-top: 16px; padding-top: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
-        .read-more { color: var(--blue-light); font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; background: none; border: none; font-size: 13px; }
+        /* GRID */
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 
-        .single-news-view { display: none; background: var(--white); border-radius: var(--radius); padding: 40px; box-shadow: 0 4px 25px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03); max-width: 800px; margin: 0 auto; width: 100%; }
-        .single-news-view.active { display: block; }
-        .btn-back { background: #eef4fa; color: var(--blue-dark); border: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-        .full-news-img { width: 100%; max-height: 440px; object-fit: contain; background-color: #f5f5f7; border-radius: 10px; margin: 20px 0; display: none; border: 1px solid rgba(0,0,0,0.05); }
-        .full-news-body { font-size: 16px; line-height: 1.7; color: #3a3a3c; white-space: pre-line; word-break: break-word; }
+        .news-card {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 18px; padding: 28px 26px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            transition: all 0.25s; cursor: pointer;
+        }
+        .news-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-4px); background: #1c1c26; }
 
-        .loading, .empty { text-align: center; padding: 60px 0; grid-column: 1 / -1; color: var(--text-muted); }
-        .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(29, 112, 184, 0.1); border-radius: 50%; border-top-color: var(--blue-light); animation: spin 1s infinite; margin-bottom: 12px; }
+        .news-icon-wrap { width: 44px; height: 44px; background: rgba(192,57,43,0.1); border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+        .news-icon-wrap i { font-size: 18px; color: var(--red); }
+        .news-badge { display: inline-block; background: rgba(192,57,43,0.12); color: var(--red); font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .news-title { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.45; }
+
+        .news-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+        .read-more { color: var(--red); font-weight: 600; font-size: 12px; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; transition: gap 0.2s; }
+        .news-card:hover .read-more { gap: 8px; }
+
+        /* SINGLE VIEW */
+        .single-view { display: none; max-width: 740px; margin: 0 auto; }
+        .single-view.active { display: block; }
+        .btn-back { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); padding: 8px 18px; border-radius: 980px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 32px; font-family: inherit; transition: background 0.2s; }
+        .btn-back:hover { background: rgba(255,255,255,0.1); }
+        .full-badge { display: inline-block; background: rgba(192,57,43,0.12); color: var(--red); font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+        #full-news-title { font-size: clamp(22px, 4vw, 32px); font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
+        #full-news-date { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+        .full-news-img { width: 100%; max-height: 420px; object-fit: contain; background: var(--panel); border-radius: 14px; margin: 0 0 28px; display: none; border: 1px solid var(--border); }
+        .full-news-body { font-size: 16px; line-height: 1.75; color: rgba(232,232,240,0.75); white-space: pre-line; }
+
+        /* STATES */
+        .loading, .empty { text-align: center; padding: 80px 0; grid-column: 1/-1; color: var(--muted); }
+        .spinner { display: inline-block; width: 28px; height: 28px; border: 2px solid var(--border); border-radius: 50%; border-top-color: var(--red); animation: spin 1s infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===== RESPONSIVE ===== */
+        footer { text-align: center; padding: 28px 20px; color: rgba(255,255,255,0.2); font-size: 13px; border-top: 1px solid var(--border); }
+
         @media (max-width: 768px) {
-            .nav-menu {
-                position: fixed; top: 54px; left: 0; right: 0;
-                background-color: #003366f2; backdrop-filter: blur(20px);
-                flex-direction: column; gap: 0;
-                max-height: 0; overflow: hidden;
-                transition: max-height 0.3s ease;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-            }
-            .nav-menu.open { max-height: 320px; }
+            .nav-menu { position: fixed; top: 54px; left: 0; right: 0; background: rgba(10,10,15,0.97); flex-direction: column; gap: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; border-bottom: 1px solid var(--border); }
+            .nav-menu.open { max-height: 300px; }
             .nav-menu li { width: 100%; }
-            .nav-menu a { display: block; padding: 14px 20px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .nav-menu a { display: block; padding: 14px 20px; border-bottom: 1px solid var(--border); }
             .nav-toggle { display: block; }
             .logo-text span { display: none; }
-            .nav-container { padding: 0 16px; }
         }
-
         @media (max-width: 600px) {
-            .container { padding: 0 14px; margin: 24px auto; }
-            .news-grid { grid-template-columns: 1fr; gap: 16px; }
-            .news-card { padding: 22px; }
-            .single-news-view { padding: 24px 18px; }
-            .full-news-body { font-size: 15px; }
-        }
-
-        @media (max-width: 380px) {
-            .logo-text strong { font-size: 13px; }
-            .btn-login { padding: 5px 12px; font-size: 12px; }
+            .container { padding: 40px 16px 60px; }
+            .news-grid { grid-template-columns: 1fr; }
+            .news-card { padding: 22px 20px; }
         }
     </style>
 </head>
@@ -92,124 +92,99 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo" onclick="window.location.href='/index.html'">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
-                <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
+                <div class="logo-badge"><i class="fa-solid fa-database"></i></div>
+                <div class="logo-text">
+                    <strong>BASE DE DATOS COLOMBIA RPG</strong>
+                    <span>SISTEMA INTEGRADO CRIMINAL // ACCESO RESTRINGIDO</span>
+                </div>
             </div>
             <ul class="nav-menu" id="navMenu">
                 <li><a href="/index.html">Inicio</a></li>
                 <li><a href="/buscados.html">Buscados</a></li>
                 <li><a href="/noticias.html" class="active">Noticias</a></li>
             </ul>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
                 <a href="/iniciar-sesion.html" class="btn-login">Acceder</a>
-                <button class="nav-toggle" id="navToggle" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+                <button class="nav-toggle" id="navToggle"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </nav>
 
     <div class="container">
-        <div id="vista-lista-noticias">
+        <div id="vista-lista">
             <div class="page-header">
-                <h1 class="page-title">Boletines y Prensa Oficial</h1>
-                <p class="page-subtitle">Comunicados e informativos emitidos por los despachos fiscales de la nación.</p>
+                <h1>Boletines y prensa oficial</h1>
+                <p>Comunicados e informativos emitidos por los despachos fiscales.</p>
             </div>
             <div class="news-grid" id="contenedor-noticias">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Sincronizando comunicados oficiales...</p>
-                </div>
+                <div class="loading"><div class="spinner"></div><p>Sincronizando comunicados...</p></div>
             </div>
         </div>
 
-        <div id="vista-noticia-completa" class="single-news-view">
-            <button class="btn-back" onclick="mostrarListaNoticias()"><i class="fa-solid fa-arrow-left"></i> Volver a las noticias</button>
-            <span class="news-badge">Comunicado Oficial</span>
-            <h1 id="full-news-title" class="page-title" style="text-align: left; margin-top: 10px; font-size: clamp(20px, 5vw, 28px);"></h1>
-            <p id="full-news-date" style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;"></p>
-            <img id="full-news-image" class="full-news-img" src="" alt="Imagen del caso">
+        <div id="vista-completa" class="single-view">
+            <button class="btn-back" onclick="mostrarLista()"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+            <span class="full-badge">Comunicado oficial</span>
+            <h1 id="full-news-title"></h1>
+            <p id="full-news-date"></p>
+            <img id="full-news-image" class="full-news-img" src="" alt="">
             <p id="full-news-text" class="full-news-body"></p>
         </div>
     </div>
 
+    <footer><p>Copyright &copy; 2026 Base de datos Colombia RPG</p></footer>
+
     <script>
         const navToggle = document.getElementById('navToggle');
         const navMenu = document.getElementById('navMenu');
-        navToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('open');
-        });
+        navToggle.addEventListener('click', () => navMenu.classList.toggle('open'));
+        window.addEventListener('resize', () => { if(window.innerWidth > 768) navMenu.classList.remove('open'); });
 
         let noticiasCache = [];
 
         async function cargarNoticias() {
             try {
-                const response = await fetch('/api/admin/data');
-                const data = await response.json();
-                noticiasCache = data.noticias; 
-                
-                const contenedor = document.getElementById('contenedor-noticias');
-                contenedor.innerHTML = '';
-
+                const data = await (await fetch('/api/admin/data')).json();
+                noticiasCache = data.noticias;
+                const c = document.getElementById('contenedor-noticias');
+                c.innerHTML = '';
                 if (!noticiasCache || noticiasCache.length === 0) {
-                    contenedor.innerHTML = `
-                        <div class="empty">
-                            <i class="fa-solid fa-folder-open" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
-                            <p>No se registran comunicados emitidos el día de hoy.</p>
-                        </div>`;
+                    c.innerHTML = '<div class="empty"><i class="fa-solid fa-folder-open" style="font-size:36px;margin-bottom:12px;display:block"></i><p>No hay comunicados registrados.</p></div>';
                     return;
                 }
-
-                noticiasCache.forEach((noticia, index) => {
-                    // Si no tiene fecha en BD usa una por defecto legible
-                    const fechaAMostrar = noticia.fecha || "Reciente";
-                    contenedor.innerHTML += `
-                        <div class="news-card">
-                            <div>
-                                <div class="news-header">
-                                    <i class="fa-solid fa-bullhorn news-icon"></i>
-                                    <div>
-                                        <span class="news-badge">Oficial</span>
-                                        <h3 class="news-title">${noticia.titular}</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="news-footer">
-                                <span><i class="fa-regular fa-clock"></i> ${fechaAMostrar}</span>
-                                <button class="read-more" onclick="verNoticiaCompleta(${index})">Ver boletín <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></button>
-                            </div>
-                        </div>`;
+                noticiasCache.forEach((n, i) => {
+                    c.innerHTML += `
+                    <div class="news-card" onclick="verCompleta(${i})">
+                        <div>
+                            <div class="news-icon-wrap"><i class="fa-solid fa-bullhorn"></i></div>
+                            <span class="news-badge">Oficial</span>
+                            <h3 class="news-title">${n.titular}</h3>
+                        </div>
+                        <div class="news-footer">
+                            <span><i class="fa-regular fa-clock"></i> ${n.fecha || 'Reciente'}</span>
+                            <button class="read-more">Ver boletín <i class="fa-solid fa-chevron-right" style="font-size:10px"></i></button>
+                        </div>
+                    </div>`;
                 });
-            } catch (error) {
-                document.getElementById('contenedor-noticias').innerHTML = `<div class="empty"><p style="color: #dc3545;">Error al cargar el canal de noticias.</p></div>`;
+            } catch {
+                document.getElementById('contenedor-noticias').innerHTML = '<div class="empty"><p style="color:var(--red)">Error al cargar noticias.</p></div>';
             }
         }
 
-        function verNoticiaCompleta(index) {
-            const noticia = noticiasCache[index];
-            if(!noticia) return;
-
-            document.getElementById('full-news-title').innerText = noticia.titular;
-            document.getElementById('full-news-date').innerHTML = `<i class="fa-solid fa-calendar-day"></i> Fecha de emisión: <b>${noticia.fecha || 'No registrada'}</b>`;
-            
-            // Corrige la lectura de las propiedades desde la API
-            document.getElementById('full-news-text').innerText = noticia.descripcion || noticia.desc || "No se ha anexado descripción ampliada para este boletín de prensa judicial.";
-            
-            const imgElement = document.getElementById('full-news-image');
-            const urlImagen = noticia.imagen || noticia.img;
-            if (urlImagen && urlImagen.trim() !== "") {
-                imgElement.src = urlImagen;
-                imgElement.style.display = "block";
-            } else {
-                imgElement.style.display = "none";
-            }
-
-            document.getElementById('vista-lista-noticias').style.display = "none";
-            document.getElementById('vista-noticia-completa').classList.add('active');
+        function verCompleta(i) {
+            const n = noticiasCache[i];
+            document.getElementById('full-news-title').innerText = n.titular;
+            document.getElementById('full-news-date').innerHTML = `<i class="fa-solid fa-calendar-day"></i> ${n.fecha || 'Fecha no registrada'}`;
+            document.getElementById('full-news-text').innerText = n.descripcion || 'Sin descripción.';
+            const img = document.getElementById('full-news-image');
+            if (n.imagen && n.imagen.trim()) { img.src = n.imagen; img.style.display = 'block'; } else { img.style.display = 'none'; }
+            document.getElementById('vista-lista').style.display = 'none';
+            document.getElementById('vista-completa').classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function mostrarListaNoticias() {
-            document.getElementById('vista-noticia-completa').classList.remove('active');
-            document.getElementById('vista-lista-noticias').style.display = "block";
+        function mostrarLista() {
+            document.getElementById('vista-completa').classList.remove('active');
+            document.getElementById('vista-lista').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
