@@ -97,6 +97,20 @@
         .modal-header { border-bottom: 1px solid var(--border) !important; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
+        .btn-outline-warning { color: var(--gold); border-color: var(--gold); }
+        .btn-outline-warning:hover { background: var(--gold); color: #1d1d1f; }
+        .btn-success { background: #2e7d4f; border: none; }
+        .btn-success:hover { background: #256a40; }
+
+        /* Tarjetas de arresto */
+        .arresto-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+        .arresto-card:hover { border-color: var(--red); transform: translateY(-3px); }
+        .arresto-card .arresto-foto { width: 100%; height: 160px; object-fit: cover; background: var(--surface); }
+        .arresto-card .arresto-foto-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--muted); font-size: 36px; }
+        .arresto-card .arresto-info { padding: 14px; }
+        .arresto-card .arresto-info h6 { color: var(--gold); font-weight: 700; margin: 0; }
+        .arresto-card .arresto-info small { color: var(--muted); }
+
         @media (max-width: 992px) { .sidebar { width: 80px; } .sidebar-header span, .sidebar a span { display: none; } .main-content { margin-left: 80px; padding: 15px; } .sidebar a { justify-content: center; padding: 20px; } }
         @media (max-width: 576px) { .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; } .sidebar-header { display: none; } .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; } .sidebar a.active { border-top-color: var(--red); } .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; } .top-bar { flex-direction: column; gap: 10px; text-align: center; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -112,6 +126,7 @@
             <a onclick="switchTab('noticias')" id="link-noticias"><i class="fa-solid fa-newspaper"></i><span>Noticias</span></a>
             <a onclick="switchTab('buscados')" id="link-buscados"><i class="fa-solid fa-user-ninja"></i><span>Buscados</span></a>
             <a onclick="switchTab('denuncias')" id="link-denuncias"><i class="fa-solid fa-file-shield"></i><span>Denuncias</span></a>
+            <a onclick="switchTab('arrestos')" id="link-arrestos"><i class="fa-solid fa-handcuffs"></i><span>Arrestos</span></a>
         </div>
     </div>
 
@@ -167,6 +182,60 @@
         </div>
 
         <div id="tab-denuncias" class="tab-content-panel"><div class="card-custom"><h4>Seguimiento Judicial</h4><div id="lista-denuncias-admin"></div></div></div>
+
+        <div id="tab-arrestos" class="tab-content-panel">
+            <div class="card-custom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="m-0">Base de Datos de Arrestos</h4>
+                    <button class="btn btn-danger rounded-circle" style="width:42px;height:42px;" onclick="abrirNuevoArresto()" title="Agregar arresto"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div id="grid-arrestos" class="row mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VER INFO COMPLETA USUARIO -->
+    <div class="modal fade" id="modalInfoUsuario" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 p-4"><h5 class="fw-bold m-0">Información Completa del Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <div class="row" id="info-usuario-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO ARRESTO -->
+    <div class="modal fade" id="modalNuevoArresto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 p-4"><h5 class="fw-bold m-0">Registrar Arresto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario a arrestar</label>
+                        <select id="ar-usuario" class="form-select">
+                            <option value="" disabled selected>Selecciona un usuario registrado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Razón del arresto</label><textarea id="ar-razon" class="form-control" rows="2" placeholder="Ej: Resistencia a la autoridad..."></textarea></div>
+                    <div class="mb-3"><label class="form-label">Delito</label><input type="text" id="ar-delito" class="form-control" placeholder="Ej: Hurto calificado"></div>
+                    <div class="mb-3"><label class="form-label">Tiempo de arresto</label><input type="text" id="ar-tiempo" class="form-control" placeholder="Ej: 15 minutos / 2 días"></div>
+                    <div class="mb-3"><label class="form-label">Foto del sospechoso</label><input type="file" id="ar-file" class="form-control" accept="image/*" onchange="preview(this, 'p-arresto')"><img id="p-arresto" style="display:none; width:100%; margin-top:10px; border-radius:10px;"></div>
+                    <button class="btn btn-danger w-100 py-2" onclick="postArresto()">ACEPTAR Y REGISTRAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE ARRESTO -->
+    <div class="modal fade" id="modalDetalleArresto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 p-4"><h5 class="fw-bold m-0">Ficha de Arresto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4" id="detalle-arresto-body"></div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" id="modalGestion" tabindex="-1">
@@ -227,7 +296,8 @@
                 document.getElementById('c-reports').innerText = d.denuncias.length;
 
                 const tU = document.getElementById('tabla-usuarios'); tU.innerHTML = '';
-                d.users.forEach(u => { tU.innerHTML += `<tr><td>${u.username}</td><td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role}</span></td><td>${u.role === 'user' ? `<button class="btn btn-sm btn-success" onclick="makeAdmin('${u.username}')">Ascender</button>` : ''} <button class="btn btn-sm btn-outline-danger" onclick="delUser('${u.username}')">X</button></td></tr>`; });
+                window.__usersCache = d.users;
+                d.users.forEach(u => { tU.innerHTML += `<tr><td>${u.username}</td><td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role}</span></td><td><button class="btn btn-sm btn-outline-warning" onclick="verInfoUsuario('${u.username}')"><i class="fa-solid fa-eye"></i> Ver información completa</button> ${u.role === 'user' ? `<button class="btn btn-sm btn-success" onclick="makeAdmin('${u.username}')">Ascender</button>` : ''} <button class="btn btn-sm btn-outline-danger" onclick="delUser('${u.username}')">X</button></td></tr>`; });
 
                 const lN = document.getElementById('lista-noticias'); lN.innerHTML = '';
                 d.noticias.forEach(n => { lN.innerHTML += `<div class="list-group-item d-flex justify-content-between"><div><b>${n.titular}</b><br><small>${n.fecha}</small></div><button class="btn btn-sm text-danger" onclick="delNews(${n.id})">X</button></div>`; });
@@ -239,6 +309,25 @@
                 d.denuncias.forEach(r => {
                     lD.innerHTML += `<div class="denuncia-card"><div class="d-flex justify-content-between align-items-start mb-3"><div><h5 class="fw-bold m-0" style="color: var(--gold);">${r.titulo}</h5><small>De: ${r.usuario} | ${r.fecha}</small></div><span class="status-badge bg-warning text-dark">${r.estado_actual}</span></div><p class="mb-3">${r.descripcion}</p>${r.evidencia ? `<img src="${r.evidencia}" class="rounded mb-3" style="max-width:120px;">` : ''}<div class="border-top pt-3" style="border-color: var(--border) !important;"><button class="btn btn-primary btn-sm rounded-pill" onclick="openGestion(${r.id})">GESTIONAR</button></div></div>`;
                 });
+
+                window.__arrestosCache = d.arrestos || [];
+                const gA = document.getElementById('grid-arrestos'); gA.innerHTML = '';
+                if (window.__arrestosCache.length === 0) {
+                    gA.innerHTML = '<div class="text-center p-5" style="color: var(--muted);">Aún no hay arrestos registrados.</div>';
+                } else {
+                    window.__arrestosCache.forEach(a => {
+                        gA.innerHTML += `
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="arresto-card" onclick="verDetalleArresto(${a.id})">
+                                    ${a.foto ? `<img src="${a.foto}" class="arresto-foto">` : `<div class="arresto-foto-placeholder"><i class="fa-solid fa-user-large"></i></div>`}
+                                    <div class="arresto-info">
+                                        <h6>${a.usuario}</h6>
+                                        <small>${a.fecha}</small>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                }
             } catch(e) { console.error(e); }
         }
 
@@ -289,6 +378,77 @@
         function delUser(username) { if(confirm("¿Eliminar?")) op('/api/admin/delete-user', { username }); }
         function delNews(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-noticia', { id }); }
         function delWanted(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-buscado', { id }); }
+        function verInfoUsuario(username) {
+            const u = (window.__usersCache || []).find(x => x.username === username);
+            if (!u) return;
+            const body = document.getElementById('info-usuario-body');
+            body.innerHTML = `
+                <div class="col-md-6 mb-3"><span class="ficha-label">Nombre completo</span><div class="ficha-value">${u.nombre_completo || '—'}</div></div>
+                <div class="col-md-3 mb-3"><span class="ficha-label">Sexo</span><div class="ficha-value">${u.sexo || '—'}</div></div>
+                <div class="col-md-3 mb-3"><span class="ficha-label">Nacionalidad</span><div class="ficha-value">${u.nacionalidad || '—'}</div></div>
+                <div class="col-md-4 mb-3"><span class="ficha-label">Lugar de nacimiento</span><div class="ficha-value">${u.lugar_nacimiento || '—'}</div></div>
+                <div class="col-md-4 mb-3"><span class="ficha-label">Fecha de nacimiento</span><div class="ficha-value">${u.fecha_nacimiento || '—'}</div></div>
+                <div class="col-md-4 mb-3"><span class="ficha-label">Cédula</span><div class="ficha-value">${u.cedula || '—'}</div></div>
+                <div class="col-md-6 mb-3"><span class="ficha-label">Usuario de Roblox</span><div class="ficha-value">${u.roblox_user || '—'}</div></div>
+                <div class="col-md-6 mb-3"><span class="ficha-label">Correo (usuario)</span><div class="ficha-value">${u.username || '—'}</div></div>
+                <div class="col-md-6 mb-3"><span class="ficha-label">Rango</span><div class="ficha-value">${u.role || '—'}</div></div>`;
+            new bootstrap.Modal(document.getElementById('modalInfoUsuario')).show();
+        }
+
+        function abrirNuevoArresto() {
+            document.getElementById('ar-razon').value = '';
+            document.getElementById('ar-delito').value = '';
+            document.getElementById('ar-tiempo').value = '';
+            document.getElementById('p-arresto').style.display = 'none';
+            document.getElementById('p-arresto').src = '';
+            const sel = document.getElementById('ar-usuario');
+            sel.innerHTML = '<option value="" disabled selected>Selecciona un usuario registrado</option>';
+            (window.__usersCache || []).forEach(u => {
+                sel.innerHTML += `<option value="${u.username}">${u.nombre_completo ? u.nombre_completo + ' — ' : ''}${u.username}</option>`;
+            });
+            new bootstrap.Modal(document.getElementById('modalNuevoArresto')).show();
+        }
+
+        async function postArresto() {
+            const usuario = document.getElementById('ar-usuario').value;
+            const razon = document.getElementById('ar-razon').value;
+            const delito = document.getElementById('ar-delito').value;
+            const tiempo = document.getElementById('ar-tiempo').value;
+            const foto = document.getElementById('p-arresto').style.display === 'block' ? document.getElementById('p-arresto').src : '';
+            const fecha = new Date().toLocaleString('es-ES');
+            if (!usuario || !razon || !delito || !tiempo) return alert("Completa todos los campos.");
+
+            try {
+                const res = await fetch('/api/admin/add-arresto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, razon, delito, tiempo, foto, arrestado_por: user.username, fecha })
+                });
+                if (res.ok) { alert("Arresto registrado correctamente."); location.reload(); }
+                else { const r = await res.json(); alert("❌ Error: " + (r.error || "Desconocido")); }
+            } catch (e) { alert("❌ Error de conexión: " + e.message); }
+        }
+
+        function verDetalleArresto(id) {
+            const a = (window.__arrestosCache || []).find(x => x.id === id);
+            if (!a) return;
+            const body = document.getElementById('detalle-arresto-body');
+            body.innerHTML = `
+                ${a.foto ? `<img src="${a.foto}" class="rounded mb-3" style="width:100%; max-height:260px; object-fit:cover;">` : ''}
+                <div class="row">
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Usuario arrestado</span><div class="ficha-value">${a.usuario}</div></div>
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Tiempo de arresto</span><div class="ficha-value">${a.tiempo}</div></div>
+                    <div class="col-md-12 mb-3"><span class="ficha-label">Delito</span><div class="ficha-value">${a.delito}</div></div>
+                    <div class="col-md-12 mb-3"><span class="ficha-label">Razón</span><div class="ficha-value">${a.razon}</div></div>
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Arrestado por</span><div class="ficha-value">${a.arrestado_por || '—'}</div></div>
+                    <div class="col-md-6 mb-3"><span class="ficha-label">Fecha</span><div class="ficha-value">${a.fecha}</div></div>
+                </div>
+                <button class="btn btn-outline-danger w-100" onclick="delArresto(${a.id})"><i class="fa-solid fa-trash me-1"></i> Eliminar arresto</button>`;
+            new bootstrap.Modal(document.getElementById('modalDetalleArresto')).show();
+        }
+
+        function delArresto(id) { if(confirm("¿Eliminar este arresto?")) op('/api/admin/delete-arresto', { id }); }
+
         function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
         window.onload = loadData;
     </script>
