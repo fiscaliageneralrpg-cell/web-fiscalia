@@ -3,93 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin - Fiscalía</title>
+    <title>Panel Administrativo Superior - Fiscalía General</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        body { background-color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .sidebar { background-color: #003366; min-height: 100vh; color: white; position: fixed; width: 240px; }
-        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 14px 20px; font-size: 14px; transition: 0.2s; cursor: pointer; }
-        .sidebar a:hover, .sidebar a.active { background-color: #1d70b8; color: white; border-left: 4px solid #38bdf8; }
-        .main-content { margin-left: 240px; padding: 24px; }
-        .card-custom { border: none; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); background: white; margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.03); }
-        .tab-content-panel { display: none; }
+        :root {
+            --primary-color: #003366;
+            --secondary-color: #1d70b8;
+            --accent-color: #38bdf8;
+            --bg-light: #f5f5f7;
+            --text-dark: #1d1d1f;
+            --white: #ffffff;
+        }
+
+        body { 
+            background-color: var(--bg-light); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Responsiva */
+        .sidebar { 
+            background-color: var(--primary-color); 
+            min-height: 100vh; 
+            color: white; 
+            position: fixed; 
+            width: 260px; 
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 25px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .sidebar a { 
+            color: #cbd5e1; 
+            text-decoration: none; 
+            display: flex;
+            align-items: center;
+            padding: 14px 25px; 
+            font-size: 15px; 
+            transition: 0.2s; 
+            cursor: pointer; 
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar a i { width: 25px; font-size: 18px; margin-right: 10px; }
+
+        .sidebar a:hover, .sidebar a.active { 
+            background-color: rgba(255,255,255,0.1); 
+            color: white; 
+            border-left: 4px solid var(--accent-color); 
+        }
+
+        /* Contenido Principal */
+        .main-content { 
+            margin-left: 260px; 
+            padding: 30px; 
+            transition: all 0.3s ease;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-custom { 
+            border: none; 
+            border-radius: 18px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04); 
+            background: white; 
+            margin-bottom: 25px; 
+            padding: 25px;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .form-label { font-weight: 600; color: var(--primary-color); font-size: 14px; }
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        .btn-primary { background: var(--primary-color); border: none; padding: 12px; border-radius: 10px; font-weight: 600; }
+        .btn-danger { background: #dc2626; border: none; padding: 12px; border-radius: 10px; font-weight: 600; }
+
+        .tab-content-panel { display: none; animation: fadeIn 0.4s ease; }
         .tab-content-panel.active { display: block; }
+
+        .preview-img-box { 
+            max-width: 100%; 
+            max-height: 200px; 
+            object-fit: cover; 
+            border-radius: 12px; 
+            margin-top: 15px; 
+            display: none; 
+            border: 2px dashed #cbd5e1; 
+        }
+
+        /* Estilos de Denuncias */
+        .denuncia-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: 0.2s;
+        }
+        .denuncia-item:hover { border-color: var(--secondary-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar { width: 80px; }
+            .sidebar-header h5, .sidebar a span { display: none; }
+            .main-content { margin-left: 80px; padding: 15px; }
+            .sidebar a { justify-content: center; padding: 20px; }
+            .sidebar a i { margin: 0; }
+        }
+
+        @media (max-width: 576px) {
+            .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 60px; flex-direction: row; display: flex; }
+            .sidebar-header { display: none; }
+            .sidebar-menu { display: flex; width: 100%; justify-content: space-around; padding: 0; }
+            .sidebar a { border-left: none; border-top: 4px solid transparent; padding: 10px; }
+            .sidebar a.active { border-left: none; border-top: 4px solid var(--accent-color); }
+            .main-content { margin-left: 0; margin-bottom: 70px; padding: 10px; }
+            .top-bar { flex-direction: column; gap: 10px; text-align: center; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div class="sidebar shadow-sm">
-        <div class="p-4 text-center border-bottom border-secondary border-opacity-25">
-            <h5 class="fw-bold m-0"><i class="fa-solid fa-user-shield me-2 text-info"></i>ADMIN FISCALÍA</h5>
+    <!-- SIDEBAR -->
+    <div class="sidebar shadow">
+        <div class="sidebar-header">
+            <h5 class="fw-bold m-0"><i class="fa-solid fa-shield-halved text-info me-2"></i><span>FISCALÍA GN</span></h5>
         </div>
-        <div class="py-3">
-            <a onclick="switchTab('consola')" id="link-consola" class="active"><i class="fa-solid fa-chart-line me-2"></i>Inicio</a>
-            <a onclick="switchTab('usuarios')" id="link-usuarios"><i class="fa-solid fa-users me-2"></i>Usuarios</a>
-            <a onclick="switchTab('noticias')" id="link-noticias"><i class="fa-solid fa-bullhorn me-2"></i>Noticias</a>
-            <a onclick="switchTab('buscados')" id="link-buscados"><i class="fa-solid fa-gavel me-2"></i>Buscados</a>
-            <a onclick="switchTab('denuncias')" id="link-denuncias"><i class="fa-solid fa-folder-open me-2"></i>Denuncias</a>
+        <div class="sidebar-menu">
+            <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
+            <a onclick="switchTab('usuarios')" id="link-usuarios"><i class="fa-solid fa-users-gear"></i><span>Usuarios</span></a>
+            <a onclick="switchTab('noticias')" id="link-noticias"><i class="fa-solid fa-newspaper"></i><span>Noticias</span></a>
+            <a onclick="switchTab('buscados')" id="link-buscados"><i class="fa-solid fa-person-military-pointing"></i><span>Buscados</span></a>
+            <a onclick="switchTab('denuncias')" id="link-denuncias"><i class="fa-solid fa-file-invoice"></i><span>Denuncias</span></a>
         </div>
     </div>
 
+    <!-- MAIN CONTENT -->
     <div class="main-content">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 id="display-username" class="fw-bold">Hola, Admin</h4>
-            <button class="btn btn-danger btn-sm" onclick="cerrarSesion()">Cerrar Sesión</button>
-        </div>
-
-        <div id="tab-consola" class="tab-content-panel active">
-            <div class="card card-custom p-5 text-center">
-                <h2>Centro de Operaciones</h2>
-                <p>Bienvenido al panel de control superior de la Fiscalía.</p>
+        
+        <div class="top-bar shadow-sm">
+            <h5 class="m-0 fw-bold text-primary" id="welcome-title">Hola, Administrador</h5>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-success">Servidor Activo</span>
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
         </div>
 
-        <!-- USUARIOS -->
+        <!-- TAB: INICIO -->
+        <div id="tab-inicio" class="tab-content-panel active">
+            <div class="card-custom text-center p-5">
+                <i class="fa-solid fa-user-shield fa-4x text-primary mb-4"></i>
+                <h2 class="fw-bold">Centro de Comando Superior</h2>
+                <p class="text-muted">Bienvenido al panel de administración de la Fiscalía General de la Nación. Desde aquí puedes controlar la información pública y judicial del estado.</p>
+                <div class="row mt-5">
+                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Noticias</h5><h3 id="count-noticias">0</h3></div></div>
+                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Buscados</h5><h3 id="count-buscados">0</h3></div></div>
+                    <div class="col-md-4 mb-3"><div class="card p-3 shadow-sm border-0"><h5>Denuncias</h5><h3 id="count-denuncias">0</h3></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: USUARIOS -->
         <div id="tab-usuarios" class="tab-content-panel">
-            <div class="card card-custom p-4">
-                <h5>Gestión de Usuarios</h5>
-                <table class="table">
-                    <thead><tr><th>Usuario</th><th>Rol</th><th>Acción</th></tr></thead>
-                    <tbody id="tabla-usuarios"></tbody>
-                </table>
+            <div class="card-custom">
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-users me-2"></i>Gestión de Personal y Ciudadanos</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr><th>Usuario</th><th>Rol Actual</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tabla-usuarios"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- DENUNCIAS ADMIN -->
-        <div id="tab-denuncias" class="tab-content-panel">
-            <div class="card card-custom p-4">
-                <h5>Denuncias Ciudadanas Recibidas</h5>
-                <div id="lista-denuncias-admin"></div>
-            </div>
-        </div>
-
-        <!-- MODAL GESTIONAR ESTADO -->
-        <div class="modal fade" id="modalEstado" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header"><h5>Gestionar Denuncia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                    <div class="modal-body">
-                        <input type="hidden" id="denuncia-id-actual">
-                        <label>Nuevo Estado / Mensaje:</label>
-                        <textarea id="nuevo-estado-mensaje" class="form-control mb-3" placeholder="Ej: La denuncia está siendo analizada por el equipo judicial..."></textarea>
-                        <button class="btn btn-primary w-100" onclick="guardarEstado()">Actualizar Estado</button>
+        <!-- TAB: NOTICIAS -->
+        <div id="tab-noticias" class="tab-content-panel">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card-custom">
+                        <h4 class="fw-bold mb-4">Publicar Noticia Oficial</h4>
+                        <div class="mb-3">
+                            <label class="form-label">Titular de la Noticia</label>
+                            <input type="text" id="n-titulo" class="form-control" placeholder="Ej: Operativo en Comuna 13">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cuerpo de la Noticia</label>
+                            <textarea id="n-desc" class="form-control" rows="5" placeholder="Detalles de la noticia..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Imagen (Opcional)</label>
+                            <input type="file" id="n-file" class="form-control" accept="image/*" onchange="previewImage(this, 'p-noticia')">
+                            <img id="p-noticia" class="preview-img-box">
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="publicarNoticia()">EMITIR BOLETÍN</button>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card-custom">
+                        <h4 class="fw-bold mb-4">Noticias en el Sistema</h4>
+                        <div id="lista-noticias" class="list-group"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- NOTICIAS Y BUSCADOS (Igual que antes pero integrados) -->
-        <div id="tab-noticias" class="tab-content-panel">...</div>
-        <div id="tab-buscados" class="tab-content-panel">...</div>
+        <!-- TAB: BUSCADOS -->
+        <div id="tab-buscados" class="tab-content-panel">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card-custom">
+                        <h4 class="fw-bold mb-4">Emitir Orden de Captura</h4>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Objetivo</label>
+                            <input type="text" id="b-nombre" class="form-control" placeholder="Nombre completo o alias">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Peligrosidad</label>
+                                <select id="b-peligro" class="form-select">
+                                    <option value="Muy Alto">Muy Alto</option>
+                                    <option value="Medio">Medio</option>
+                                    <option value="Bajo">Bajo</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Recompensa</label>
+                                <input type="text" id="b-recompensa" class="form-control" placeholder="$0.00">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hechos Delictivos</label>
+                            <textarea id="b-hechos" class="form-control" rows="3" placeholder="Delitos cometidos..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fotografía</label>
+                            <input type="file" id="b-file" class="form-control" accept="image/*" onchange="previewImage(this, 'p-buscado')">
+                            <img id="p-buscado" class="preview-img-box">
+                        </div>
+                        <button class="btn btn-danger w-100" onclick="publicarBuscado()">DESPLEGAR ORDEN</button>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card-custom">
+                        <h4 class="fw-bold mb-4">Objetivos de Interés</h4>
+                        <div id="lista-buscados" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- TAB: DENUNCIAS -->
+        <div id="tab-denuncias" class="tab-content-panel">
+            <div class="card-custom">
+                <h4 class="fw-bold mb-4"><i class="fa-solid fa-folder-open me-2"></i>Denuncias Ciudadanas</h4>
+                <div id="lista-denuncias-admin"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL GESTIONAR ESTADO -->
+    <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 p-4">
+                    <h5 class="fw-bold m-0">Actualizar Estado de Denuncia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="denuncia-id-actual">
+                    <div class="mb-3">
+                        <label class="form-label">Mensaje para el Ciudadano</label>
+                        <textarea id="nuevo-estado-mensaje" class="form-control" rows="4" placeholder="Ej: Su denuncia ha sido remitida al cuerpo técnico de investigación..."></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100 py-3" onclick="guardarNuevoEstado()">REGISTRAR ACTUALIZACIÓN</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user || user.role !== 'admin') window.location.href = 'iniciar-sesion.html';
-        document.getElementById('display-username').innerText = `Hola, ${user.username}`;
+        document.getElementById('welcome-title').innerText = `Hola, ${user.username}`;
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
@@ -98,56 +331,162 @@
             document.getElementById('link-' + tabId).classList.add('active');
         }
 
-        async function cargarDatos() {
-            const res = await fetch('/api/admin/data');
-            const data = await res.json();
-
-            // Usuarios
-            const tU = document.getElementById('tabla-usuarios');
-            tU.innerHTML = '';
-            data.users.forEach(u => {
-                tU.innerHTML += `<tr><td>${u.username}</td><td>${u.role}</td><td>
-                    ${u.role === 'user' ? `<button class="btn btn-sm btn-success" onclick="hacerAdmin('${u.username}')">Ascender</button>` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="eliminarUsuario('${u.username}')">X</button>
-                </td></tr>`;
-            });
-
-            // Denuncias
-            const lD = document.getElementById('lista-denuncias-admin');
-            lD.innerHTML = '';
-            data.denuncias.forEach(d => {
-                lD.innerHTML += `<div class="card mb-2 p-3 border">
-                    <h6><strong>${d.titulo}</strong> <span class="badge bg-warning text-dark">${d.estado_actual}</span></h6>
-                    <p class="small text-muted mb-1">Por: ${d.usuario} | ${d.fecha}</p>
-                    <p>${d.descripcion}</p>
-                    <button class="btn btn-sm btn-primary" onclick="abrirGestion(${d.id})">Gestionar Denuncia</button>
-                </div>`;
-            });
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; }
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
-        function abrirGestion(id) {
+        async function cargarDatos() {
+            try {
+                const res = await fetch('/api/admin/data');
+                const data = await res.json();
+
+                // Contadores
+                document.getElementById('count-noticias').innerText = data.noticias.length;
+                document.getElementById('count-buscados').innerText = data.buscados.length;
+                document.getElementById('count-denuncias').innerText = data.denuncias.length;
+
+                // Render Usuarios
+                const tU = document.getElementById('tabla-usuarios');
+                tU.innerHTML = '';
+                data.users.forEach(u => {
+                    tU.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${u.username}</td>
+                            <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role.toUpperCase()}</span></td>
+                            <td>
+                                ${u.role === 'user' ? `<button class="btn btn-sm btn-success me-2" onclick="hacerAdmin('${u.username}')"><i class="fa-solid fa-arrow-up"></i> Ascender</button>` : ''}
+                                <button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario('${u.username}')"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>`;
+                });
+
+                // Render Noticias
+                const lN = document.getElementById('lista-noticias');
+                lN.innerHTML = '';
+                data.noticias.forEach(n => {
+                    lN.innerHTML += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
+                            <div><h6 class="m-0 fw-bold">${n.titular}</h6><small class="text-muted">${n.fecha}</small></div>
+                            <button class="btn btn-sm text-danger" onclick="eliminarNoticia(${n.id})"><i class="fa-solid fa-circle-minus fa-lg"></i></button>
+                        </div>`;
+                });
+
+                // Render Buscados
+                const lB = document.getElementById('lista-buscados');
+                lB.innerHTML = '';
+                data.buscados.forEach(b => {
+                    lB.innerHTML += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
+                            <div><h6 class="m-0 fw-bold">${b.nombre}</h6><span class="badge bg-danger">${b.peligro}</span></div>
+                            <button class="btn btn-sm text-danger" onclick="eliminarBuscado(${b.id})"><i class="fa-solid fa-circle-minus fa-lg"></i></button>
+                        </div>`;
+                });
+
+                // Render Denuncias
+                const lD = document.getElementById('lista-denuncias-admin');
+                lD.innerHTML = '';
+                data.denuncias.forEach(d => {
+                    lD.innerHTML += `
+                        <div class="denuncia-item">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="fw-bold m-0 text-primary">${d.titulo}</h5>
+                                    <small class="text-muted">Enviado por: ${d.usuario} | ${d.fecha}</small>
+                                </div>
+                                <span class="status-badge bg-warning text-dark">${d.estado_actual}</span>
+                            </div>
+                            <p class="text-dark">${d.descripcion}</p>
+                            ${d.evidencia ? `<img src="${d.evidencia}" class="rounded mb-3" style="max-width: 150px;">` : ''}
+                            <div class="mt-3 pt-3 border-top">
+                                <button class="btn btn-primary btn-sm rounded-pill px-4" onclick="abrirModalEstado(${d.id})">GESTIONAR ESTADO</button>
+                            </div>
+                        </div>`;
+                });
+
+            } catch (err) { console.error("Error al cargar datos:", err); }
+        }
+
+        function abrirModalEstado(id) {
             document.getElementById('denuncia-id-actual').value = id;
+            document.getElementById('nuevo-estado-mensaje').value = '';
             new bootstrap.Modal(document.getElementById('modalEstado')).show();
         }
 
-        async function guardarEstado() {
+        async function guardarNuevoEstado() {
             const id = document.getElementById('denuncia-id-actual').value;
             const mensaje = document.getElementById('nuevo-estado-mensaje').value;
-            const fecha = new Date().toLocaleString();
-            
+            const fecha = new Date().toLocaleString('es-ES');
+
+            if (!mensaje) return alert("Escribe un mensaje de estado.");
+
             const res = await fetch('/api/admin/actualizar-estado', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ denuncia_id: id, mensaje, fecha })
             });
 
-            if(res.ok) {
-                alert("Estado actualizado.");
+            if (res.ok) {
+                alert("✅ Historial actualizado correctamente.");
                 location.reload();
+            } else {
+                alert("❌ Error al actualizar.");
             }
         }
 
+        async function publicarNoticia() {
+            const titular = document.getElementById('n-titulo').value;
+            const descripcion = document.getElementById('n-desc').value;
+            const imgElem = document.getElementById('p-noticia');
+            const imagen = imgElem.style.display === 'block' ? imgElem.src : '';
+            const fecha = new Date().toLocaleString('es-ES');
+
+            if(!titular || !descripcion) return alert("Completa los campos.");
+
+            const res = await fetch('/api/admin/add-noticia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ titular, descripcion, imagen, fecha })
+            });
+
+            if(res.ok) { alert("Publicada."); location.reload(); }
+        }
+
+        async function publicarBuscado() {
+            const nombre = document.getElementById('b-nombre').value;
+            const peligro = document.getElementById('b-peligro').value;
+            const hechos = document.getElementById('b-hechos').value;
+            const recompensa = document.getElementById('b-recompensa').value;
+            const imgElem = document.getElementById('p-buscado');
+            const imagen = imgElem.style.display === 'block' ? imgElem.src : '';
+
+            if(!nombre || !hechos) return alert("Completa los campos.");
+
+            const res = await fetch('/api/admin/add-buscado', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, peligro, hechos, recompensa, imagen })
+            });
+
+            if(res.ok) { alert("Orden Desplegada."); location.reload(); }
+        }
+
+        async function ejecutarOperacion(url, payload) {
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if(res.ok) location.reload();
+        }
+
+        function hacerAdmin(username) { if(confirm("¿Ascender a Admin?")) ejecutarOperacion('/api/admin/make-admin', { username }); }
+        function eliminarUsuario(username) { if(confirm("¿Eliminar usuario?")) ejecutarOperacion('/api/admin/delete-user', { username }); }
+        function eliminarNoticia(id) { if(confirm("¿Eliminar noticia?")) ejecutarOperacion('/api/admin/delete-noticia', { id }); }
+        function eliminarBuscado(id) { if(confirm("¿Eliminar orden?")) ejecutarOperacion('/api/admin/delete-buscado', { id }); }
+
         function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
+
         window.onload = cargarDatos;
     </script>
 </body>
