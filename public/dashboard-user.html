@@ -93,6 +93,13 @@
         .modal-header { border-bottom: 1px solid var(--border) !important; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
 
+        /* Antecedentes */
+        .antecedente-card { border: 1px solid var(--border); border-radius: 15px; padding: 18px; margin-bottom: 18px; background: var(--panel-2); display: flex; gap: 14px; }
+        .antecedente-card img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+        .antecedente-card .antecedente-foto-placeholder { width: 80px; height: 80px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 26px; flex-shrink: 0; }
+        .antecedente-card h6 { color: var(--gold); font-weight: 700; margin-bottom: 6px; }
+        .antecedente-card .antecedente-meta { font-size: 12px; color: var(--muted); }
+
         /* Responsive */
         @media (max-width: 992px) {
             .sidebar { width: 80px; }
@@ -125,6 +132,7 @@
             <a onclick="switchTab('inicio')" id="link-inicio" class="active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
             <a onclick="switchTab('denunciar')" id="link-denunciar"><i class="fa-solid fa-bullhorn"></i><span>Denunciar</span></a>
             <a onclick="switchTab('mis-denuncias')" id="link-mis-denuncias"><i class="fa-solid fa-list-check"></i><span>Mis Denuncias</span></a>
+            <a onclick="switchTab('antecedentes')" id="link-antecedentes"><i class="fa-solid fa-handcuffs"></i><span>Antecedentes</span></a>
         </div>
     </div>
 
@@ -191,6 +199,14 @@
                 <div id="lista-mis-denuncias" class="row"></div>
             </div>
         </div>
+
+        <!-- ANTECEDENTES -->
+        <div id="tab-antecedentes" class="tab-content-panel">
+            <div class="card-custom">
+                <h4 class="fw-bold mb-4" style="color: var(--gold);"><i class="fa-solid fa-handcuffs me-2"></i>Mis Antecedentes</h4>
+                <div id="lista-antecedentes" class="row"></div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL HISTORIAL -->
@@ -230,6 +246,7 @@
             document.getElementById('tab-' + t).classList.add('active');
             document.getElementById('link-' + t).classList.add('active');
             if(t === 'mis-denuncias') loadMyReports();
+            if(t === 'antecedentes') loadAntecedentes();
         }
 
         function preview(i, pId) {
@@ -298,6 +315,36 @@
                     </div>`;
             });
             new bootstrap.Modal(document.getElementById('modalHistory')).show();
+        }
+
+        async function loadAntecedentes() {
+            try {
+                const res = await fetch(`/api/arrestos/mis-antecedentes/${user.username}`);
+                const data = await res.json();
+                const container = document.getElementById('lista-antecedentes');
+                container.innerHTML = '';
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="text-center p-5" style="color: var(--muted);">No tienes antecedentes registrados.</div>';
+                    return;
+                }
+
+                data.forEach(a => {
+                    container.innerHTML += `
+                        <div class="col-md-6">
+                            <div class="antecedente-card">
+                                ${a.foto ? `<img src="${a.foto}">` : `<div class="antecedente-foto-placeholder"><i class="fa-solid fa-user-large"></i></div>`}
+                                <div>
+                                    <h6>${a.delito}</h6>
+                                    <div class="antecedente-meta mb-1"><strong>Razón:</strong> ${a.razon}</div>
+                                    <div class="antecedente-meta mb-1"><strong>Tiempo de arresto:</strong> ${a.tiempo}</div>
+                                    <div class="antecedente-meta mb-1"><strong>Arrestado por:</strong> ${a.arrestado_por || '—'}</div>
+                                    <div class="antecedente-meta"><strong>Fecha:</strong> ${a.fecha}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { console.error(e); }
         }
 
         function cerrarSesion() { localStorage.clear(); window.location.href = 'iniciar-sesion.html'; }
