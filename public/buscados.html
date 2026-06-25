@@ -137,7 +137,7 @@
                 }
 
                 buscadosData.forEach((b, index) => {
-                    const foto = b.imagen || 'https://via.placeholder.com/300x400?text=SIN+FOTO';
+                    const foto = b.imagen || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-J1VqwqJWVL35t11sQNevk2UUaCrDoqV4cPU1ZW3LHCeQOJsRMygJgsU&s=10';
                     contenedor.innerHTML += `
                         <div class="wanted-card" onclick="verDetalles(${index})">
                             <div class="wanted-top">REQUERIDO</div>
@@ -157,7 +157,7 @@
 
         function verDetalles(index) {
             const b = buscadosData[index];
-            document.getElementById('m-img').src = b.imagen || 'https://via.placeholder.com/300x400?text=SIN+FOTO';
+            document.getElementById('m-img').src = b.imagen || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-J1VqwqJWVL35t11sQNevk2UUaCrDoqV4cPU1ZW3LHCeQOJsRMygJgsU&s=10';
             document.getElementById('m-name').innerText = b.nombre;
             document.getElementById('m-peligro').innerText = b.peligro || 'Nivel No Especificado';
             
