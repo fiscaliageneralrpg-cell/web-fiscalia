@@ -40,11 +40,27 @@ const inicializarBaseDeDatos = async () => {
         await pool.query("ALTER TABLE denuncias ADD COLUMN IF NOT EXISTS estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada'");
     } catch (e) { /* Ya existe */ }
 
+    // 3. REPARAR: Asegurar que existan las columnas de datos personales del usuario
+    try {
+        await pool.query(`
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nombre_completo VARCHAR(250);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sexo VARCHAR(20);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nacionalidad VARCHAR(100);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS lugar_nacimiento VARCHAR(150);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_nacimiento VARCHAR(50);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS roblox_user VARCHAR(100);
+          ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cedula VARCHAR(50);
+        `);
+    } catch (e) { /* Ya existen */ }
+
     const adminEmail = 'fiscaliageneralrpg@gmail.com';
     const checkAdmin = await pool.query("SELECT * FROM usuarios WHERE username = $1", [adminEmail]);
     if (checkAdmin.rows.length === 0) {
         const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
-        await pool.query("INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'admin', 'aceptado')", [adminEmail, hashedPassword]);
+        await pool.query(
+          "INSERT INTO usuarios (username, password, role, status, nombre_completo, sexo, nacionalidad, lugar_nacimiento, fecha_nacimiento, roblox_user, cedula) VALUES ($1, $2, 'admin', 'aceptado', $3, $4, $5, $6, $7, $8, $9)",
+          [adminEmail, hashedPassword, 'Administración Fiscalía', 'No especifica', 'Colombia', 'Bogotá', '01/01/2000', 'admin_rp', '0000000000']
+        );
     }
     console.log("⚖️ SISTEMA BD: Verificado y Reparado.");
   } catch (err) { console.error("❌ ERROR CRÍTICO BD:", err.message); }
@@ -54,9 +70,24 @@ inicializarBaseDeDatos();
 // --- RUTAS API ---
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const {
+      username, password,
+      nombre_completo, sexo, nacionalidad,
+      lugar_nacimiento, fecha_nacimiento,
+      roblox_user, cedula
+    } = req.body;
+
+    if (!username || !password || !nombre_completo || !sexo || !nacionalidad || !lugar_nacimiento || !fecha_nacimiento || !roblox_user || !cedula) {
+      return res.status(400).json({ error: "Completa todos los campos." });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query("INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'user', 'aceptado')", [username, hashedPassword]);
+    await pool.query(
+      `INSERT INTO usuarios
+        (username, password, role, status, nombre_completo, sexo, nacionalidad, lugar_nacimiento, fecha_nacimiento, roblox_user, cedula)
+       VALUES ($1, $2, 'user', 'aceptado', $3, $4, $5, $6, $7, $8, $9)`,
+      [username, hashedPassword, nombre_completo, sexo, nacionalidad, lugar_nacimiento, fecha_nacimiento, roblox_user, cedula]
+    );
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: "El usuario ya existe." }); }
 });
@@ -70,7 +101,20 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Contraseña incorrecta." });
     req.session.user = { username: user.username, role: user.role };
-    res.json({ success: true, user: { username: user.username, role: user.role } });
+    res.json({
+      success: true,
+      user: {
+        username: user.username,
+        role: user.role,
+        nombre_completo: user.nombre_completo,
+        sexo: user.sexo,
+        nacionalidad: user.nacionalidad,
+        lugar_nacimiento: user.lugar_nacimiento,
+        fecha_nacimiento: user.fecha_nacimiento,
+        roblox_user: user.roblox_user,
+        cedula: user.cedula
+      }
+    });
   } catch (err) { res.status(500).json({ error: "Error en el login." }); }
 });
 
@@ -102,7 +146,7 @@ app.get('/api/denuncias/estados/:id', async (req, res) => {
 
 app.get('/api/admin/data', async (req, res) => {
   try {
-    const u = await pool.query('SELECT username, role FROM usuarios');
+    const u = await pool.query('SELECT username, role, nombre_completo, sexo, nacionalidad, lugar_nacimiento, fecha_nacimiento, roblox_user, cedula FROM usuarios');
     const b = await pool.query('SELECT * FROM buscados ORDER BY id DESC');
     const n = await pool.query('SELECT * FROM noticias ORDER BY id DESC');
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
