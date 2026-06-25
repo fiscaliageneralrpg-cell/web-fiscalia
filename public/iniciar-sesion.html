@@ -79,7 +79,6 @@
                 <button id="tab-register" class="tab-btn" onclick="switchTab('register')">Crear Cuenta</button>
             </div>
 
-            <!-- Formulario: Iniciar Sesión -->
             <form id="loginForm" class="auth-form active" onsubmit="handleLogin(event)">
                 <div class="input-group">
                     <label>Usuario / Correo</label>
@@ -94,7 +93,6 @@
                 <button type="submit" class="btn-submit">Ingresar al Sistema</button>
             </form>
 
-            <!-- Formulario: Crear Cuenta -->
             <form id="registerForm" class="auth-form" onsubmit="handleRegister(event)">
                 <div class="input-group">
                     <label>Usuario / Correo</label>
@@ -150,7 +148,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                alert("¡Registro enviado con éxito! Tu cuenta ha sido enviada a un administrador para que sea aceptada.");
+                alert("¡Cuenta creada con éxito! Ya puedes iniciar sesión.");
                 document.getElementById('registerForm').reset();
                 switchTab('login');
             } catch (err) {
@@ -173,7 +171,13 @@
                 if (!res.ok) throw new Error(data.error);
 
                 localStorage.setItem('currentUser', JSON.stringify(data.user));
-                window.location.href = 'dashboard.html';
+                
+                // Redirección según rol
+                if (data.user.role === 'admin') {
+                    window.location.href = 'dashboard-admin.html';
+                } else {
+                    window.location.href = 'dashboard-user.html';
+                }
             } catch (err) {
                 alert("❌ ERROR: " + err.message);
             }
