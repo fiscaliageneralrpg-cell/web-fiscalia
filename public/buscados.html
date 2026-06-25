@@ -12,152 +12,172 @@
             --danger: #df2020;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        html { -webkit-text-size-adjust: 100%; }
         body { background-color: var(--bg-apple); color: var(--text-dark); padding-top: 80px; min-height: 100vh; display: flex; flex-direction: column; width: 100%; overflow-x: hidden; }
         
-        /* Barra de Navegación Exacta */
+        /* Barra de Navegación */
         .navbar { background-color: rgba(0, 51, 102, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); position: fixed; top: 0; width: 100%; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 54px; padding: 0 20px; }
-        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; }
-        .logo-img { height: 36px; flex-shrink: 0; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
-        .logo-text { min-width: 0; overflow: hidden; }
-        .logo-text strong { color: var(--white); font-size: 15px; display: block; white-space: nowrap; }
-        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-img { height: 36px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.9); padding: 2px; }
+        .logo-text strong { color: var(--white); font-size: 15px; display: block; }
+        .logo-text span { font-size: 9px; display: block; color: #cbd5e1; }
         .nav-menu { display: flex; list-style: none; gap: 28px; }
-        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; white-space: nowrap; }
+        .nav-menu a { color: #cbd5e1; text-decoration: none; font-size: 14px; padding: 4px 0; }
         .nav-menu a:hover, .nav-menu a.active { color: #38bdf8; }
-        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+        .btn-login { background-color: var(--white); color: var(--blue-dark); padding: 6px 16px; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 500; }
 
-        .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 20px; cursor: pointer; padding: 6px 10px; }
-
-        /* Estructura de Contenido */
+        /* Contenido */
         .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; flex: 1; width: 100%; }
         .page-header { text-align: center; margin-bottom: 40px; }
-        .page-title { font-size: clamp(24px, 5vw, 32px); font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
-        .page-subtitle { font-size: clamp(14px, 2.5vw, 16px); color: var(--text-muted); padding: 0 10px; }
+        .page-title { font-size: 32px; font-weight: 700; color: var(--blue-dark); margin-bottom: 10px; }
         
-        /* Grid de Solicitados */
-        .wanted-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; margin-top: 20px; }
-        .wanted-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.03); transition: transform 0.2s; text-align: center; }
-        .wanted-card:hover { transform: translateY(-4px); }
+        /* Grid */
+        .wanted-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
+        .wanted-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s; text-align: center; border: 1px solid rgba(0,0,0,0.02); }
+        .wanted-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
         
-        .wanted-top { background-color: var(--danger); color: var(--white); padding: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; }
-        .wanted-photo-box { background: #f2f2f7; height: 160px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-bottom: 1px solid #f2f2f7; }
-        
-        .wanted-info { padding: 20px; }
-        .wanted-label { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px; }
-        .wanted-name { font-size: 16px; font-weight: 700; color: var(--text-dark); text-transform: uppercase; word-break: break-word; }
+        .wanted-top { background-color: var(--danger); color: var(--white); padding: 6px; font-size: 11px; font-weight: 700; }
+        .wanted-photo-box { height: 200px; background: #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .wanted-photo-box img { width: 100%; height: 100%; object-fit: cover; }
+        .wanted-info { padding: 15px; }
+        .wanted-name { font-size: 16px; font-weight: 700; text-transform: uppercase; color: var(--blue-dark); }
 
-        /* Estados */
-        .loading, .empty { text-align: center; padding: 60px 0; grid-column: 1 / -1; color: var(--text-muted); }
-        .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(223, 32, 32, 0.1); border-radius: 50%; border-top-color: var(--danger); animation: spin 1s infinite; margin-bottom: 12px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--white); width: 100%; max-width: 500px; border-radius: 20px; overflow: hidden; position: relative; animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; z-index: 10; }
+        .modal-img { width: 100%; height: 250px; object-fit: cover; background: #ddd; }
+        .modal-body { padding: 25px; }
+        .modal-name { font-size: 24px; font-weight: 800; color: var(--blue-dark); margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid var(--danger); display: inline-block; }
+        
+        .detail-item { margin-bottom: 12px; }
+        .detail-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .detail-value { font-size: 15px; color: var(--text-dark); font-weight: 500; }
+        .badge-peligro { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--danger); color: white; }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .nav-menu {
-                position: fixed; top: 54px; left: 0; right: 0;
-                background-color: #003366f2; backdrop-filter: blur(20px);
-                flex-direction: column; gap: 0;
-                max-height: 0; overflow: hidden;
-                transition: max-height 0.3s ease;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-            }
-            .nav-menu.open { max-height: 320px; }
-            .nav-menu li { width: 100%; }
-            .nav-menu a { display: block; padding: 14px 20px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); }
-            .nav-toggle { display: block; }
-            .logo-text span { display: none; }
-            .nav-container { padding: 0 16px; }
-        }
+        .loading { text-align: center; padding: 50px; grid-column: 1/-1; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--danger); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         @media (max-width: 600px) {
-            .container { padding: 0 14px; margin: 24px auto; }
-            .wanted-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-            .wanted-photo-box { height: 120px; }
-            .wanted-info { padding: 14px; }
-            .wanted-name { font-size: 14px; }
-        }
-
-        @media (max-width: 380px) {
-            .logo-text strong { font-size: 13px; }
-            .btn-login { padding: 5px 12px; font-size: 12px; }
+            .wanted-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+            .wanted-photo-box { height: 150px; }
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo" onclick="window.location.href='/index.html'">
+            <div class="logo" onclick="window.location.href='index.html'">
                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXBKuX8mWSlLgU5WOYx5ODP9N8QM5debq5wTdzLVi4fFWk2M8IQsowaFI&s=10" class="logo-img">
                 <div class="logo-text"><strong>FISCALÍA</strong><span>GENERAL DE LA NACIÓN</span></div>
             </div>
-            <ul class="nav-menu" id="navMenu">
-                <li><a href="/index.html">Inicio</a></li>
-                <li><a href="/buscados.html" class="active">Buscados</a></li>
-                <li><a href="/noticias.html">Noticias</a></li>
+            <ul class="nav-menu">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="buscados.html" class="active">Buscados</a></li>
+                <li><a href="noticias.html">Noticias</a></li>
             </ul>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <a href="/iniciar-sesion.html" class="btn-login">Acceder</a>
-                <button class="nav-toggle" id="navToggle" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
-            </div>
+            <a href="iniciar-sesion.html" class="btn-login">Acceder</a>
         </div>
     </nav>
 
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">Orden de Captura y Requeridos</h1>
-            <p class="page-subtitle">Ciudadanos con procesos vigentes ante la justicia del país.</p>
+            <h1 class="page-title">Cartel de los Más Buscados</h1>
+            <p>Ayúdenos a encontrarlos. Su información es confidencial.</p>
         </div>
 
         <div class="wanted-grid" id="contenedor-buscados">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Verificando base de datos judicial...</p>
+            <div class="loading"><div class="spinner"></div><p>Cargando base de datos judicial...</p></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DETALLES -->
+    <div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="document.getElementById('modalOverlay').style.display='none'">&times;</button>
+            <img id="m-img" class="modal-img" src="" alt="Foto del buscado">
+            <div class="modal-body">
+                <div id="m-name" class="modal-name">NOMBRE COMPLETO</div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">Nivel de Peligrosidad</div>
+                    <div id="m-peligro" class="badge-peligro">ALTO</div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">Recompensa Ofrecida</div>
+                    <div id="m-recompensa" class="detail-value" style="color: #16a34a; font-weight: 800; font-size: 18px;">$0.00</div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">Delitos y Hechos</div>
+                    <div id="m-delitos" class="detail-value">No hay delitos registrados.</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const navToggle = document.getElementById('navToggle');
-        const navMenu = document.getElementById('navMenu');
-        navToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('open');
-        });
+        let buscadosData = [];
 
         async function cargarBuscados() {
             try {
                 const response = await fetch('/api/admin/data');
                 const data = await response.json();
+                buscadosData = data.buscados;
                 const contenedor = document.getElementById('contenedor-buscados');
                 contenedor.innerHTML = '';
 
-                if (data.buscados.length === 0) {
-                    contenedor.innerHTML = `
-                        <div class="empty">
-                            <i class="fa-solid fa-shield-solid" style="font-size: 40px; color: #22c55e; margin-bottom: 12px;"></i>
-                            <p style="color: #22c55e; font-weight: 500;">No se registran órdenes de captura activas.</p>
-                        </div>`;
+                if (buscadosData.length === 0) {
+                    contenedor.innerHTML = '<div class="loading"><p>No hay órdenes de captura vigentes.</p></div>';
                     return;
                 }
 
-                data.buscados.forEach(criminal => {
+                buscadosData.forEach((b, index) => {
+                    const foto = b.imagen || 'https://via.placeholder.com/300x400?text=SIN+FOTO';
                     contenedor.innerHTML += `
-                        <div class="wanted-card">
-                            <div class="wanted-top"><i class="fa-solid fa-triangle-exclamation"></i> BUSCADO</div>
+                        <div class="wanted-card" onclick="verDetalles(${index})">
+                            <div class="wanted-top">REQUERIDO</div>
                             <div class="wanted-photo-box">
-                                <i class="fa-solid fa-user-secret fa-3x"></i>
+                                <img src="${foto}" alt="${b.nombre}">
                             </div>
                             <div class="wanted-info">
-                                <div class="wanted-label">REQUERIDO OFICIAL</div>
-                                <div class="wanted-name">${criminal.nombre}</div>
+                                <div class="wanted-name">${b.nombre}</div>
+                                <div style="font-size:10px; color:red; font-weight:700; margin-top:5px;">${b.peligro || 'Bajo'}</div>
                             </div>
                         </div>`;
                 });
             } catch (error) {
-                document.getElementById('contenedor-buscados').innerHTML = `<div class="empty"><p style="color: var(--danger);">Error al conectar con la central criminal.</p></div>`;
+                console.error(error);
             }
         }
+
+        function verDetalles(index) {
+            const b = buscadosData[index];
+            document.getElementById('m-img').src = b.imagen || 'https://via.placeholder.com/300x400?text=SIN+FOTO';
+            document.getElementById('m-name').innerText = b.nombre;
+            document.getElementById('m-peligro').innerText = b.peligro || 'Nivel No Especificado';
+            
+            // Lógica de Recompensa
+            const recompensa = b.recompensa && b.recompensa.trim() !== "" ? b.recompensa : "No hay recompensa";
+            document.getElementById('m-recompensa').innerText = recompensa;
+
+            // Lógica de Delitos
+            const delitos = b.descripcion && b.descripcion.trim() !== "" ? b.descripcion : "No hay delitos registrados";
+            document.getElementById('m-delitos').innerText = delitos;
+
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function cerrarModal(e) {
+            if(e.target.id === 'modalOverlay') {
+                document.getElementById('modalOverlay').style.display = 'none';
+            }
+        }
+
         window.onload = cargarBuscados;
     </script>
 </body>
