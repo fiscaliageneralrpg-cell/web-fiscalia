@@ -6,12 +6,14 @@ require('dotenv').config();
 
 const app = express();
 
+// Configuración de límites para imágenes Base64 grandes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
 app.set('view engine', 'ejs');
 
+// Configuración de sesión
 app.use(session({
   secret: 'fiscalia_secret_key_rp',
   resave: false,
@@ -55,7 +57,7 @@ const inicializarBaseDeDatos = async () => {
         descripcion TEXT,
         evidencia TEXT,
         fecha VARCHAR(50),
-        estado_actual VARCHAR(100) DEFAULT 'Enviada'
+        estado_actual VARCHAR(250) DEFAULT 'Denuncia Enviada'
       );
       CREATE TABLE IF NOT EXISTS estados_denuncias (
         id SERIAL PRIMARY KEY,
@@ -99,7 +101,7 @@ app.post('/api/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Error en el login." }); }
 });
 
-// --- DENUNCIAS ---
+// --- DENUNCIAS Y ESTADOS ---
 app.post('/api/denuncias/enviar', async (req, res) => {
   try {
     const { usuario, titulo, descripcion, evidencia, fecha } = req.body;
@@ -107,8 +109,9 @@ app.post('/api/denuncias/enviar', async (req, res) => {
       "INSERT INTO denuncias (usuario, titulo, descripcion, evidencia, fecha) VALUES ($1, $2, $3, $4, $5) RETURNING id",
       [usuario, titulo, descripcion, evidencia, fecha]
     );
-    // Primer estado por defecto
-    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [result.rows[0].id, 'Denuncia recibida en el sistema.', fecha]);
+    const denunciaId = result.rows[0].id;
+    // Insertar el primer estado en el historial
+    await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denunciaId, 'Denuncia enviada exitosamente al sistema.', fecha]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: "Error al enviar denuncia" }); }
 });
@@ -124,10 +127,10 @@ app.get('/api/denuncias/estados/:id', async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM estados_denuncias WHERE denuncia_id = $1 ORDER BY id ASC", [req.params.id]);
     res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: "Error al obtener estados" }); }
+  } catch (err) { res.status(500).json({ error: "Error al obtener historial de estados" }); }
 });
 
-// --- ADMIN ---
+// --- ADMINISTRACIÓN ---
 app.get('/api/admin/data', async (req, res) => {
   try {
     const u = await pool.query('SELECT username, role FROM usuarios');
@@ -135,37 +138,63 @@ app.get('/api/admin/data', async (req, res) => {
     const n = await pool.query('SELECT * FROM noticias ORDER BY id DESC');
     const d = await pool.query('SELECT * FROM denuncias ORDER BY id DESC');
     res.json({ users: u.rows, buscados: b.rows, noticias: n.rows, denuncias: d.rows });
-  } catch (err) { res.status(500).json({ error: "Error" }); }
+  } catch (err) { res.status(500).json({ error: "Error al cargar datos administrativos" }); }
 });
 
 app.post('/api/admin/actualizar-estado', async (req, res) => {
   try {
     const { denuncia_id, mensaje, fecha } = req.body;
+    if (!denuncia_id || !mensaje) return res.status(400).json({ error: "Faltan datos" });
+    
+    // Actualizar el estado actual en la tabla principal
     await pool.query("UPDATE denuncias SET estado_actual = $1 WHERE id = $2", [mensaje, denuncia_id]);
+    // Insertar el nuevo mensaje en el historial
     await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denuncia_id, mensaje, fecha]);
+    
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: "Error" }); }
+  } catch (err) { 
+    console.error("Error al actualizar estado:", err);
+    res.status(500).json({ error: "Error interno al actualizar estado" }); 
+  }
 });
 
 app.post('/api/admin/make-admin', async (req, res) => {
-  await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al ascender usuario" }); }
 });
 
 app.post('/api/admin/delete-user', async (req, res) => {
-  await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar usuario" }); }
 });
 
 app.post('/api/admin/add-noticia', async (req, res) => {
-  const { titular, descripcion, imagen, fecha } = req.body;
-  await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
-  res.json({ success: true });
+  try {
+    const { titular, descripcion, imagen, fecha } = req.body;
+    await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [titular, descripcion, imagen, fecha]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al guardar noticia" }); }
 });
 
 app.post('/api/admin/add-buscado', async (req, res) => {
-  const { nombre, peligro, hechos, recompensa, imagen } = req.body;
-  await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [nombre, peligro, hechos, recompensa, imagen]);
+  try {
+    const { nombre, peligro, hechos, recompensa, imagen } = req.body;
+    await pool.query('INSERT INTO buscados (nombre, peligro, descripcion, recompensa, imagen) VALUES ($1, $2, $3, $4, $5)', [nombre, peligro, hechos, recompensa, imagen]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al guardar buscado" }); }
+});
+
+app.post('/api/admin/delete-noticia', async (req, res) => {
+  await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
+  res.json({ success: true });
+});
+
+app.post('/api/admin/delete-buscado', async (req, res) => {
+  await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
   res.json({ success: true });
 });
 
