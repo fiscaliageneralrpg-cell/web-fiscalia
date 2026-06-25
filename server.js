@@ -6,25 +6,28 @@ require('dotenv').config();
 
 const app = express();
 
-// IMPORTANTE: Aumentamos el límite para recibir imágenes Base64
+// Configuración de límites para imágenes Base64 grandes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
 app.set('view engine', 'ejs');
 
+// Configuración de sesión
 app.use(session({
   secret: 'fiscalia_secret_key_rp',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 horas
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // Sesión activa por 24 horas
 }));
 
+// Conexión a Base de Datos (PostgreSQL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
+// Inicialización de Tablas
 const inicializarBaseDeDatos = async () => {
   try {
     await pool.query(`
@@ -51,26 +54,26 @@ const inicializarBaseDeDatos = async () => {
       );
     `);
 
-    // Asegurar que el admin principal existe
+    // Crear admin por defecto si no existe
     const adminEmail = 'fiscaliageneralrpg@gmail.com';
     const checkAdmin = await pool.query("SELECT * FROM usuarios WHERE username = $1", [adminEmail]);
-    
     if (checkAdmin.rows.length === 0) {
         const hashedPassword = await bcrypt.hash('Fiscalia2026*', 10);
         await pool.query("INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'admin', 'aceptado')", [adminEmail, hashedPassword]);
-        console.log("👤 Admin principal creado.");
+        console.log("👤 Admin principal creado correctamente.");
     }
-
     console.log("⚖️ BASE DE DATOS: Lista y actualizada.");
   } catch (err) { console.error("❌ ERROR BD:", err.message); }
 };
 inicializarBaseDeDatos();
 
-// --- RUTAS DE AUTENTICACIÓN ---
+// --- RUTAS DE AUTENTICACIÓN (SIN /auth/ PARA COINCIDIR CON TU FRONTEND) ---
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
   try {
     const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Datos incompletos" });
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     await pool.query(
       "INSERT INTO usuarios (username, password, role, status) VALUES ($1, $2, 'user', 'pendiente')",
@@ -82,7 +85,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const result = await pool.query("SELECT * FROM usuarios WHERE username = $1", [username]);
@@ -102,7 +105,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// --- API RUTAS ADMINISTRACIÓN ---
+// --- RUTAS DE ADMINISTRACIÓN ---
 
 app.get('/api/admin/data', async (req, res) => {
   try {
@@ -121,7 +124,7 @@ app.post('/api/admin/add-noticia', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Error al guardar noticia" }); }
 });
 
-// RUTA CORREGIDA: Sin tilde
+// RUTA CORREGIDA: Sin tilde para evitar errores 404
 app.post('/api/admin/add-buscado', async (req, res) => {
   try {
     const { nombre, peligro, hechos, recompensa, imagen } = req.body;
@@ -137,23 +140,33 @@ app.post('/api/admin/add-buscado', async (req, res) => {
 });
 
 app.post('/api/admin/delete-noticia', async (req, res) => {
-  await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar noticia" }); }
 });
 
 app.post('/api/admin/delete-buscado', async (req, res) => {
-  await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar buscado" }); }
 });
 
 app.post('/api/admin/accept-user', async (req, res) => {
-  await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query('UPDATE usuarios SET status = $1 WHERE username = $2', ['aceptado', req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al aceptar usuario" }); }
 });
 
 app.post('/api/admin/delete-user', async (req, res) => {
-  await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
-  res.json({ success: true });
+  try {
+    await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "Error al eliminar usuario" }); }
 });
 
-app.listen(process.env.PORT || 10000, () => console.log('🚀 SERVIDOR ONLINE'));
+// Servidor escuchando
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 SERVIDOR ONLINE EN PUERTO ${PORT}`));
