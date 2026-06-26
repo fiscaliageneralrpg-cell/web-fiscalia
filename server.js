@@ -23,6 +23,9 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Roles válidos del sistema, en orden de jerarquía ascendente
+const ROLES_VALIDOS = ['user', 'policial', 'altos_mandos', 'admin'];
+
 // AUTO-REPARACIÓN DE BASE DE DATOS
 const inicializarBaseDeDatos = async () => {
   try {
@@ -145,6 +148,7 @@ app.get('/api/denuncias/estados/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
+// Esta ruta es compartida por admin, altos_mandos y policial (cada panel pinta solo lo que le corresponde)
 app.get('/api/admin/data', async (req, res) => {
   try {
     const u = await pool.query('SELECT username, role, nombre_completo, sexo, nacionalidad, lugar_nacimiento, fecha_nacimiento, roblox_user, cedula FROM usuarios');
@@ -193,22 +197,54 @@ app.post('/api/admin/actualizar-estado', async (req, res) => {
   try {
     const { denuncia_id, mensaje, fecha } = req.body;
     if (!denuncia_id || !mensaje) return res.status(400).json({ error: "Faltan datos (ID o Mensaje)" });
-    
+
     // 1. Actualizar tabla principal
     const updateRes = await pool.query("UPDATE denuncias SET estado_actual = $1 WHERE id = $2", [mensaje, denuncia_id]);
     if (updateRes.rowCount === 0) return res.status(404).json({ error: "No se encontró la denuncia con ese ID" });
 
     // 2. Insertar en historial
     await pool.query("INSERT INTO estados_denuncias (denuncia_id, mensaje, fecha) VALUES ($1, $2, $3)", [denuncia_id, mensaje, fecha]);
-    
+
     res.json({ success: true });
-  } catch (err) { 
+  } catch (err) {
     console.error("❌ ERROR ACTUALIZAR ESTADO:", err);
-    res.status(500).json({ error: err.message }); 
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Otras rutas de admin...
+// --- GESTIÓN DE RANGOS ---
+// Ruta genérica de cambio de rango. Usada por:
+//   - admin.html  -> puede poner cualquier rango (user/policial/altos_mandos/admin)
+//   - altos-mandos.html -> solo puede ascender a 'policial' o bajar a 'user' (nunca dar admin/altos_mandos)
+// La validación de "quién puede asignar qué" se hace aquí en el servidor, no solo en el frontend.
+app.post('/api/admin/set-role', async (req, res) => {
+  try {
+    const { username, role, actor_role } = req.body;
+
+    if (!username || !role) return res.status(400).json({ error: "Faltan datos (username o role)" });
+    if (!ROLES_VALIDOS.includes(role)) return res.status(400).json({ error: "Rango no válido." });
+
+    // Restricción de seguridad: altos_mandos solo puede mover entre 'user' y 'policial'.
+    // Nunca puede otorgar 'altos_mandos' ni 'admin', ni quitarle el rango a un admin/altos_mandos.
+    if (actor_role === 'altos_mandos') {
+      if (!['user', 'policial'].includes(role)) {
+        return res.status(403).json({ error: "Altos Mandos solo puede asignar el rango Policial o Usuario." });
+      }
+      const target = await pool.query("SELECT role FROM usuarios WHERE username = $1", [username]);
+      if (target.rows.length && ['admin', 'altos_mandos'].includes(target.rows[0].role)) {
+        return res.status(403).json({ error: "No puedes modificar el rango de un Admin o Alto Mando." });
+      }
+    }
+
+    await pool.query("UPDATE usuarios SET role = $1 WHERE username = $2", [role, username]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ ERROR SET-ROLE:", err);
+    res.status(500).json({ error: err.message || "Error al actualizar el rango" });
+  }
+});
+
+// Mantenidas por compatibilidad con paneles/llamadas antiguas
 app.post('/api/admin/make-admin', async (req, res) => { await pool.query("UPDATE usuarios SET role = 'admin' WHERE username = $1", [req.body.username]); res.json({ success: true }); });
 app.post('/api/admin/delete-user', async (req, res) => { await pool.query('DELETE FROM usuarios WHERE username = $1', [req.body.username]); res.json({ success: true }); });
 app.post('/api/admin/add-noticia', async (req, res) => { await pool.query('INSERT INTO noticias (titular, descripcion, imagen, fecha) VALUES ($1, $2, $3, $4)', [req.body.titular, req.body.descripcion, req.body.imagen, req.body.fecha]); res.json({ success: true }); });
@@ -216,4 +252,4 @@ app.post('/api/admin/add-buscado', async (req, res) => { await pool.query('INSER
 app.post('/api/admin/delete-noticia', async (req, res) => { await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]); res.json({ success: true }); });
 app.post('/api/admin/delete-buscado', async (req, res) => { await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]); res.json({ success: true }); });
 
-app.listen(process.env.PORT || 10000, () => console.log('🚀 SERVIDOR ONLINE'));
+module.exports = app;
