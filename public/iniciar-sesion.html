@@ -303,6 +303,15 @@
             } catch (err) { alert("Error: " + err.message); }
         }
 
+        // Mapa de roles -> panel correspondiente.
+        // Si en el futuro agregas un rol nuevo, solo hace falta agregarlo aquí.
+        const RUTAS_POR_ROL = {
+            admin: '/dashboard-admin.html',
+            altos_mandos: '/dashboard-mandos.html',
+            policial: '/dashboard-policial.html',
+            user: '/dashboard-user.html'
+        };
+
         async function handleLogin(e) {
             e.preventDefault();
             const username = document.getElementById('loginUser').value;
@@ -312,7 +321,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 localStorage.setItem('currentUser', JSON.stringify(data.user));
-                window.location.href = data.user.role === 'admin' ? '/dashboard-admin.html' : '/dashboard-user.html';
+                window.location.href = RUTAS_POR_ROL[data.user.role] || '/dashboard-user.html';
             } catch (err) { alert("Error: " + err.message); }
         }
     </script>
