@@ -252,4 +252,7 @@ app.post('/api/admin/add-buscado', async (req, res) => { await pool.query('INSER
 app.post('/api/admin/delete-noticia', async (req, res) => { await pool.query('DELETE FROM noticias WHERE id = $1', [req.body.id]); res.json({ success: true }); });
 app.post('/api/admin/delete-buscado', async (req, res) => { await pool.query('DELETE FROM buscados WHERE id = $1', [req.body.id]); res.json({ success: true }); });
 
-module.exports = app;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`⚖️ Servidor Fiscalía corriendo en el puerto ${PORT}`);
+});
