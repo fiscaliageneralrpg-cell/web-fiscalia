@@ -22,7 +22,6 @@
             --mono:     'Courier New', 'Lucida Console', monospace;
             --radius:   6px;
 
-            /* Alias para compatibilidad con nombres usados originalmente */
             --primary: #c0392b;
             --secondary: #f0c040;
             --accent: #f0c040;
@@ -58,7 +57,6 @@
         .timeline-item { position: relative; padding-left: 35px; margin-bottom: 20px; border-left: 2px solid var(--border); }
         .timeline-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; background: var(--red); border-radius: 50%; border: 3px solid var(--panel); }
 
-        /* Encabezado de consola estilo hero oscuro */
         .console-hero { background: var(--surface); border: 1px solid var(--border); }
         .console-hero i { color: var(--red); text-shadow: 0 0 18px var(--red-glow); }
         .console-hero h1 { letter-spacing: -1px; font-weight: 700; }
@@ -69,11 +67,9 @@
         .stat-card.accent-gold h2 { color: var(--gold); }
         .stat-card.accent-warn h2 { color: #e0a93f; }
 
-        /* Ficha personal */
         .ficha-label { display: block; font-size: 11px; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
         .ficha-value { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text); min-height: 20px; word-break: break-word; }
 
-        /* Tablas y listas */
         .table { color: var(--text); }
         .table-light { background: var(--panel-2); color: var(--muted); }
         .table-hover > tbody > tr:hover { background-color: rgba(192,57,43,0.08); color: var(--text); }
@@ -102,7 +98,6 @@
         .btn-success { background: #2e7d4f; border: none; }
         .btn-success:hover { background: #256a40; }
 
-        /* Tarjetas de arresto */
         .arresto-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: 0.2s; }
         .arresto-card:hover { border-color: var(--red); transform: translateY(-3px); }
         .arresto-card .arresto-foto { width: 100%; height: 160px; object-fit: cover; background: var(--surface); }
@@ -110,6 +105,15 @@
         .arresto-card .arresto-info { padding: 14px; }
         .arresto-card .arresto-info h6 { color: var(--gold); font-weight: 700; margin: 0; }
         .arresto-card .arresto-info small { color: var(--muted); }
+
+        /* Select de rango dentro de la tabla */
+        .rango-select { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; font-size: 13px; min-width: 150px; }
+        .rango-select:focus { border-color: var(--red); box-shadow: 0 0 0 0.15rem var(--red-glow); outline: none; }
+        .badge-role { padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .badge-role.role-admin { background: var(--red); color: #fff; }
+        .badge-role.role-altos_mandos { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold); }
+        .badge-role.role-policial { background: rgba(70,130,200,0.18); color: #6fa8dc; border: 1px solid #3f6da8; }
+        .badge-role.role-user { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border); }
 
         @media (max-width: 992px) { .sidebar { width: 80px; } .sidebar-header span, .sidebar a span { display: none; } .main-content { margin-left: 80px; padding: 15px; } .sidebar a { justify-content: center; padding: 20px; } }
         @media (max-width: 576px) { .sidebar { position: fixed; bottom: 0; min-height: auto; width: 100%; height: 65px; flex-direction: row; display: flex; } .sidebar-header { display: none; } .sidebar a { flex: 1; border-left: none; border-top: 4px solid transparent; padding: 10px; flex-direction: column; font-size: 10px; } .sidebar a.active { border-top-color: var(--red); } .main-content { margin-left: 0; margin-bottom: 80px; padding: 10px; } .top-bar { flex-direction: column; gap: 10px; text-align: center; } }
@@ -164,7 +168,11 @@
         </div>
 
         <div id="tab-usuarios" class="tab-content-panel">
-            <div class="card-custom"><h4>Gestión de Cuentas</h4><div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>Usuario</th><th>Rango</th><th>Acciones</th></tr></thead><tbody id="tabla-usuarios"></tbody></table></div></div>
+            <div class="card-custom">
+                <h4>Gestión de Cuentas</h4>
+                <p class="mb-3" style="color: var(--muted); font-size: 13px;">Como Admin puedes asignar cualquier rango: Usuario, Policial, Altos Mandos o Admin. El cambio se aplica de inmediato.</p>
+                <div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>Usuario</th><th>Rango actual</th><th>Cambiar rango</th><th>Acciones</th></tr></thead><tbody id="tabla-usuarios"></tbody></table></div>
+            </div>
         </div>
 
         <div id="tab-noticias" class="tab-content-panel">
@@ -258,6 +266,8 @@
         if (!user || user.role !== 'admin') window.location.href = 'iniciar-sesion.html';
         document.getElementById('admin-greeting').innerText = `Hola, ${user.username}`;
 
+        const NOMBRES_ROL = { admin: 'Admin', altos_mandos: 'Altos Mandos', policial: 'Policial', user: 'Usuario' };
+
         function fillFicha() {
             document.getElementById('f-nombre').innerText = user.nombre_completo || '—';
             document.getElementById('f-sexo').innerText = user.sexo || '—';
@@ -304,7 +314,25 @@
 
                 const tU = document.getElementById('tabla-usuarios'); tU.innerHTML = '';
                 window.__usersCache = d.users;
-                d.users.forEach(u => { tU.innerHTML += `<tr><td>${u.username}</td><td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-secondary'}">${u.role}</span></td><td><button class="btn btn-sm btn-outline-warning" onclick="verInfoUsuario('${u.username}')"><i class="fa-solid fa-eye"></i> Ver información completa</button> ${u.role === 'user' ? `<button class="btn btn-sm btn-success" onclick="makeAdmin('${u.username}')">Ascender</button>` : ''} <button class="btn btn-sm btn-outline-danger" onclick="delUser('${u.username}')">X</button></td></tr>`; });
+                d.users.forEach(u => {
+                    const rolActual = u.role || 'user';
+                    tU.innerHTML += `<tr>
+                        <td>${u.username}</td>
+                        <td><span class="badge-role role-${rolActual}">${NOMBRES_ROL[rolActual] || rolActual}</span></td>
+                        <td>
+                            <select class="rango-select" onchange="cambiarRango('${u.username}', this.value, this)">
+                                <option value="user" ${rolActual === 'user' ? 'selected' : ''}>Usuario</option>
+                                <option value="policial" ${rolActual === 'policial' ? 'selected' : ''}>Policial</option>
+                                <option value="altos_mandos" ${rolActual === 'altos_mandos' ? 'selected' : ''}>Altos Mandos</option>
+                                <option value="admin" ${rolActual === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-warning" onclick="verInfoUsuario('${u.username}')"><i class="fa-solid fa-eye"></i> Ver información completa</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delUser('${u.username}')">X</button>
+                        </td>
+                    </tr>`;
+                });
 
                 const lN = document.getElementById('lista-noticias'); lN.innerHTML = '';
                 d.noticias.forEach(n => { lN.innerHTML += `<div class="list-group-item d-flex justify-content-between"><div><b>${n.titular}</b><br><small>${n.fecha}</small></div><button class="btn btn-sm text-danger" onclick="delNews(${n.id})">X</button></div>`; });
@@ -384,10 +412,38 @@
         }
 
         async function op(u, p) { const res = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if(res.ok) location.reload(); }
-        function makeAdmin(username) { if(confirm("¿Ascender?")) op('/api/admin/make-admin', { username }); }
         function delUser(username) { if(confirm("¿Eliminar?")) op('/api/admin/delete-user', { username }); }
         function delNews(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-noticia', { id }); }
         function delWanted(id) { if(confirm("¿Eliminar?")) op('/api/admin/delete-buscado', { id }); }
+
+        // Cambia el rango de un usuario desde el selector de la tabla.
+        // El admin puede asignar cualquiera de los 4 rangos, incluyendo quitar el admin (bajarlo a Usuario, Policial o Altos Mandos).
+        async function cambiarRango(username, nuevoRol, selectEl) {
+            const nombreBonito = NOMBRES_ROL[nuevoRol] || nuevoRol;
+            if (!confirm(`¿Confirmas cambiar el rango de ${username} a "${nombreBonito}"?`)) {
+                loadData(); // revierte visualmente el select si cancela
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/set-role', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, role: nuevoRol, actor_role: user.role })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alert(`✅ ${username} ahora tiene el rango: ${nombreBonito}`);
+                    loadData();
+                } else {
+                    alert("❌ ERROR: " + (result.error || "No se pudo cambiar el rango"));
+                    loadData();
+                }
+            } catch (e) {
+                alert("❌ ERROR DE CONEXIÓN: " + e.message);
+                loadData();
+            }
+        }
+
         function verInfoUsuario(username) {
             const u = (window.__usersCache || []).find(x => x.username === username);
             if (!u) return;
@@ -401,7 +457,7 @@
                 <div class="col-md-4 mb-3"><span class="ficha-label">Cédula</span><div class="ficha-value">${u.cedula || '—'}</div></div>
                 <div class="col-md-6 mb-3"><span class="ficha-label">Usuario de Roblox</span><div class="ficha-value">${u.roblox_user || '—'}</div></div>
                 <div class="col-md-6 mb-3"><span class="ficha-label">Correo (usuario)</span><div class="ficha-value">${u.username || '—'}</div></div>
-                <div class="col-md-6 mb-3"><span class="ficha-label">Rango</span><div class="ficha-value">${u.role || '—'}</div></div>`;
+                <div class="col-md-6 mb-3"><span class="ficha-label">Rango</span><div class="ficha-value">${NOMBRES_ROL[u.role] || u.role || '—'}</div></div>`;
             new bootstrap.Modal(document.getElementById('modalInfoUsuario')).show();
         }
 
@@ -433,8 +489,6 @@
             const fotoImg = document.getElementById('p-arresto');
             const foto = (fotoImg.style.display === 'block' && fotoImg.src && fotoImg.src.startsWith('data:')) ? fotoImg.src : '';
             const fecha = new Date().toLocaleString('es-ES');
-
-            console.log('[postArresto] payload:', { usuario, razon, delito, tiempo, fotoLength: foto.length, arrestado_por: user.username, fecha });
 
             if (!usuario) return alert("⚠️ Debes seleccionar un usuario.");
             if (!razon) return alert("⚠️ Falta la razón del arresto.");
