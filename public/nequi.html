@@ -275,7 +275,7 @@
         <div class="identity">
           <div class="avatar">💳</div>
           <div>
-            PANEL: <strong id="nombre">Cargando...</strong><br /><span
+            PANEL: <strong id="nombre">TU CUENTA</strong><br /><span
               id="actualizado"
               >Consultando saldo seguro</span
             >
@@ -422,6 +422,16 @@
               "Ejecuta <strong>/saldo</strong> en el servidor principal de Discord y vuelve a entrar a esta página.";
             return;
           }
+          if (
+            datos.codigo === "NEQUI_API_NO_CONFIGURADA" ||
+            datos.codigo === "NEQUI_API_INACCESIBLE"
+          ) {
+            document.querySelector("#operacion-panel").style.display = "none";
+            document.querySelector("#error").innerHTML =
+              "⚠️ <strong>La web todavía no está conectada al bot.</strong><br />" +
+              `${datos.error}<br />Configura NEQUI_API_URL y NEQUI_API_KEY en Render.`;
+            return;
+          }
           throw new Error(datos.error || "No se pudo consultar el saldo.");
         }
         const s = datos.saldo;
@@ -447,9 +457,12 @@
             (e) => (document.querySelector("#error").textContent = e.message),
           ),
         );
-      cargar().catch(
-        (e) => (document.querySelector("#error").textContent = e.message),
-      );
+      cargar().catch((e) => {
+        document.querySelector("#operacion-panel").style.display = "none";
+        document.querySelector("#error").innerHTML =
+          "⚠️ <strong>No se pudo cargar tu cuenta Nequi.</strong><br />" +
+          `${e.message || "Revisa la conexión del servidor."}`;
+      });
     </script>
   </body>
 </html>
