@@ -1,1 +1,384 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vincular cédula | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #07101d;
+        --panel: #102238;
+        --line: rgba(255, 255, 255, 0.12);
+        --text: #f4f7fb;
+        --muted: #aebbd0;
+        --yellow: #ffd166;
+        --discord: #5865f2;
+        --green: #46d39a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% 0, #15365b, transparent 42%), var(--bg);
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .wrap {
+        width: min(650px, 100%);
+      }
+
+      .card {
+        padding: 34px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(16, 34, 56, 0.94);
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      .eyebrow {
+        color: var(--yellow);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 12px 0 8px;
+        font-size: clamp(32px, 6vw, 52px);
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        font-size: 21px;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .instruction {
+        margin: 25px 0;
+        padding: 22px;
+        border: 1px solid rgba(88, 101, 242, 0.45);
+        border-radius: 16px;
+        background: rgba(88, 101, 242, 0.12);
+      }
+
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+        margin: 16px 0;
+      }
+
+      .number {
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #07101d;
+        background: var(--yellow);
+        font-weight: 900;
+      }
+
+      .step p {
+        margin: 2px 0 0;
+      }
+
+      code {
+        padding: 5px 8px;
+        border-radius: 7px;
+        color: #fff;
+        background: #07101d;
+        font-family: Consolas, monospace;
+        font-weight: 700;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 17px;
+        border: 0;
+        border-radius: 10px;
+        font: inherit;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .discord-button {
+        color: #fff;
+        background: var(--discord);
+      }
+
+      .continue-button {
+        color: #07101d;
+        background: var(--yellow);
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      .check-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .check-row input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--green);
+      }
+
+      .form-section {
+        display: none;
+        margin-top: 28px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+      }
+
+      .form-section.visible {
+        display: block;
+      }
+
+      .field {
+        display: block;
+        margin: 18px 0;
+      }
+
+      .field span {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .field input {
+        width: 100%;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        outline: none;
+        color: var(--text);
+        background: var(--bg);
+        font: inherit;
+      }
+
+      .field input:focus {
+        border-color: var(--yellow);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .error {
+        margin-top: 15px;
+        color: #fecaca;
+      }
+
+      .back {
+        display: inline-block;
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      @media (max-width: 520px) {
+        .card {
+          padding: 25px 20px;
+        }
+
+        .actions .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <div class="eyebrow">Paso obligatorio</div>
+        <h1>Vincula tu cédula</h1>
+        <p>
+          Antes de completar este formulario, debes registrar tu cédula desde el
+          servidor oficial de Discord de Medellín RP.
+        </p>
+
+        <div class="instruction">
+          <h2>Primero haz esto en Discord</h2>
+
+          <div class="step">
+            <span class="number">1</span>
+            <p>Entra al servidor oficial de Medellín RP.</p>
+          </div>
+
+          <div class="step">
+            <span class="number">2</span>
+            <p>
+              En un canal autorizado, ejecuta el comando
+              <code>/registrar cedula</code>.
+            </p>
+          </div>
+
+          <div class="step">
+            <span class="number">3</span>
+            <p>Completa el formulario que aparecerá en Discord.</p>
+          </div>
+
+          <div class="step">
+            <span class="number">4</span>
+            <p>
+              Después vuelve a esta página y continúa con el botón inferior.
+            </p>
+          </div>
+
+          <a
+            class="button discord-button"
+            href="https://discord.com/channels/1500206705055760406"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Abrir servidor de Discord
+          </a>
+        </div>
+
+        <label class="check-row">
+          <input id="confirmado" type="checkbox" />
+          Ya ejecuté <code>/registrar cedula</code> y completé el formulario en
+          Discord.
+        </label>
+
+        <button
+          id="continuar"
+          class="button continue-button"
+          type="button"
+          disabled
+        >
+          Continuar con la vinculación
+        </button>
+
+        <section id="formulario-section" class="form-section">
+          <h2>Confirmar datos de la cédula</h2>
+          <p>
+            Estos datos deben coincidir con la información que registraste en
+            Discord.
+          </p>
+
+          <form id="formulario">
+            <label class="field">
+              <span>NUIP / número de cédula</span>
+              <input
+                name="nuip"
+                inputmode="numeric"
+                pattern="[0-9]{5,20}"
+                minlength="5"
+                maxlength="20"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>Nombre completo</span>
+              <input name="nombre" maxlength="150" required />
+            </label>
+
+            <label class="field">
+              <span>Fecha de nacimiento (opcional)</span>
+              <input name="fecha_nacimiento" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Nacionalidad</span>
+              <input name="nacionalidad" value="Colombiana" required />
+            </label>
+
+            <button class="button continue-button" type="submit">
+              Guardar vinculación
+            </button>
+            <div id="error" class="error" role="alert"></div>
+          </form>
+        </section>
+
+        <a class="back" href="/dashboard-user.html">← Volver al dashboard</a>
+      </section>
+    </main>
+
+    <script>
+      const confirmado = document.querySelector("#confirmado");
+      const continuar = document.querySelector("#continuar");
+      const formularioSection = document.querySelector("#formulario-section");
+      const formulario = document.querySelector("#formulario");
+      const error = document.querySelector("#error");
+
+      confirmado.addEventListener("change", () => {
+        continuar.disabled = !confirmado.checked;
+      });
+
+      continuar.addEventListener("click", () => {
+        formularioSection.classList.add("visible");
+        continuar.style.display = "none";
+        formularioSection.scrollIntoView({ behavior: "smooth" });
+      });
+
+      formulario.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        error.textContent = "Guardando vinculación...";
+
+        try {
+          const respuesta = await fetch("/api/cedula", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.fromEntries(new FormData(formulario))),
+          });
+
+          const datos = await respuesta.json();
+
+          if (!respuesta.ok) {
+            throw new Error(
+              datos.error || "No se pudo guardar la vinculación.",
+            );
+          }
+
+          window.location.href = datos.redirect || "/dashboard-user.html";
+        } catch (resultado) {
+          error.textContent = resultado.message;
+        }
+      });
+    </script>
+  </body>
+</html>
 
