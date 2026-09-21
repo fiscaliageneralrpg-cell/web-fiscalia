@@ -5,122 +5,149 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Dashboard | Medellín RP</title>
     <style>
+      :root {
+        --navy: #071b2b;
+        --blue: #0c7890;
+        --cyan: #42d8d0;
+        --cream: #f4efe3;
+        --muted: #a9bac6;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
-        background: #07101d;
-        color: #f4f7fb;
-        font-family: system-ui, sans-serif;
+        min-height: 100vh;
+        color: var(--cream);
+        background: linear-gradient(135deg, #06141f, #0a3140);
+        font-family: Inter, system-ui, sans-serif;
       }
       .wrap {
-        width: min(980px, calc(100% - 30px));
-        margin: 45px auto;
+        width: min(920px, calc(100% - 32px));
+        margin: 42px auto;
       }
       .top {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 25px;
+        color: #cde9e5;
       }
-      .logout {
-        color: #aebbd0;
+      .top a {
+        color: #9ec9cc;
         text-decoration: none;
-      }
-      .hero,
-      .card {
-        padding: 28px;
-        border: 1px solid #ffffff1c;
-        border-radius: 22px;
-        background: #102238;
       }
       .hero {
-        background: linear-gradient(135deg, #173e65, #102238);
+        position: relative;
+        margin-top: 28px;
+        padding: 42px;
+        border: 1px solid #42d8d044;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #0c7180, #102b42);
+        overflow: hidden;
       }
-      h1 {
-        margin: 0 0 8px;
-        letter-spacing: -0.05em;
+      .hero:after {
+        position: absolute;
+        right: -90px;
+        bottom: -150px;
+        width: 380px;
+        height: 380px;
+        border: 1px solid #42d8d033;
+        border-radius: 50%;
+        content: "";
       }
-      p {
-        color: #aebbd0;
+      .eyebrow {
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.17em;
+        text-transform: uppercase;
       }
-      .grid {
+      .hero h1 {
+        position: relative;
+        z-index: 1;
+        margin: 12px 0 8px;
+        font-size: clamp(32px, 7vw, 66px);
+        letter-spacing: -0.07em;
+      }
+      .hero p {
+        position: relative;
+        z-index: 1;
+        max-width: 530px;
+        color: #c5e2e1;
+      }
+      .info {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-        margin-top: 18px;
-      }
-      .card h3 {
-        margin-top: 0;
-      }
-      .value {
-        font-size: 22px;
-        font-weight: 800;
-        color: #ffd166;
-      }
-      .muted {
-        font-size: 13px;
-        color: #aebbd0;
-      }
-      .document-card {
-        margin-top: 18px;
-        padding: 22px;
-        border: 1px solid #ffffff1c;
-        border-radius: 22px;
-        background: #102238;
-      }
-      .document-card h2 {
-        margin-top: 0;
-      }
-      .quick-actions {
-        margin-top: 18px;
-      }
-      .quick-action {
-        display: block;
-        padding: 18px;
-        border: 1px solid #ffffff1c;
-        border-radius: 16px;
-        color: #f4f7fb;
-        background: linear-gradient(135deg, #173e65, #102238);
-        text-decoration: none;
-      }
-      .quick-action.nequi {
-        background: linear-gradient(135deg, #3a1367, #170d2b);
-      }
-      .quick-action strong,
-      .quick-action span {
-        display: block;
-      }
-      .quick-action span {
-        margin-top: 5px;
-        color: #aebbd0;
-        font-size: 13px;
-      }
-      .dashboard-actions {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
         gap: 14px;
         margin-top: 18px;
       }
-      #cedula-imagen-contenedor {
-        display: none;
-        margin-top: 18px;
-        overflow: hidden;
-        border: 1px solid #ffd16644;
-        border-radius: 16px;
-        background: #07101d;
+      .info article {
+        padding: 22px;
+        border: 1px solid #ffffff1c;
+        border-radius: 18px;
+        background: #0b2737aa;
       }
-      #cedula-imagen {
+      .label {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .value {
         display: block;
-        width: 100%;
-        height: auto;
+        margin-top: 10px;
+        color: var(--cyan);
+        font-size: 22px;
+        font-weight: 900;
       }
-      @media (max-width: 700px) {
-        .grid {
-          grid-template-columns: 1fr;
+      .panel {
+        display: block;
+        margin-top: 18px;
+        padding: 22px;
+        border: 1px solid #42d8d044;
+        border-radius: 20px;
+        color: #fff;
+        text-decoration: none;
+        background: #0a4050;
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .panel:hover {
+        transform: translateY(-3px);
+        background: #0d6170;
+      }
+      .panel strong,
+      .panel span {
+        display: block;
+      }
+      .panel strong {
+        font-size: 20px;
+      }
+      .panel span {
+        margin-top: 6px;
+        color: #b5d5d7;
+        font-size: 13px;
+      }
+      .foot {
+        margin-top: 22px;
+        color: #819ca7;
+        font-size: 12px;
+      }
+      @media (max-width: 650px) {
+        .wrap {
+          margin: 25px auto;
         }
         .top {
           align-items: flex-start;
           gap: 12px;
           flex-direction: column;
+        }
+        .hero {
+          padding: 28px;
+        }
+        .info {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -129,82 +156,61 @@
     <main class="wrap">
       <div class="top">
         <strong>「ME:RP」Medellín RP︱ER:LC</strong
-        ><a class="logout" href="/cerrar-sesion">Cerrar sesión</a>
+        ><a href="/cerrar-sesion">Cerrar sesión</a>
       </div>
       <section class="hero">
-        <h1 id="saludo">Cargando dashboard...</h1>
-        <p>Bienvenido a tu espacio personal dentro de la comunidad.</p>
-      </section>
-      <section class="grid">
-        <article class="card">
-          <h3>Ciudadano</h3>
-          <div id="nombre" class="value">—</div>
-          <div class="muted">Nombre registrado</div>
-        </article>
-        <article class="card">
-          <h3>NUIP</h3>
-          <div id="nuip" class="value">—</div>
-          <div class="muted">Documento ciudadano</div>
-        </article>
-        <article class="card">
-          <h3>Whitelist</h3>
-          <div class="value">Aprobada</div>
-          <div class="muted">Acceso autorizado</div>
-        </article>
-      </section>
-      <section class="dashboard-actions">
-        <a class="quick-action" href="#documentacion">
-          <strong>🪪 Ver mi cédula</strong>
-          <span>Consultar mi documentación ciudadana</span>
-        </a>
-        <a class="quick-action nequi" href="/nequi.html">
-          <strong>💜 Nequi</strong>
-          <span>Depositar, retirar y transferir</span>
-        </a>
-      </section>
-      <section id="documentacion" class="document-card">
-        <h2>🪪 Mi cédula ciudadana</h2>
-        <p class="muted">Imagen generada por el sistema de Medellín RP.</p>
-        <div id="cedula-imagen-contenedor">
-          <img id="cedula-imagen" alt="Cédula de ciudadanía" />
-        </div>
-        <p id="sin-imagen" class="muted">
-          Usa <strong>/mostrar-cedula</strong> en Discord para generar o
-          actualizar la imagen.
+        <div class="eyebrow">Portal ciudadano</div>
+        <h1 id="saludo">Bienvenido</h1>
+        <p>
+          Gestiona tu identidad y consulta la información oficial de tu
+          personaje dentro de Medellín RP.
         </p>
       </section>
+      <section class="info">
+        <article>
+          <div class="label">Ciudadano</div>
+          <span id="nombre" class="value">—</span>
+        </article>
+        <article>
+          <div class="label">NUIP</div>
+          <span id="nuip" class="value">—</span>
+        </article>
+        <article>
+          <div class="label">Estado</div>
+          <span class="value">Activo</span>
+        </article>
+      </section>
+      <a class="panel" href="/ciudadano.html"
+        ><strong>▣ Panel ciudadano</strong
+        ><span>Consulta tu cédula, expediente, Nequi y antecedentes.</span></a
+      >
+      <div class="foot">
+        Sistema digital de Medellín RP · Información protegida para usuarios
+        autenticados.
+      </div>
     </main>
     <script>
       (async () => {
-        const r = await fetch("/api/usuario");
-        if (!r.ok) {
-          location.href = "/iniciar-seccion.html";
-          return;
-        }
-        const d = await r.json(),
-          u = d.usuario;
-        if (d.redireccion) {
-          location.href = d.redireccion;
-          return;
-        }
-        document.querySelector("#saludo").textContent = `Hola, ${u.nombre}`;
-        document.querySelector("#nombre").textContent =
-          u.cedula?.nombre || u.nombre;
-        document.querySelector("#nuip").textContent =
-          u.cedula?.nuip || "Sin registrar";
-
-        if (u.cedula) {
-          const contenedor = document.querySelector(
-            "#cedula-imagen-contenedor",
-          );
-          const imagen = document.querySelector("#cedula-imagen");
-          imagen.src = "/api/cedula/imagen?t=" + Date.now();
-          imagen.onerror = () => {
-            contenedor.style.display = "none";
-            document.querySelector("#sin-imagen").style.display = "block";
-          };
-          contenedor.style.display = "block";
-          document.querySelector("#sin-imagen").style.display = "none";
+        try {
+          const r = await fetch("/api/usuario", { cache: "no-store" });
+          if (!r.ok) {
+            location.href = "/iniciar-seccion.html";
+            return;
+          }
+          const d = await r.json();
+          if (d.redireccion) {
+            location.href = d.redireccion;
+            return;
+          }
+          const u = d.usuario || {};
+          document.querySelector("#saludo").textContent =
+            "Hola, " + (u.nombre || "ciudadano");
+          document.querySelector("#nombre").textContent =
+            u.cedula?.nombre || u.nombre || "—";
+          document.querySelector("#nuip").textContent =
+            u.cedula?.nuip || "Sin registrar";
+        } catch (e) {
+          document.querySelector("#saludo").textContent = "Portal ciudadano";
         }
       })();
     </script>
