@@ -122,6 +122,30 @@
         padding: 12px;
         border-radius: 10px;
       }
+      .denied-notice {
+        display: none;
+        position: relative;
+        margin-bottom: 22px;
+        padding: 16px 48px 16px 16px;
+        border: 1px solid rgba(248, 113, 113, 0.45);
+        border-radius: 13px;
+        color: #fee2e2;
+        background: rgba(127, 29, 29, 0.35);
+      }
+      .denied-notice strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .close-notice {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        border: 0;
+        color: #fee2e2;
+        background: transparent;
+        font-size: 20px;
+        cursor: pointer;
+      }
       .error {
         display: block;
         background: #7f1d1d;
@@ -151,6 +175,20 @@
         <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
       </div>
       <section class="card">
+        <div id="denied-notice" class="denied-notice" role="alert">
+          <button
+            id="close-notice"
+            class="close-notice"
+            type="button"
+            aria-label="Cerrar aviso"
+          >
+            ×
+          </button>
+          <strong>⚠️ Tu whitelist fue denegada</strong>
+          <span id="denied-reason"
+            >Vuelve a realizarla para poder continuar.</span
+          >
+        </div>
         <h1>Whitelist</h1>
         <p class="intro">
           Responde con sinceridad. Tu solicitud será revisada por el equipo de
@@ -223,7 +261,42 @@
     </main>
     <script>
       const form = document.querySelector("#formulario"),
-        estado = document.querySelector("#estado");
+        estado = document.querySelector("#estado"),
+        avisoDenegada = document.querySelector("#denied-notice"),
+        motivoDenegada = document.querySelector("#denied-reason");
+
+      async function revisarEstadoAnterior() {
+        try {
+          const respuesta = await fetch("/api/whitelist/status", {
+            cache: "no-store",
+          });
+
+          if (!respuesta.ok) return;
+
+          const datos = await respuesta.json();
+
+          if (datos.estado === "aceptada" && datos.redirect) {
+            window.location.href = datos.redirect;
+            return;
+          }
+
+          if (datos.estado === "denegada") {
+            avisoDenegada.style.display = "block";
+            motivoDenegada.textContent = datos.motivo
+              ? `Motivo: ${datos.motivo}. Vuelve a realizar la whitelist.`
+              : "Vuelve a realizar la whitelist para poder continuar.";
+          }
+        } catch (error) {
+          console.error("[WHITELIST] No se pudo revisar el estado:", error);
+        }
+      }
+
+      document.querySelector("#close-notice").addEventListener("click", () => {
+        avisoDenegada.style.display = "none";
+      });
+
+      revisarEstadoAnterior();
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         estado.className = "status";
