@@ -101,7 +101,7 @@ function obtenerAvatarUrl(usuario) {
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
 
-async function enviarEmbedDiscord(canalId, embed) {
+async function enviarEmbedDiscord(canalId, embed, components = []) {
   const respuesta = await fetch(
     `https://discord.com/api/v10/channels/${canalId}/messages`,
     {
@@ -111,7 +111,7 @@ async function enviarEmbedDiscord(canalId, embed) {
         "Content-Type": "application/json",
         "User-Agent": "Medellin-RP-Web/1.0",
       },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({ embeds: [embed], components }),
     },
   );
 
@@ -258,7 +258,7 @@ app.post("/api/whitelist", async (req, res) => {
   try {
     const { pool } = require("./db");
 
-    await pool.execute(
+    const [resultadoWhitelist] = await pool.execute(
       `INSERT INTO whitelist_solicitudes
                 (discord_id, discord_username, respuestas, estado)
              VALUES (?, ?, ?, 'pendiente')`,
@@ -278,31 +278,53 @@ app.post("/api/whitelist", async (req, res) => {
     );
 
     try {
-      await enviarEmbedDiscord("1539313915001839616", {
-        title: "📋 NUEVA SOLICITUD DE WHITELIST",
-        description:
-          `El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
-          `**Estado:** Pendiente de revisión`,
-        color: 0xffd166,
-        thumbnail: req.session.usuario.avatarUrl
-          ? { url: req.session.usuario.avatarUrl }
-          : undefined,
-        fields: [
+      await enviarEmbedDiscord(
+        "1539313915001839616",
+        {
+          title: "📋 NUEVA SOLICITUD DE WHITELIST",
+          description:
+            `El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
+            `**Estado:** Pendiente de revisión`,
+          color: 0xffd166,
+          thumbnail: req.session.usuario.avatarUrl
+            ? { url: req.session.usuario.avatarUrl }
+            : undefined,
+          fields: [
+            {
+              name: "👤 Usuario",
+              value: `<@${req.session.usuario.id}>`,
+              inline: true,
+            },
+            {
+              name: "🆔 Discord ID",
+              value: req.session.usuario.id,
+              inline: true,
+            },
+            ...camposWhitelist,
+          ].slice(0, 25),
+          footer: { text: "Medellín RP • Whitelist web" },
+          timestamp: new Date().toISOString(),
+        },
+        [
           {
-            name: "👤 Usuario",
-            value: `<@${req.session.usuario.id}>`,
-            inline: true,
+            type: 1,
+            components: [
+              {
+                type: 2,
+                style: 3,
+                label: "ACEPTAR",
+                custom_id: `whitelist:aceptar:${resultadoWhitelist.insertId}:${req.session.usuario.id}`,
+              },
+              {
+                type: 2,
+                style: 4,
+                label: "DENEGAR",
+                custom_id: `whitelist:denegar:${resultadoWhitelist.insertId}:${req.session.usuario.id}`,
+              },
+            ],
           },
-          {
-            name: "🆔 Discord ID",
-            value: req.session.usuario.id,
-            inline: true,
-          },
-          ...camposWhitelist,
-        ].slice(0, 25),
-        footer: { text: "Medellín RP • Whitelist web" },
-        timestamp: new Date().toISOString(),
-      });
+        ],
+      );
     } catch (errorDiscord) {
       console.error(
         "[WHITELIST] Se guardó en MySQL, pero no llegó a Discord:",
