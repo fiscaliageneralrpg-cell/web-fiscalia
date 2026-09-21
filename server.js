@@ -345,6 +345,49 @@ app.post("/api/whitelist", async (req, res) => {
   }
 });
 
+app.get("/api/whitelist/status", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+
+  try {
+    const { pool } = require("./db");
+    const [solicitudes] = await pool.execute(
+      `SELECT estado, motivo_denegacion
+       FROM whitelist_solicitudes
+       WHERE discord_id = ?
+       ORDER BY id DESC
+       LIMIT 1`,
+      [req.session.usuario.id],
+    );
+
+    const estado = solicitudes[0] || null;
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
+    const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
+
+    if (aprobadaPorRol || estado?.estado === "aceptada") {
+      return res.json({
+        estado: "aceptada",
+        redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html",
+      });
+    }
+
+    if (estado?.estado === "denegada") {
+      return res.json({
+        estado: "denegada",
+        motivo: estado.motivo_denegacion || "La solicitud fue denegada.",
+        redirect: "/whitelist-denegada.html",
+      });
+    }
+
+    return res.json({ estado: "pendiente" });
+  } catch (error) {
+    console.error("[WHITELIST STATUS]", error.message);
+    return res.status(500).json({
+      error: "No se pudo consultar el estado de la whitelist.",
+    });
+  }
+});
+
 app.post("/api/cedula", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
