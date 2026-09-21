@@ -678,12 +678,15 @@ app.get("/api/nequi", async (req, res) => {
       [req.session.usuario.id],
     );
 
-    const saldo = filas[0] || {
-      billetera: 0,
-      banco: 0,
-      numero_tarjeta: null,
-      actualizado_en: null,
-    };
+    if (!filas[0]) {
+      return res.status(404).json({
+        codigo: "CUENTA_NEQUI_INEXISTENTE",
+        error:
+          "No tienes una cuenta Nequi activa. Ejecuta /saldo en el servidor principal de Discord.",
+      });
+    }
+
+    const saldo = filas[0];
 
     return res.json({
       correcto: true,
