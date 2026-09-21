@@ -71,9 +71,6 @@
         margin-top: 0;
       }
       .quick-actions {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
         margin-top: 18px;
       }
       .quick-action {
@@ -96,6 +93,12 @@
         margin-top: 5px;
         color: #aebbd0;
         font-size: 13px;
+      }
+      .dashboard-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-top: 18px;
       }
       #cedula-imagen-contenedor {
         display: none;
@@ -149,7 +152,17 @@
           <div class="muted">Acceso autorizado</div>
         </article>
       </section>
-      <section class="document-card">
+      <section class="dashboard-actions">
+        <a class="quick-action" href="#documentacion">
+          <strong>🪪 Ver mi cédula</strong>
+          <span>Consultar mi documentación ciudadana</span>
+        </a>
+        <a class="quick-action nequi" href="/nequi.html">
+          <strong>💜 Nequi</strong>
+          <span>Depositar, retirar y transferir</span>
+        </a>
+      </section>
+      <section id="documentacion" class="document-card">
         <h2>🪪 Mi cédula ciudadana</h2>
         <p class="muted">Imagen generada por el sistema de Medellín RP.</p>
         <div id="cedula-imagen-contenedor">
@@ -159,16 +172,6 @@
           Usa <strong>/mostrar-cedula</strong> en Discord para generar o
           actualizar la imagen.
         </p>
-        <div class="quick-actions">
-          <a class="quick-action" href="#cedula-imagen-contenedor">
-            <strong>🪪 Documentación</strong>
-            <span>Ver tu cédula ciudadana</span>
-          </a>
-          <a class="quick-action nequi" href="/nequi.html">
-            <strong>💜 Nequi</strong>
-            <span>Consultar dinero, banco y tarjeta</span>
-          </a>
-        </div>
       </section>
     </main>
     <script>
