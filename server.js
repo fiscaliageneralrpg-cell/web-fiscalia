@@ -1,44 +1,103 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const { probarConexion, buscarUsuarioPorDiscord } = require('./db');
+
 require('dotenv').config();
 
 const app = express();
-
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 const variablesObligatorias = [
     'SESSION_SECRET',
     'DISCORD_CLIENT_ID',
     'DISCORD_CLIENT_SECRET',
-    'DISCORD_REDIRECT_URI'
+    'DISCORD_REDIRECT_URI',
+    'DISCORD_GUILD_ID',
+    'DISCORD_BOT_TOKEN'
 ];
 
-for (const variable of variablesObligatorias) {
-    if (!process.env[variable]) {
-        console.error(`[CONFIGURACIÓN] Falta la variable: ${variable}`);
-        process.exit(1);
-    }
+const faltantes = variablesObligatorias.filter(
+    (variable) => !process.env[variable]
+);
+
+if (faltantes.length > 0) {
+    console.error(
+        `[CONFIGURACION] Faltan variables en Render: ${faltantes.join(', ')}`
+    );
+    process.exit(1);
 }
 
-app.set('trust proxy', 1);
+const ROL_WHITELIST_APROBADA = '1500316176960716940';
+const ROL_WHITELIST_PENDIENTE = '1500556631157768242';
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 24
     }
-} ));
+}));
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+function redirigirDespuesDeLogin(req, res, destino) {
+    req.session.save((error) => {
+        if (error) {
+            console.error('[SESION] No se pudo guardar la sesión:', error);
+            return res.status(500).send('No se pudo guardar la sesión.');
+        }
+
+        return res.redirect(destino);
+    });
+}
+
+async function obtenerRolesDelServidor(discordId) {
+    const url = new URL(
+        `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}`
+    );
+
+    const respuesta = await fetch(url, {
+        headers: {
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+            'User-Agent': 'Medellin-RP-Web/1.0'
+        }
+    });
+
+    if (respuesta.status === 404) {
+        return [];
+    }
+
+    if (!respuesta.ok) {
+        const detalle = await respuesta.text();
+        throw new Error(
+            `Discord no devolvió los roles: ${respuesta.status} ${detalle}`
+        );
+    }
+
+    const miembro = await respuesta.json();
+    return Array.isArray(miembro.roles) ? miembro.roles : [];
+}
+
+function obtenerAvatarUrl(usuario) {
+    if (!usuario.avatar) {
+        return null;
+    }
+
+    const extension = usuario.avatar.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
+}
 
 app.get('/auth/discord', (req, res) => {
     const parametros = new URLSearchParams({
@@ -48,18 +107,17 @@ app.get('/auth/discord', (req, res) => {
         scope: 'identify'
     });
 
-    const urlDiscord =
-        `https://discord.com/oauth2/authorize?${parametros.toString( )}`;
-
-    res.redirect(urlDiscord);
+    res.redirect(
+        `https://discord.com/oauth2/authorize?${parametros.toString()}`
+    );
 });
 
 app.get('/auth/discord/callback', async (req, res) => {
-    const { code, error } = req.query;
+    const { code, error, error_description: descripcion } = req.query;
 
     if (error) {
         return res.status(400).send(
-            `Discord canceló el inicio de sesión: ${error}`
+            `Discord canceló el inicio de sesión: ${descripcion || error}`
         );
     }
 
@@ -79,13 +137,14 @@ app.get('/auth/discord/callback', async (req, res) => {
         });
 
         const respuestaToken = await fetch(
-            'https://discord.com/api/oauth2/token',
+            'https://discord.com/api/v10/oauth2/token',
             {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Medellin-RP-Web/1.0'
                 },
-                body: parametrosToken.toString( )
+                body: parametrosToken.toString()
             }
         );
 
@@ -93,66 +152,95 @@ app.get('/auth/discord/callback', async (req, res) => {
 
         if (!respuestaToken.ok || !datosToken.access_token) {
             console.error('[DISCORD TOKEN]', datosToken);
-
             return res.status(401).send(
                 'Discord no pudo validar el inicio de sesión.'
             );
         }
 
         const respuestaUsuario = await fetch(
-            'https://discord.com/api/users/@me',
+            'https://discord.com/api/v10/users/@me',
             {
                 headers: {
-                    Authorization: `${datosToken.token_type} ${datosToken.access_token}`
+                    Authorization: `${datosToken.token_type} ${datosToken.access_token}`,
+                    'User-Agent': 'Medellin-RP-Web/1.0'
                 }
             }
-         );
+        );
 
         const usuario = await respuestaUsuario.json();
 
         if (!respuestaUsuario.ok || !usuario.id) {
             console.error('[DISCORD USUARIO]', usuario);
-
             return res.status(401).send(
                 'No se pudo obtener tu usuario de Discord.'
             );
         }
 
+        const roles = await obtenerRolesDelServidor(usuario.id);
+        const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
+        const whitelistPendiente = roles.includes(ROL_WHITELIST_PENDIENTE);
+
+        const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
+
         req.session.usuario = {
             id: usuario.id,
             username: usuario.username,
             nombre: usuario.global_name || usuario.username,
-            avatar: usuario.avatar
+            avatar: usuario.avatar,
+            avatarUrl: obtenerAvatarUrl(usuario),
+            roles,
+            whitelistAprobada,
+            whitelistPendiente,
+            cedulaRegistrada: Boolean(usuarioRegistrado),
+            cedula: usuarioRegistrado
         };
 
         console.log(
-            `[LOGIN] Usuario conectado: ${usuario.username} (${usuario.id})`
+            `[LOGIN] ${usuario.username} (${usuario.id}) | ` +
+            `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`
         );
 
-        res.redirect('/dashboard-user.html');
+        if (whitelistPendiente || !whitelistAprobada) {
+            return redirigirDespuesDeLogin(req, res, '/whitelist.html');
+        }
+
+        if (!usuarioRegistrado) {
+            return redirigirDespuesDeLogin(req, res, '/crear-cedula.html');
+        }
+
+        return redirigirDespuesDeLogin(req, res, '/dashboard-user.html');
     } catch (error) {
         console.error('[DISCORD OAUTH2]', error);
-        res.status(500).send(
+        return res.status(500).send(
             'Ocurrió un error interno durante el inicio de sesión.'
         );
     }
 });
 
-app.get('/api/estado', (req, res) => {
-    res.json({
-        correcto: true,
-        mensaje: 'La web está funcionando correctamente'
-    });
+app.get('/api/estado', async (req, res) => {
+    try {
+        await probarConexion();
+        return res.json({
+            correcto: true,
+            mysql: true,
+            mensaje: 'La web está funcionando correctamente.'
+        });
+    } catch (error) {
+        console.error('[API ESTADO MYSQL]', error.message);
+        return res.status(503).json({
+            correcto: false,
+            mysql: false,
+            mensaje: 'La web funciona, pero no pudo conectar con MySQL.'
+        });
+    }
 });
 
 app.get('/api/usuario', (req, res) => {
     if (!req.session.usuario) {
-        return res.status(401).json({
-            autenticado: false
-        });
+        return res.status(401).json({ autenticado: false });
     }
 
-    res.json({
+    return res.json({
         autenticado: true,
         usuario: req.session.usuario
     });
@@ -164,14 +252,18 @@ app.get('/cerrar-sesion', (req, res) => {
             console.error('[SESION]', error);
         }
 
-        res.redirect('/iniciar-seccion.html');
+        res.clearCookie('connect.sid');
+        return res.redirect('/iniciar-seccion.html');
     });
 });
 
 app.use((req, res) => {
-    res.status(404).send('Página no encontrada');
+    return res.status(404).send('Página no encontrada.');
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Web iniciada en el puerto ${PORT}`);
+    console.log(`[WEB] Servidor iniciado en el puerto ${PORT}.`);
+    probarConexion().catch((error) => {
+        console.error('[MYSQL] Error de conexión:', error.message);
+    });
 });
