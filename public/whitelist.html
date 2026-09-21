@@ -48,8 +48,59 @@
         padding: 30px;
         border: 1px solid var(--line);
         border-radius: 24px;
-        background: #0d1b2dcc;
-        box-shadow: 0 25px 70px #0006;
+        background: linear-gradient(145deg, #102943f2, #0b1728f2);
+        box-shadow:
+          0 25px 70px #0008,
+          inset 0 1px #ffffff12;
+      }
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 26px;
+        padding: 18px;
+        border: 1px solid #ffd16633;
+        border-radius: 17px;
+        background: linear-gradient(110deg, #ffd16618, #5865f214);
+      }
+      .hero-icon {
+        display: grid;
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        place-items: center;
+        border-radius: 15px;
+        background: #ffd166;
+        color: #07101d;
+        font-size: 25px;
+      }
+      .hero strong {
+        display: block;
+        font-size: 16px;
+      }
+      .hero span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .steps {
+        display: flex;
+        gap: 8px;
+        margin: 0 0 25px;
+      }
+      .step {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .step.active {
+        border-color: #ffd16666;
+        color: var(--yellow);
+        background: #ffd16612;
       }
       h1 {
         margin: 0 0 8px;
@@ -89,6 +140,12 @@
       .question textarea {
         min-height: 88px;
         resize: vertical;
+      }
+      form h2 {
+        padding: 11px 14px;
+        border-left: 3px solid var(--yellow);
+        border-radius: 8px;
+        background: #ffd1660d;
       }
       .question input:focus,
       .question textarea:focus {
@@ -175,6 +232,20 @@
         <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
       </div>
       <section class="card">
+        <div class="hero">
+          <div class="hero-icon">📋</div>
+          <div>
+            <strong>Solicitud oficial de 「ME:RP」</strong>
+            <span
+              >Completa el formulario con respuestas propias y sinceras.</span
+            >
+          </div>
+        </div>
+        <div class="steps">
+          <span class="step active">01 Información</span>
+          <span class="step active">02 Conocimientos RP</span>
+          <span class="step active">03 Situaciones</span>
+        </div>
         <div id="denied-notice" class="denied-notice" role="alert">
           <button
             id="close-notice"
