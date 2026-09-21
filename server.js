@@ -30,6 +30,13 @@ if (faltantes.length > 0) {
 
 const ROL_WHITELIST_APROBADA = "1500316176960716940";
 const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
+const EMOJI_ESPERA = "<:8810datetime:1538599244678692934>";
+const EMOJI_ACEPTADO = "<:1507611843198451915:1538596251879219371>";
+const EMOJI_DENEGADO = "<a:1485274567520948324:1549034139456380978>";
+const EMOJI_ADMIN = "<a:1334651531206856755:1548832195400040488>";
+const EMOJI_FORMULARIO = "<:1543355584793813002:1549408007610302527>";
+const EMOJI_FORMULARIO_2 = "<:1543355638636220526:1549408009212403763>";
+const NOMBRE_SERVIDOR = "「ME:RP」Medellín RP︱ER:LC";
 
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -220,7 +227,14 @@ app.get("/auth/discord/callback", async (req, res) => {
         `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`,
     );
 
-    if (whitelistPendiente || !whitelistAprobada) {
+    if (whitelistPendiente) {
+      console.log(
+        `[LOGIN] ${usuario.id} conserva el rol pendiente: va a whitelist.`,
+      );
+      return redirigirDespuesDeLogin(req, res, "/whitelist.html");
+    }
+
+    if (!whitelistAprobada) {
       return redirigirDespuesDeLogin(req, res, "/whitelist.html");
     }
 
@@ -281,9 +295,9 @@ app.post("/api/whitelist", async (req, res) => {
       await enviarEmbedDiscord(
         "1539313915001839616",
         {
-          title: "📋 NUEVA SOLICITUD DE WHITELIST",
+          title: `${EMOJI_FORMULARIO} NUEVA SOLICITUD DE WHITELIST`,
           description:
-            `El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
+            `${EMOJI_ESPERA} El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
             `**Estado:** Pendiente de revisión`,
           color: 0xffd166,
           thumbnail: req.session.usuario.avatarUrl
@@ -291,18 +305,18 @@ app.post("/api/whitelist", async (req, res) => {
             : undefined,
           fields: [
             {
-              name: "👤 Usuario",
+              name: `${EMOJI_ADMIN} Usuario`,
               value: `<@${req.session.usuario.id}>`,
               inline: true,
             },
             {
-              name: "🆔 Discord ID",
+              name: `${EMOJI_FORMULARIO_2} Discord ID`,
               value: req.session.usuario.id,
               inline: true,
             },
             ...camposWhitelist,
           ].slice(0, 25),
-          footer: { text: "Medellín RP • Whitelist web" },
+          footer: { text: `${NOMBRE_SERVIDOR} • Gestión de whitelist` },
           timestamp: new Date().toISOString(),
         },
         [
@@ -575,13 +589,22 @@ app.get("/api/usuario", async (req, res) => {
     const cedulaActualizada = await buscarUsuarioPorDiscord(
       req.session.usuario.id,
     );
+    const rolesActualizados = await obtenerRolesDelServidor(
+      req.session.usuario.id,
+    );
+    const conservaRolPendiente = rolesActualizados.includes(
+      ROL_WHITELIST_PENDIENTE,
+    );
 
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
+    req.session.usuario.roles = rolesActualizados;
+    req.session.usuario.whitelistPendiente = conservaRolPendiente;
 
     return res.json({
       autenticado: true,
       usuario: req.session.usuario,
+      redireccion: conservaRolPendiente ? "/whitelist.html" : null,
     });
   } catch (error) {
     console.error("[API USUARIO]", error.message);
