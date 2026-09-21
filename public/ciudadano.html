@@ -87,6 +87,7 @@
         color: #cbd8e3;
         background: #ffffff0a;
         font-weight: 800;
+        cursor: pointer;
       }
       .tab.active {
         border-color: var(--yellow);
@@ -205,6 +206,26 @@
       .record strong {
         color: var(--ink);
       }
+      .pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .pager button {
+        padding: 9px 13px;
+        border: 1px solid #42d8d088;
+        border-radius: 8px;
+        color: var(--ink);
+        background: #42d8d022;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .pager button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
       .status {
         margin-top: 15px;
       }
@@ -238,10 +259,9 @@
         <div class="seal">✦</div>
       </header>
       <nav class="tabs">
-        <span class="tab active">▣ Info general</span
-        ><span class="tab">⚒ Arrestos (<b id="arrestos">0</b>)</span
-        ><span class="tab">▤ Multas (<b id="multas">0</b>)</span
-        ><span class="tab">◉ Órdenes (0)</span>
+        <button class="tab active" data-vista="general">▣ Info general</button
+        ><button class="tab" data-vista="antecedentes">⚒ Antecedentes (<b id="arrestos">0</b>)</button
+        ><button class="tab" data-vista="multas">▤ Multas (<b id="multas">0</b>)</button>
       </nav>
       <section class="summary">
         <article class="metric gold">
@@ -283,11 +303,16 @@
             </div>
             <a class="visa-link" href="/nequi.html">Abrir gestión Nequi →</a>
           </article>
-          <article class="paper">
-            <h2>📋 Antecedentes recientes</h2>
-            <div id="registros" class="empty">Cargando registros...</div>
-          </article>
         </aside>
+      </section>
+      <section id="expediente-vista" class="paper" hidden>
+        <h2 id="expediente-titulo">Antecedentes</h2>
+        <div id="expediente-registros" class="empty">Cargando registros...</div>
+        <div class="pager">
+          <button id="pagina-anterior" type="button">← Anterior</button>
+          <span id="pagina-numero" class="status">Página 1</span>
+          <button id="pagina-siguiente" type="button">Siguiente →</button>
+        </div>
       </section>
       <div id="estado-carga" class="status">Cargando información...</div>
     </main>
@@ -297,17 +322,88 @@
         currency: "COP",
         maximumFractionDigits: 0,
       });
+      const estadoExpediente = {
+        antecedentes: [],
+        multas: [],
+        pagina: 1,
+        vista: "general",
+      };
+      const registrosPorPagina = 10;
+
+      function pintarExpediente() {
+        const contenedor = document.querySelector("#expediente-registros");
+        const titulo = document.querySelector("#expediente-titulo");
+        const anterior = document.querySelector("#pagina-anterior");
+        const siguiente = document.querySelector("#pagina-siguiente");
+        const numero = document.querySelector("#pagina-numero");
+        const registros = estadoExpediente[estadoExpediente.vista] || [];
+        const paginas = Math.max(1, Math.ceil(registros.length / registrosPorPagina));
+        estadoExpediente.pagina = Math.min(estadoExpediente.pagina, paginas);
+        const inicio = (estadoExpediente.pagina - 1) * registrosPorPagina;
+        const actuales = registros.slice(inicio, inicio + registrosPorPagina);
+        titulo.textContent = estadoExpediente.vista === "multas" ? "Multas" : "Antecedentes y arrestos";
+        contenedor.textContent = "";
+        if (!actuales.length) {
+          contenedor.textContent = estadoExpediente.vista === "multas"
+            ? "No tienes multas registradas."
+            : "No tienes antecedentes ni arrestos registrados.";
+        } else {
+          actuales.forEach((registro) => {
+            const elemento = document.createElement("div");
+            elemento.className = "record";
+            const descripcion = registro.descripcion || registro.delito || registro.motivo ||
+              (Array.isArray(registro.delitos)
+                ? registro.delitos.map((delito) => delito.delito || delito.codigo).join(", ")
+                : "Registro administrativo");
+            elemento.innerHTML = `<strong>${estadoExpediente.vista === "multas" ? "Comparendo / multa" : "Arresto / antecedente"}</strong><br>${descripcion}<br>${registro.fecha ? new Date(registro.fecha).toLocaleString("es-CO") : "Fecha no registrada"}`;
+            contenedor.appendChild(elemento);
+          });
+        }
+        numero.textContent = `Página ${estadoExpediente.pagina} de ${paginas}`;
+        anterior.disabled = estadoExpediente.pagina <= 1;
+        siguiente.disabled = estadoExpediente.pagina >= paginas;
+      }
+
+      function cambiarVista(vista) {
+        estadoExpediente.vista = vista;
+        estadoExpediente.pagina = 1;
+        const general = vista === "general";
+        document.querySelector(".summary").hidden = !general;
+        document.querySelector(".content").hidden = !general;
+        document.querySelector("#expediente-vista").hidden = general;
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.vista === vista);
+        });
+        if (!general) pintarExpediente();
+      }
+
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => cambiarVista(tab.dataset.vista));
+      });
+      document.querySelector("#pagina-anterior").addEventListener("click", () => {
+        estadoExpediente.pagina -= 1;
+        pintarExpediente();
+      });
+      document.querySelector("#pagina-siguiente").addEventListener("click", () => {
+        estadoExpediente.pagina += 1;
+        pintarExpediente();
+      });
+
       async function cargar() {
-        const rs = await Promise.all([
+        const rs = await Promise.allSettled([
           fetch("/api/usuario", { cache: "no-store" }),
           fetch("/api/nequi", { cache: "no-store" }),
           fetch("/api/expediente", { cache: "no-store" }),
         ]);
-        if (rs[0].status === 401) {
+        if (rs[0].status === "rejected") {
+          throw new Error("No se pudo conectar con el servidor.");
+        }
+        const respuestaUsuario = rs[0].value;
+        if (respuestaUsuario.status === 401) {
           location.href = "/iniciar-seccion.html";
           return;
         }
-        const u = (await rs[0].json()).usuario || {};
+        const u = (await respuestaUsuario.json()).usuario || {};
         document.querySelector("#nombre-header").textContent =
           `${u.cedula?.nombre || u.nombre || "Ciudadano"} · Registro digital`;
         if (u.cedula) {
@@ -318,58 +414,51 @@
           };
           document.querySelector("#sin-cedula").style.display = "none";
         }
-        const n = await rs[1].json();
-        if (rs[1].ok) {
+        const respuestaNequi = rs[1];
+        const n = respuestaNequi.status === "fulfilled"
+          ? await respuestaNequi.value.json()
+          : {};
+        if (respuestaNequi.status === "fulfilled" && respuestaNequi.value.ok) {
           const s = n.saldo;
-          document.querySelector("#mano").textContent = moneda.format(
-            s.billetera,
-          );
-          document.querySelector("#nequi").textContent = moneda.format(s.banco);
+          const billetera = Number(s?.billetera || 0);
+          const banco = Number(s?.banco || 0);
+          document.querySelector("#mano").textContent = moneda.format(billetera);
+          document.querySelector("#nequi").textContent = moneda.format(banco);
           document.querySelector("#total").textContent = moneda.format(
-            s.billetera + s.banco,
+            billetera + banco,
           );
-          document.querySelector("#tarjeta").textContent = s.numeroTarjeta
+          document.querySelector("#tarjeta").textContent = s?.numeroTarjeta
             ? "VISA • " + String(s.numeroTarjeta).slice(-4)
             : "VISA • ----";
+        } else {
+          document.querySelector("#nequi").textContent = "No disponible";
         }
-        const x = await rs[2].json();
-        if (rs[2].ok) {
-          const e = x.expediente,
-            c = e.conteos,
-            total = c.arrestos + c.antecedentes + c.multas;
-          document.querySelector("#arrestos").textContent =
-            c.arrestos + c.antecedentes;
-          document.querySelector("#multas").textContent = c.multas;
-          document.querySelector("#estado").textContent = total
-            ? "Con antecedentes"
-            : "Sin antecedentes";
-          document.querySelector("#resumen").textContent = total
-            ? `${total} registro(s) asociado(s).`
-            : "No hay registros asociados.";
-          const list = [...e.arrestos, ...e.antecedentes, ...e.multas].slice(
-              0,
-              6,
-            ),
-            box = document.querySelector("#registros");
-          box.textContent = "";
-          if (!list.length)
-            box.textContent =
-              "No tienes arrestos, antecedentes ni comparendos registrados.";
-          else
-            list.forEach((r) => {
-              const el = document.createElement("div");
-              el.className = "record";
-              el.innerHTML =
-                "<strong>" +
-                (r.tipo === "multa" || r.tipo === "comparendo" || r.placa
-                  ? "Comparendo"
-                  : "Arresto / antecedente") +
-                "</strong><br>" +
-                (r.fecha
-                  ? new Date(r.fecha).toLocaleString("es-CO")
-                  : "Fecha no registrada");
-              box.appendChild(el);
-            });
+        const respuestaExpediente = rs[2];
+        if (respuestaExpediente.status === "rejected") {
+          document.querySelector("#estado").textContent = "No disponible";
+        } else {
+          const x = await respuestaExpediente.value.json();
+          if (!respuestaExpediente.value.ok) {
+            document.querySelector("#estado").textContent = "No disponible";
+          } else {
+            const e = x.expediente || { arrestos: [], antecedentes: [], multas: [], conteos: {} };
+            const c = e.conteos || {};
+            const total = Number(c.arrestos || 0) + Number(c.antecedentes || 0) + Number(c.multas || 0);
+            document.querySelector("#arrestos").textContent =
+              Number(c.arrestos || 0) + Number(c.antecedentes || 0);
+            document.querySelector("#multas").textContent = Number(c.multas || 0);
+            document.querySelector("#estado").textContent = total
+              ? "Con antecedentes"
+              : "Sin antecedentes";
+            document.querySelector("#resumen").textContent = total
+              ? `${total} registro(s) asociado(s).`
+              : "No hay registros asociados.";
+            estadoExpediente.antecedentes = [
+              ...(e.arrestos || []),
+              ...(e.antecedentes || []),
+            ];
+            estadoExpediente.multas = e.multas || [];
+          }
         }
         document.querySelector("#estado-carga").textContent =
           "Información actualizada desde Medellín RP.";
