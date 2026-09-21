@@ -206,7 +206,7 @@ app.get("/auth/discord/callback", async (req, res) => {
 
     const roles = await obtenerRolesDelServidor(usuario.id);
     if (roles === null) {
-      return res.redirect("/iniciar-seccion.html?error=no-server");
+      return res.redirect("/no-estas-en-el-servidor.html");
     }
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
     const whitelistPendiente = roles.includes(ROL_WHITELIST_PENDIENTE);
