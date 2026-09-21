@@ -30,6 +30,7 @@ if (faltantes.length > 0) {
 
 const ROL_WHITELIST_APROBADA = "1500316176960716940";
 const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
+const ROL_STAFF_WHITELIST = "1510018366964891829";
 const EMOJI_ESPERA = "<:8810datetime:1538599244678692934>";
 const EMOJI_ACEPTADO = "<:1507611843198451915:1538596251879219371>";
 const EMOJI_DENEGADO = "<a:1485274567520948324:1549034139456380978>";
@@ -108,7 +109,7 @@ function obtenerAvatarUrl(usuario) {
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
 
-async function enviarEmbedDiscord(canalId, embed, components = []) {
+async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}) {
   const respuesta = await fetch(
     `https://discord.com/api/v10/channels/${canalId}/messages`,
     {
@@ -118,7 +119,7 @@ async function enviarEmbedDiscord(canalId, embed, components = []) {
         "Content-Type": "application/json",
         "User-Agent": "Medellin-RP-Web/1.0",
       },
-      body: JSON.stringify({ embeds: [embed], components }),
+      body: JSON.stringify({ ...opciones, embeds: [embed], components }),
     },
   );
 
@@ -347,6 +348,10 @@ app.post("/api/whitelist", async (req, res) => {
             ],
           },
         ],
+        {
+          content: `<@&${ROL_STAFF_WHITELIST}> **Esta whitelist se envió desde la web.**`,
+          allowed_mentions: { roles: [ROL_STAFF_WHITELIST] },
+        },
       );
     } catch (errorDiscord) {
       console.error(
@@ -1050,4 +1055,3 @@ app.listen(PORT, "0.0.0.0", () => {
     console.error("[MYSQL] Error de conexión:", error.message);
   });
 });
-
