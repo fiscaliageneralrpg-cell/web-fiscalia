@@ -209,6 +209,22 @@
       .record strong {
         color: var(--ink);
       }
+      .shop-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .shop-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff08;
+      }
+      .shop-card h3 { margin: 0 0 7px; }
+      .shop-card p { margin: 5px 0; color: var(--muted); font-size: 13px; }
+      .shop-card button { margin-top: 12px; padding: 9px 12px; border: 0; border-radius: 8px; color: #06141f; background: var(--yellow); font-weight: 900; cursor: pointer; }
+      .shop-card button:disabled { cursor: not-allowed; opacity: .5; }
+      .shop-section { margin-top: 16px; }
       .pager {
         display: flex;
         align-items: center;
@@ -264,7 +280,9 @@
       <nav class="tabs">
         <button class="tab active" data-vista="general">▣ Info general</button
         ><button class="tab" data-vista="antecedentes">⚒ Antecedentes (<b id="arrestos">0</b>)</button
-        ><button class="tab" data-vista="multas">▤ Multas (<b id="multas">0</b>)</button>
+        ><button class="tab" data-vista="multas">▤ Multas (<b id="multas">0</b>)</button
+        ><button class="tab" data-vista="tienda">🛒 Tienda</button
+        ><button class="tab" data-vista="comportamiento">🧭 Comportamiento</button>
       </nav>
       <section class="summary">
         <article class="metric gold">
@@ -317,6 +335,26 @@
           <button id="pagina-siguiente" type="button">Siguiente →</button>
         </div>
       </section>
+      <section id="tienda-vista" class="paper" hidden>
+        <h2>🛒 Tienda</h2>
+        <p class="empty">Compra usando únicamente el dinero disponible en Mano.</p>
+        <div id="tienda-registros" class="shop-grid">Cargando tienda...</div>
+        <div class="pager">
+          <button id="tienda-anterior" type="button">← Anterior</button>
+          <span id="tienda-pagina" class="status">Página 1</span>
+          <button id="tienda-siguiente" type="button">Siguiente →</button>
+        </div>
+        <div class="shop-section">
+          <h2>🎒 Mi inventario</h2>
+          <div id="tienda-inventario" class="shop-grid">Cargando inventario...</div>
+        </div>
+      </section>
+      <section id="comportamiento-vista" class="paper" hidden>
+        <h2>🧭 Comportamiento</h2>
+        <p class="empty">Consulta tus notas y sanciones registradas por el equipo del servidor.</p>
+        <div class="shop-section"><h2>📝 Notas</h2><div id="notas-registros" class="record">Cargando notas...</div></div>
+        <div class="shop-section"><h2>⚠️ Sanciones</h2><div id="sanciones-registros" class="record">Cargando sanciones...</div></div>
+      </section>
       <div id="estado-carga" class="status">Cargando información...</div>
     </main>
     <script>
@@ -330,8 +368,14 @@
         multas: [],
         pagina: 1,
         vista: "general",
+        tienda: [],
+        inventarioTienda: [],
+        paginaTienda: 1,
+        notas: [],
+        sanciones: [],
       };
       const registrosPorPagina = 10;
+      const productosPorPagina = 5;
 
       function expandirArrestos(registros) {
         return registros.flatMap((registro) => {
@@ -381,17 +425,79 @@
         siguiente.disabled = estadoExpediente.pagina >= paginas;
       }
 
+      function pintarTienda() {
+        const contenedor = document.querySelector("#tienda-registros");
+        const paginas = Math.max(1, Math.ceil(estadoExpediente.tienda.length / productosPorPagina));
+        estadoExpediente.paginaTienda = Math.min(estadoExpediente.paginaTienda, paginas);
+        const inicio = (estadoExpediente.paginaTienda - 1) * productosPorPagina;
+        const productos = estadoExpediente.tienda.slice(inicio, inicio + productosPorPagina);
+        contenedor.textContent = "";
+        if (!productos.length) contenedor.textContent = "No hay productos disponibles en la tienda.";
+        else productos.forEach((producto) => {
+          const tarjeta = document.createElement("article");
+          tarjeta.className = "shop-card";
+          const id = producto.id || producto.itemId || producto.productoId;
+          tarjeta.innerHTML = `<h3>${producto.emoji || "🛍️"} ${producto.nombre || "Producto"}</h3><p>${producto.descripcion || "Sin descripción"}</p><p><strong>Precio: ${moneda.format(Number(producto.precio || 0))}</strong></p><button type="button" data-comprar="${id}">Comprar</button>`;
+          contenedor.appendChild(tarjeta);
+        });
+        document.querySelector("#tienda-pagina").textContent = `Página ${estadoExpediente.paginaTienda} de ${paginas}`;
+        document.querySelector("#tienda-anterior").disabled = estadoExpediente.paginaTienda <= 1;
+        document.querySelector("#tienda-siguiente").disabled = estadoExpediente.paginaTienda >= paginas;
+      }
+
+      function pintarInventarioTienda() {
+        const contenedor = document.querySelector("#tienda-inventario");
+        contenedor.textContent = "";
+        if (!estadoExpediente.inventarioTienda.length) {
+          contenedor.textContent = "Tu inventario está vacío.";
+          return;
+        }
+        estadoExpediente.inventarioTienda.forEach((item) => {
+          const tarjeta = document.createElement("article");
+          tarjeta.className = "shop-card";
+          tarjeta.innerHTML = `<h3>${item.emoji || "📦"} ${item.nombre || "Item"}</h3><p>${item.descripcion || "Sin descripción"}</p><p>Tipo: ${item.tipo || "objeto"}</p>`;
+          contenedor.appendChild(tarjeta);
+        });
+      }
+
+      function pintarComportamiento() {
+        const pintar = (selector, registros, vacio) => {
+          const contenedor = document.querySelector(selector);
+          contenedor.textContent = "";
+          if (!registros.length) { contenedor.textContent = vacio; return; }
+          registros.forEach((registro) => {
+            const elemento = document.createElement("div");
+            elemento.className = "record";
+            const texto = registro.contenido || registro.motivo || "Sin descripción";
+            const autor = registro.autorTag ? `Registrado por ${registro.autorTag}` : "Equipo Medellín RP";
+            elemento.innerHTML = `<strong>${texto}</strong><br><span>${autor} · ${registro.fecha ? new Date(registro.fecha).toLocaleString("es-CO") : "Fecha no registrada"}</span>`;
+            contenedor.appendChild(elemento);
+          });
+        };
+        pintar("#notas-registros", estadoExpediente.notas, "No tienes notas registradas.");
+        pintar("#sanciones-registros", estadoExpediente.sanciones, "No tienes sanciones registradas.");
+      }
+
       function cambiarVista(vista) {
         estadoExpediente.vista = vista;
         estadoExpediente.pagina = 1;
         const general = vista === "general";
+        const tienda = vista === "tienda";
+        const comportamiento = vista === "comportamiento";
         document.querySelector(".summary").hidden = !general;
         document.querySelector(".content").hidden = !general;
-        document.querySelector("#expediente-vista").hidden = general;
+        document.querySelector("#expediente-vista").hidden = general || tienda;
+        document.querySelector("#tienda-vista").hidden = !tienda;
+        document.querySelector("#comportamiento-vista").hidden = !comportamiento;
         document.querySelectorAll(".tab").forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.vista === vista);
         });
-        if (!general) pintarExpediente();
+        if (tienda) {
+          pintarTienda();
+          pintarInventarioTienda();
+        } else if (comportamiento) {
+          pintarComportamiento();
+        } else if (!general) pintarExpediente();
       }
 
       document.querySelectorAll(".tab").forEach((tab) => {
@@ -405,12 +511,38 @@
         estadoExpediente.pagina += 1;
         pintarExpediente();
       });
+      document.querySelector("#tienda-anterior").addEventListener("click", () => {
+        estadoExpediente.paginaTienda -= 1;
+        pintarTienda();
+      });
+      document.querySelector("#tienda-siguiente").addEventListener("click", () => {
+        estadoExpediente.paginaTienda += 1;
+        pintarTienda();
+      });
+      document.querySelector("#tienda-registros").addEventListener("click", async (evento) => {
+        const boton = evento.target.closest("[data-comprar]");
+        if (!boton) return;
+        boton.disabled = true;
+        const respuesta = await fetch(`/api/tienda/${encodeURIComponent(boton.dataset.comprar)}/comprar`, { method: "POST" });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) {
+          alert(datos.error || "No se pudo completar la compra.");
+          boton.disabled = false;
+          return;
+        }
+        alert("Compra realizada correctamente. El producto fue añadido a tu inventario.");
+        await cargar();
+        pintarTienda();
+        pintarInventarioTienda();
+      });
 
       async function cargar() {
         const rs = await Promise.allSettled([
           fetch("/api/usuario", { cache: "no-store" }),
           fetch("/api/nequi", { cache: "no-store" }),
           fetch("/api/expediente", { cache: "no-store" }),
+          fetch("/api/tienda", { cache: "no-store" }),
+          fetch("/api/comportamiento", { cache: "no-store" }),
         ]);
         if (rs[0].status === "rejected") {
           throw new Error("No se pudo conectar con el servidor.");
@@ -477,6 +609,23 @@
             estadoExpediente.multas = e.multas || [];
           }
         }
+        const respuestaTienda = rs[3];
+        if (respuestaTienda.status === "fulfilled" && respuestaTienda.value.ok) {
+          const datosTienda = await respuestaTienda.value.json();
+          estadoExpediente.tienda = datosTienda.tienda || [];
+          estadoExpediente.inventarioTienda = datosTienda.inventario || [];
+          if (estadoExpediente.vista === "tienda") {
+            pintarTienda();
+            pintarInventarioTienda();
+          }
+        }
+        const respuestaComportamiento = rs[4];
+        if (respuestaComportamiento.status === "fulfilled" && respuestaComportamiento.value.ok) {
+          const datosComportamiento = await respuestaComportamiento.value.json();
+          estadoExpediente.notas = datosComportamiento.notas || [];
+          estadoExpediente.sanciones = datosComportamiento.sanciones || [];
+          if (estadoExpediente.vista === "comportamiento") pintarComportamiento();
+        }
         document.querySelector("#estado-carga").textContent =
           "Información actualizada desde Medellín RP.";
       }
@@ -488,3 +637,4 @@
     </script>
   </body>
 </html>
+
