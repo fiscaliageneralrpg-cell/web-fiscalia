@@ -263,19 +263,43 @@ app.post("/api/whitelist", async (req, res) => {
 app.post("/api/cedula", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
-  const { nuip, nombre, fecha_nacimiento, nacionalidad } = req.body || {};
+  const {
+    nombres,
+    apellidos,
+    sexo,
+    nacionalidad,
+    lugar_nac,
+    fecha_nac,
+    roblox,
+  } = req.body || {};
   const discordId = req.session.usuario.id;
 
-  if (!/^\d{5,20}$/.test(String(nuip || ""))) {
+  if (!String(nombres || "").trim() || !String(apellidos || "").trim()) {
     return res
       .status(400)
-      .json({ error: "El NUIP debe contener entre 5 y 20 números." });
+      .json({ error: "Nombres y apellidos son obligatorios." });
   }
 
-  if (!String(nombre || "").trim()) {
+  if (!["MASCULINO", "FEMENINO"].includes(String(sexo || ""))) {
+    return res.status(400).json({ error: "Selecciona un sexo válido." });
+  }
+
+  if (!["COLOMBIANA", "EXTRANJERA"].includes(String(nacionalidad || ""))) {
     return res
       .status(400)
-      .json({ error: "El nombre completo es obligatorio." });
+      .json({ error: "Selecciona una nacionalidad válida." });
+  }
+
+  if (!String(lugar_nac || "").trim() || !String(fecha_nac || "").trim()) {
+    return res
+      .status(400)
+      .json({ error: "Lugar y fecha de nacimiento son obligatorios." });
+  }
+
+  if (!String(roblox || "").trim()) {
+    return res
+      .status(400)
+      .json({ error: "El usuario de Roblox es obligatorio." });
   }
 
   try {
@@ -288,18 +312,46 @@ app.post("/api/cedula", async (req, res) => {
         .json({ error: "Tu whitelist todavía no está aprobada." });
     }
 
-    await pool.execute(
-      `INSERT INTO usuarios
-                (discord_id, nuip, nombre, fecha_nacimiento, nacionalidad)
-             VALUES (?, ?, ?, NULLIF(?, ''), ?)`,
-      [
-        discordId,
-        String(nuip),
-        String(nombre).trim(),
-        fecha_nacimiento || "",
-        String(nacionalidad || "Colombiana").trim(),
-      ],
-    );
+    const conexion = await pool.getConnection();
+
+    try {
+      await conexion.beginTransaction();
+
+      const [ultimoResultado] = await conexion.execute(
+        `SELECT COALESCE(MAX(CAST(nuip AS UNSIGNED)), 1000) AS ultimo
+         FROM usuarios FOR UPDATE`,
+      );
+
+      const nuip = String(Number(ultimoResultado[0].ultimo) + 1);
+      const nombreCompleto = `${String(nombres).trim()} ${String(apellidos).trim()}`;
+
+      await conexion.execute(
+        `INSERT INTO usuarios
+          (discord_id, nuip, nombre, nombres, apellidos, sexo,
+           fecha_nacimiento, fecha_nac, nacionalidad, lugar_nac, roblox_name)
+         VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?, ?)`,
+        [
+          discordId,
+          nuip,
+          nombreCompleto,
+          String(nombres).trim(),
+          String(apellidos).trim(),
+          String(sexo),
+          String(fecha_nac),
+          String(fecha_nac),
+          String(nacionalidad),
+          String(lugar_nac).trim(),
+          String(roblox).trim(),
+        ],
+      );
+
+      await conexion.commit();
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
 
     const cedula = await buscarUsuarioPorDiscord(discordId);
     req.session.usuario.cedulaRegistrada = true;
@@ -308,11 +360,9 @@ app.post("/api/cedula", async (req, res) => {
     return req.session.save((error) => {
       if (error) {
         console.error("[CEDULA] No se pudo guardar la sesión:", error);
-        return res
-          .status(500)
-          .json({
-            error: "Cédula guardada, pero no se pudo actualizar la sesión.",
-          });
+        return res.status(500).json({
+          error: "Cédula guardada, pero no se pudo actualizar la sesión.",
+        });
       }
 
       return res.json({ correcto: true, redirect: "/dashboard-user.html" });
@@ -321,12 +371,9 @@ app.post("/api/cedula", async (req, res) => {
     console.error("[CEDULA] No se pudo guardar:", error.message);
 
     if (error.code === "ER_DUP_ENTRY") {
-      return res
-        .status(409)
-        .json({
-          error:
-            "El NUIP o la cuenta de Discord ya tiene una cédula registrada.",
-        });
+      return res.status(409).json({
+        error: "La cuenta de Discord ya tiene una cédula registrada.",
+      });
     }
 
     return res.status(500).json({ error: "No se pudo guardar la cédula." });
@@ -351,15 +398,30 @@ app.get("/api/estado", async (req, res) => {
   }
 });
 
-app.get("/api/usuario", (req, res) => {
+app.get("/api/usuario", async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ autenticado: false });
   }
 
-  return res.json({
-    autenticado: true,
-    usuario: req.session.usuario,
-  });
+  try {
+    const cedulaActualizada = await buscarUsuarioPorDiscord(
+      req.session.usuario.id,
+    );
+
+    req.session.usuario.cedula = cedulaActualizada;
+    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
+
+    return res.json({
+      autenticado: true,
+      usuario: req.session.usuario,
+    });
+  } catch (error) {
+    console.error("[API USUARIO]", error.message);
+    return res.status(503).json({
+      autenticado: true,
+      error: "No se pudo consultar la cédula en MySQL.",
+    });
+  }
 });
 
 app.get("/cerrar-sesion", (req, res) => {
