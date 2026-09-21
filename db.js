@@ -43,8 +43,10 @@ async function probarConexion() {
 
 async function buscarUsuarioPorDiscord(discordId) {
   const [filas] = await pool.execute(
-    `SELECT id, discord_id, nuip, nombre, fecha_nacimiento,
-                nacionalidad, creado_en, actualizado_en
+    `SELECT id, discord_id, nuip, nombre, nombres, apellidos, sexo,
+                fecha_nacimiento, fecha_nac, nacionalidad, lugar_nac,
+                fecha_exp, lugar_exp, roblox_id, roblox_name,
+                cedula_imagen_url, creado_en, actualizado_en
          FROM usuarios
          WHERE discord_id = ?
          LIMIT 1`,
