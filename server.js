@@ -289,6 +289,21 @@ app.post("/api/whitelist", async (req, res) => {
   try {
     const { pool } = require("./db");
 
+    const [pendientesExistentes] = await pool.execute(
+      `SELECT id
+       FROM whitelist_solicitudes
+       WHERE discord_id = ? AND estado = 'pendiente'
+       ORDER BY id DESC
+       LIMIT 1`,
+      [req.session.usuario.id],
+    );
+    if (pendientesExistentes.length) {
+      return res.status(409).json({
+        error: "Ya tienes una solicitud de whitelist pendiente. Espera la revisión del equipo.",
+        redirect: "/whitelist-pendiente.html",
+      });
+    }
+
     const [resultadoWhitelist] = await pool.execute(
       `INSERT INTO whitelist_solicitudes
                 (discord_id, discord_username, respuestas, estado)
@@ -406,7 +421,7 @@ app.get("/api/whitelist/status", async (req, res) => {
       });
     }
 
-    if (roles.includes(ROL_WHITELIST_PENDIENTE) && estado?.estado === "pendiente") {
+    if (estado?.estado === "pendiente") {
       return res.json({ estado: "pendiente" });
     }
 
