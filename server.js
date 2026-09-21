@@ -208,6 +208,16 @@ app.get("/auth/discord/callback", async (req, res) => {
     const whitelistPendiente = roles.includes(ROL_WHITELIST_PENDIENTE);
 
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
+    const { pool } = require("./db");
+    const [solicitudesWhitelist] = await pool.execute(
+      `SELECT estado
+       FROM whitelist_solicitudes
+       WHERE discord_id = ?
+       ORDER BY id DESC
+       LIMIT 1`,
+      [usuario.id],
+    );
+    const estadoWhitelist = solicitudesWhitelist[0]?.estado || null;
 
     req.session.usuario = {
       id: usuario.id,
@@ -218,6 +228,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       roles,
       whitelistAprobada,
       whitelistPendiente,
+      estadoWhitelist,
       cedulaRegistrada: Boolean(usuarioRegistrado),
       cedula: usuarioRegistrado,
     };
@@ -227,11 +238,9 @@ app.get("/auth/discord/callback", async (req, res) => {
         `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`,
     );
 
-    if (whitelistPendiente) {
-      console.log(
-        `[LOGIN] ${usuario.id} conserva el rol pendiente: va a whitelist.`,
-      );
-      return redirigirDespuesDeLogin(req, res, "/whitelist.html");
+    if (whitelistPendiente || estadoWhitelist === "pendiente") {
+      console.log(`[LOGIN] ${usuario.id} tiene whitelist pendiente.`);
+      return redirigirDespuesDeLogin(req, res, "/whitelist-pendiente.html");
     }
 
     if (!whitelistAprobada) {
@@ -599,16 +608,27 @@ app.get("/api/usuario", async (req, res) => {
     const conservaRolPendiente = rolesActualizados.includes(
       ROL_WHITELIST_PENDIENTE,
     );
+    const { pool } = require("./db");
+    const [solicitudes] = await pool.execute(
+      `SELECT estado
+       FROM whitelist_solicitudes
+       WHERE discord_id = ?
+       ORDER BY id DESC
+       LIMIT 1`,
+      [req.session.usuario.id],
+    );
+    const tieneWhitelistPendiente =
+      conservaRolPendiente || solicitudes[0]?.estado === "pendiente";
 
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
     req.session.usuario.roles = rolesActualizados;
-    req.session.usuario.whitelistPendiente = conservaRolPendiente;
+    req.session.usuario.whitelistPendiente = tieneWhitelistPendiente;
 
     return res.json({
       autenticado: true,
       usuario: req.session.usuario,
-      redireccion: conservaRolPendiente ? "/whitelist.html" : null,
+      redireccion: tieneWhitelistPendiente ? "/whitelist-pendiente.html" : null,
     });
   } catch (error) {
     console.error("[API USUARIO]", error.message);
