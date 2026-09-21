@@ -109,6 +109,10 @@
         }
         const d = await r.json(),
           u = d.usuario;
+        if (d.redireccion) {
+          location.href = d.redireccion;
+          return;
+        }
         document.querySelector("#saludo").textContent = `Hola, ${u.nombre}`;
         document.querySelector("#nombre").textContent =
           u.cedula?.nombre || u.nombre;
