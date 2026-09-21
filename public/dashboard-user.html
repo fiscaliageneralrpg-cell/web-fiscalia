@@ -60,6 +60,29 @@
         font-size: 13px;
         color: #aebbd0;
       }
+      .document-card {
+        margin-top: 18px;
+        padding: 22px;
+        border: 1px solid #ffffff1c;
+        border-radius: 22px;
+        background: #102238;
+      }
+      .document-card h2 {
+        margin-top: 0;
+      }
+      #cedula-imagen-contenedor {
+        display: none;
+        margin-top: 18px;
+        overflow: hidden;
+        border: 1px solid #ffd16644;
+        border-radius: 16px;
+        background: #07101d;
+      }
+      #cedula-imagen {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
       @media (max-width: 700px) {
         .grid {
           grid-template-columns: 1fr;
@@ -99,12 +122,23 @@
           <div class="muted">Acceso autorizado</div>
         </article>
       </section>
+      <section class="document-card">
+        <h2>🪪 Mi cédula ciudadana</h2>
+        <p class="muted">Imagen generada por el sistema de Medellín RP.</p>
+        <div id="cedula-imagen-contenedor">
+          <img id="cedula-imagen" alt="Cédula de ciudadanía" />
+        </div>
+        <p id="sin-imagen" class="muted">
+          Usa <strong>/mostrar-cedula</strong> en Discord para generar o
+          actualizar la imagen.
+        </p>
+      </section>
     </main>
     <script>
       (async () => {
         const r = await fetch("/api/usuario");
         if (!r.ok) {
-          location.href = "/index.html";
+          location.href = "/iniciar-seccion.html";
           return;
         }
         const d = await r.json(),
@@ -118,6 +152,16 @@
           u.cedula?.nombre || u.nombre;
         document.querySelector("#nuip").textContent =
           u.cedula?.nuip || "Sin registrar";
+
+        if (u.cedula?.cedula_imagen_url) {
+          const contenedor = document.querySelector(
+            "#cedula-imagen-contenedor",
+          );
+          const imagen = document.querySelector("#cedula-imagen");
+          imagen.src = u.cedula.cedula_imagen_url;
+          contenedor.style.display = "block";
+          document.querySelector("#sin-imagen").style.display = "none";
+        }
       })();
     </script>
   </body>
