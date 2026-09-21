@@ -1,1 +1,250 @@
-
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Whitelist | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #07101d;
+        --panel: #102238;
+        --line: #ffffff1c;
+        --text: #f4f7fb;
+        --muted: #aebbd0;
+        --yellow: #ffd166;
+        --blue: #5865f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 10% 0, #15365b, var(--bg) 45%);
+        color: var(--text);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .wrap {
+        width: min(850px, calc(100% - 30px));
+        margin: 45px auto;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 28px;
+      }
+      .brand {
+        font-weight: 850;
+      }
+      .brand small {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .card {
+        padding: 30px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: #0d1b2dcc;
+        box-shadow: 0 25px 70px #0006;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(32px, 5vw, 52px);
+        letter-spacing: -0.06em;
+      }
+      h2 {
+        margin: 30px 0 16px;
+        color: var(--yellow);
+        font-size: 18px;
+      }
+      .intro {
+        color: var(--muted);
+        margin: 0 0 24px;
+      }
+      .question {
+        display: block;
+        margin: 18px 0;
+      }
+      .question span {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .question input,
+      .question textarea {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        outline: 0;
+        background: #07101d;
+        color: var(--text);
+        font: inherit;
+      }
+      .question textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+      .question input:focus,
+      .question textarea:focus {
+        border-color: var(--yellow);
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 28px;
+      }
+      .button {
+        border: 0;
+        border-radius: 11px;
+        padding: 14px 20px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .primary {
+        background: var(--yellow);
+        color: #07101d;
+      }
+      .back {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+      }
+      .status {
+        display: none;
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 10px;
+      }
+      .error {
+        display: block;
+        background: #7f1d1d;
+        color: #fecaca;
+      }
+      .loading {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+      @media (max-width: 600px) {
+        .card {
+          padding: 22px;
+        }
+        .top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <div class="brand">
+          「ME:RP」Medellín RP︱ER:LC<small>Solicitud de whitelist</small>
+        </div>
+        <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
+      </div>
+      <section class="card">
+        <h1>Whitelist</h1>
+        <p class="intro">
+          Responde con sinceridad. Tu solicitud será revisada por el equipo de
+          Medellín RP.
+        </p>
+        <form id="formulario">
+          <h2>01 — Conocimientos generales</h2>
+          <label class="question"
+            ><span>¿Cuál es tu Discord?</span
+            ><input
+              name="discord"
+              required
+              placeholder="Usuario o ID de Discord" /></label
+          ><label class="question"
+            ><span>¿Qué edad tienes?</span
+            ><input
+              name="edad"
+              type="number"
+              min="13"
+              max="99"
+              required /></label
+          ><label class="question"
+            ><span>¿Cuánto tiempo llevas jugando ER:LC?</span
+            ><textarea name="tiempo" required></textarea></label
+          ><label class="question"
+            ><span>¿Has jugado RP anteriormente?</span
+            ><textarea name="experiencia" required></textarea>
+          </label>
+          <h2>02 — Conocimientos RP</h2>
+          <label class="question"
+            ><span>¿Qué significa RP?</span
+            ><textarea name="rp" required></textarea></label
+          ><label class="question"
+            ><span>¿Qué es FRP?</span
+            ><textarea name="frp" required></textarea></label
+          ><label class="question"
+            ><span>¿Qué es RDM?</span
+            ><textarea name="rdm" required></textarea></label
+          ><label class="question"
+            ><span>¿Qué es VDM?</span
+            ><textarea name="vdm" required></textarea></label
+          ><label class="question"
+            ><span>¿Qué es Meta Gaming?</span
+            ><textarea name="metagaming" required></textarea>
+          </label>
+          <h2>03 — Situaciones RP</h2>
+          <label class="question"
+            ><span>Un policía te detiene, ¿qué haces?</span
+            ><textarea name="detencion" required></textarea></label
+          ><label class="question"
+            ><span>Quedas herido en un tiroteo, ¿cómo actúas?</span
+            ><textarea name="herido" required></textarea></label
+          ><label class="question"
+            ><span
+              >Tu vehículo queda averiado durante una persecución, ¿qué
+              haces?</span
+            ><textarea name="vehiculo" required></textarea></label
+          ><label class="question"
+            ><span>Ves un accidente con heridos, ¿cómo reaccionas?</span
+            ><textarea name="accidente" required></textarea>
+          </label>
+          <div class="actions">
+            <button class="button primary" type="submit">
+              Enviar whitelist</button
+            ><a class="back" href="/index.html">Volver</a>
+          </div>
+          <div id="estado" class="status"></div>
+        </form>
+      </section>
+    </main>
+    <script>
+      const form = document.querySelector("#formulario"),
+        estado = document.querySelector("#estado");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        estado.className = "status";
+        estado.textContent = "Enviando solicitud...";
+        form.classList.add("loading");
+        const respuestas = Object.fromEntries(new FormData(form).entries());
+        try {
+          const r = await fetch("/api/whitelist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ respuestas }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "No se pudo enviar");
+          location.href = d.redirect || "/whitelist-pendiente.html";
+        } catch (err) {
+          estado.className = "status error";
+          estado.textContent = err.message;
+          form.classList.remove("loading");
+        }
+      });
+    </script>
+  </body>
+</html>
