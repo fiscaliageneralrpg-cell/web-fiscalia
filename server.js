@@ -669,47 +669,28 @@ app.get("/api/nequi", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
   try {
-    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
-      const respuestaBot = await fetch(
-        `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}`,
-        { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY } },
-      );
-      const datosBot = await respuestaBot.json();
-      return res.status(respuestaBot.status).json(datosBot);
-    }
-
-    const { pool } = require("./db");
-    const [filas] = await pool.execute(
-      `SELECT billetera, banco, numero_tarjeta, actualizado_en
-       FROM saldos
-       WHERE discord_id = ?
-       LIMIT 1`,
-      [req.session.usuario.id],
-    );
-
-    if (!filas[0]) {
-      return res.status(404).json({
-        codigo: "CUENTA_NEQUI_INEXISTENTE",
-        error:
-          "No tienes una cuenta Nequi activa. Ejecuta /saldo en el servidor principal de Discord.",
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      return res.status(503).json({
+        codigo: "NEQUI_API_NO_CONFIGURADA",
+        error: "Render no tiene configurada NEQUI_API_URL o NEQUI_API_KEY.",
       });
     }
 
-    const saldo = filas[0];
-
-    return res.json({
-      correcto: true,
-      saldo: {
-        billetera: Number(saldo.billetera || 0),
-        banco: Number(saldo.banco || 0),
-        numeroTarjeta: saldo.numero_tarjeta,
-        actualizadoEn: saldo.actualizado_en,
+    const respuestaBot = await fetch(
+      `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}`,
+      {
+        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        signal: AbortSignal.timeout(8000),
       },
-    });
+    );
+    const datosBot = await respuestaBot.json();
+    return res.status(respuestaBot.status).json(datosBot);
   } catch (error) {
     console.error("[API NEQUI]", error.message);
     return res.status(500).json({
-      error: "No se pudo consultar el saldo Nequi.",
+      codigo: "NEQUI_API_INACCESIBLE",
+      error:
+        "Render no puede comunicarse con la API del bot. Revisa la URL pública y el puerto.",
     });
   }
 });
@@ -852,29 +833,26 @@ app.post("/api/nequi/operacion", async (req, res) => {
 
   const { tipo, monto, destinoId } = req.body || {};
   try {
-    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
-      const respuestaBot = await fetch(
-        `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}/operacion`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Nequi-Key": process.env.NEQUI_API_KEY,
-          },
-          body: JSON.stringify({ tipo, monto, destinoId }),
-        },
-      );
-      const datosBot = await respuestaBot.json();
-      return res.status(respuestaBot.status).json(datosBot);
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      return res.status(503).json({
+        error: "Render no tiene configurada la conexión con la API del bot.",
+      });
     }
 
-    await moverSaldoNequi(
-      req.session.usuario.id,
-      tipo,
-      monto,
-      destinoId || null,
+    const respuestaBot = await fetch(
+      `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}/operacion`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Nequi-Key": process.env.NEQUI_API_KEY,
+        },
+        body: JSON.stringify({ tipo, monto, destinoId }),
+        signal: AbortSignal.timeout(8000),
+      },
     );
-    return res.json({ correcto: true });
+    const datosBot = await respuestaBot.json();
+    return res.status(respuestaBot.status).json(datosBot);
   } catch (error) {
     console.error("[API NEQUI OPERACION]", error.message);
     return res.status(error.statusCode || 500).json({
