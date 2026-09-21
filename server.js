@@ -702,6 +702,159 @@ app.get("/api/nequi", async (req, res) => {
   }
 });
 
+app.get("/api/nequi/usuarios", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+
+  try {
+    const respuesta = await fetch(
+      `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members?limit=1000`,
+      {
+        headers: {
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+          "User-Agent": "Medellin-RP-Web/1.0",
+        },
+      },
+    );
+
+    if (!respuesta.ok)
+      throw new Error(`Discord respondió ${respuesta.status}.`);
+    const miembros = await respuesta.json();
+
+    return res.json({
+      usuarios: miembros
+        .filter((miembro) => miembro.user?.id !== req.session.usuario.id)
+        .map((miembro) => ({
+          id: miembro.user.id,
+          nombre:
+            miembro.nick || miembro.user.global_name || miembro.user.username,
+          username: miembro.user.username,
+        }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    });
+  } catch (error) {
+    console.error("[API NEQUI USUARIOS]", error.message);
+    return res
+      .status(500)
+      .json({ error: "No se pudieron cargar los usuarios del servidor." });
+  }
+});
+
+async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
+  const cantidad = Number(monto);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    const error = new Error(
+      "El monto debe ser un número entero mayor que cero.",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const conexion = await require("./db").pool.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const [filas] = await conexion.execute(
+      `SELECT discord_id, billetera, banco
+       FROM saldos
+       WHERE discord_id IN (?, ?)
+       FOR UPDATE`,
+      destinoId ? [discordId, destinoId] : [discordId, discordId],
+    );
+    const actual = filas.find((fila) => fila.discord_id === discordId);
+
+    if (!actual) {
+      const error = new Error("No existe una cuenta Nequi activa.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (tipo === "depositar") {
+      if (Number(actual.billetera) < cantidad) {
+        const error = new Error(
+          "No tienes suficiente dinero en Mano para depositar.",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+      await conexion.execute(
+        `UPDATE saldos SET billetera = billetera - ?, banco = banco + ? WHERE discord_id = ?`,
+        [cantidad, cantidad, discordId],
+      );
+    } else if (tipo === "retirar") {
+      if (Number(actual.banco) < cantidad) {
+        const error = new Error(
+          "No tienes suficiente dinero en Nequi para retirar.",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+      await conexion.execute(
+        `UPDATE saldos SET banco = banco - ?, billetera = billetera + ? WHERE discord_id = ?`,
+        [cantidad, cantidad, discordId],
+      );
+    } else if (tipo === "transferir") {
+      const destino = filas.find((fila) => fila.discord_id === destinoId);
+      if (!destino) {
+        const error = new Error(
+          "El usuario destinatario no tiene una cuenta Nequi activa.",
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+      if (destinoId === discordId) {
+        const error = new Error("No puedes transferirte dinero a ti mismo.");
+        error.statusCode = 400;
+        throw error;
+      }
+      if (Number(actual.banco) < cantidad) {
+        const error = new Error(
+          "No tienes suficiente dinero en Nequi para transferir.",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+      await conexion.execute(
+        `UPDATE saldos SET banco = banco - ? WHERE discord_id = ?`,
+        [cantidad, discordId],
+      );
+      await conexion.execute(
+        `UPDATE saldos SET banco = banco + ? WHERE discord_id = ?`,
+        [cantidad, destinoId],
+      );
+    } else {
+      const error = new Error("Operación no válida.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await conexion.commit();
+  } catch (error) {
+    await conexion.rollback();
+    throw error;
+  } finally {
+    conexion.release();
+  }
+}
+
+app.post("/api/nequi/operacion", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+
+  const { tipo, monto, destinoId } = req.body || {};
+  try {
+    await moverSaldoNequi(
+      req.session.usuario.id,
+      tipo,
+      monto,
+      destinoId || null,
+    );
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[API NEQUI OPERACION]", error.message);
+    return res.status(error.statusCode || 500).json({
+      error: error.message || "No se pudo completar la operación.",
+    });
+  }
+});
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
