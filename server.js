@@ -62,6 +62,10 @@ app.use(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/iniciar-seccion.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "iniciar-seccion.html"));
+});
+
 function redirigirDespuesDeLogin(req, res, destino) {
   req.session.save((error) => {
     if (error) {
