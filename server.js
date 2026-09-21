@@ -101,6 +101,28 @@ function obtenerAvatarUrl(usuario) {
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
 
+async function enviarEmbedDiscord(canalId, embed) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/channels/${canalId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "Content-Type": "application/json",
+        "User-Agent": "Medellin-RP-Web/1.0",
+      },
+      body: JSON.stringify({ embeds: [embed] }),
+    },
+  );
+
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text();
+    throw new Error(
+      `Discord no pudo enviar el mensaje: ${respuesta.status} ${detalle}`,
+    );
+  }
+}
+
 app.get("/auth/discord", (req, res) => {
   const parametros = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID,
@@ -247,6 +269,47 @@ app.post("/api/whitelist", async (req, res) => {
       ],
     );
 
+    const camposWhitelist = Object.entries(respuestas).map(
+      ([pregunta, respuesta]) => ({
+        name: pregunta.replaceAll("_", " ").slice(0, 256),
+        value: String(respuesta || "Sin respuesta").slice(0, 1024),
+        inline: false,
+      }),
+    );
+
+    try {
+      await enviarEmbedDiscord("1539313915001839616", {
+        title: "📋 NUEVA SOLICITUD DE WHITELIST",
+        description:
+          `El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
+          `**Estado:** Pendiente de revisión`,
+        color: 0xffd166,
+        thumbnail: req.session.usuario.avatarUrl
+          ? { url: req.session.usuario.avatarUrl }
+          : undefined,
+        fields: [
+          {
+            name: "👤 Usuario",
+            value: `<@${req.session.usuario.id}>`,
+            inline: true,
+          },
+          {
+            name: "🆔 Discord ID",
+            value: req.session.usuario.id,
+            inline: true,
+          },
+          ...camposWhitelist,
+        ].slice(0, 25),
+        footer: { text: "Medellín RP • Whitelist web" },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (errorDiscord) {
+      console.error(
+        "[WHITELIST] Se guardó en MySQL, pero no llegó a Discord:",
+        errorDiscord.message,
+      );
+    }
+
     return res.json({
       correcto: true,
       redirect: "/whitelist-pendiente.html",
@@ -356,6 +419,46 @@ app.post("/api/cedula", async (req, res) => {
     const cedula = await buscarUsuarioPorDiscord(discordId);
     req.session.usuario.cedulaRegistrada = true;
     req.session.usuario.cedula = cedula;
+
+    try {
+      await enviarEmbedDiscord("1539426748142325780", {
+        title: "🪪 NUEVO REGISTRO CIVIL",
+        description:
+          "Se creó una nueva cédula ciudadana desde la página web de Medellín RP.",
+        color: 0x00a876,
+        thumbnail: req.session.usuario.avatarUrl
+          ? { url: req.session.usuario.avatarUrl }
+          : undefined,
+        fields: [
+          {
+            name: "👤 Ciudadano",
+            value: `${cedula.nombres || nombres} ${cedula.apellidos || apellidos}`,
+            inline: false,
+          },
+          { name: "🆔 NUIP", value: `CC ${cedula.nuip}`, inline: true },
+          { name: "⚧ Sexo", value: String(sexo), inline: true },
+          {
+            name: "🌎 Nacionalidad",
+            value: String(nacionalidad),
+            inline: true,
+          },
+          {
+            name: "📍 Lugar de nacimiento",
+            value: String(lugar_nac),
+            inline: true,
+          },
+          { name: "🎮 Roblox", value: String(roblox), inline: true },
+          { name: "💬 Discord", value: `<@${discordId}>`, inline: true },
+        ],
+        footer: { text: "Medellín RP • Registro Civil" },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (errorDiscord) {
+      console.error(
+        "[CEDULA] Se guardó en MySQL, pero no llegó el log a Discord:",
+        errorDiscord.message,
+      );
+    }
 
     return req.session.save((error) => {
       if (error) {
