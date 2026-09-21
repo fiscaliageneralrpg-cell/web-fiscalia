@@ -272,11 +272,11 @@
           <strong id="estado" class="big">Consultando...</strong
           ><span id="resumen" class="empty">Consultando registros.</span>
         </article>
-        <article class="metric">
+        <a class="metric" href="/vehiculos.html" style="text-decoration:none;color:inherit;display:block;">
           <div class="label">🚗 Vehículos registrados</div>
-          <strong class="big">0</strong
-          ><span class="empty">Registros disponibles</span>
-        </article>
+          <strong class="big">Ver vehículos</strong>
+          <span class="empty">Consulta, registra o elimina tus vehículos.</span>
+        </a>
       </section>
       <section class="content">
         <article class="paper">
@@ -332,6 +332,20 @@
         vista: "general",
       };
       const registrosPorPagina = 10;
+
+      function expandirArrestos(registros) {
+        return registros.flatMap((registro) => {
+          if (!Array.isArray(registro.delitos) || !registro.delitos.length) {
+            return [registro];
+          }
+          return registro.delitos.map((delito) => ({
+            ...registro,
+            ...delito,
+            arrestoOriginal: registro.arrestoId || registro.id || null,
+            fecha: registro.fecha,
+          }));
+        });
+      }
 
       function pintarExpediente() {
         const contenedor = document.querySelector("#expediente-registros");
@@ -456,10 +470,10 @@
             document.querySelector("#resumen").textContent = total
               ? `${total} registro(s) asociado(s).`
               : "No hay registros asociados.";
-            estadoExpediente.antecedentes = [
+            estadoExpediente.antecedentes = expandirArrestos([
               ...(e.arrestos || []),
               ...(e.antecedentes || []),
-            ];
+            ]);
             estadoExpediente.multas = e.multas || [];
           }
         }
