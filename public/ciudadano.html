@@ -486,7 +486,7 @@
         const comportamiento = vista === "comportamiento";
         document.querySelector(".summary").hidden = !general;
         document.querySelector(".content").hidden = !general;
-        document.querySelector("#expediente-vista").hidden = general || tienda;
+        document.querySelector("#expediente-vista").hidden = general || tienda || comportamiento;
         document.querySelector("#tienda-vista").hidden = !tienda;
         document.querySelector("#comportamiento-vista").hidden = !comportamiento;
         document.querySelectorAll(".tab").forEach((tab) => {
@@ -637,4 +637,3 @@
     </script>
   </body>
 </html>
-
