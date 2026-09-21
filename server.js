@@ -665,6 +665,43 @@ app.get("/api/cedula/imagen", async (req, res) => {
   }
 });
 
+app.get("/api/nequi", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+
+  try {
+    const { pool } = require("./db");
+    const [filas] = await pool.execute(
+      `SELECT billetera, banco, numero_tarjeta, actualizado_en
+       FROM saldos
+       WHERE discord_id = ?
+       LIMIT 1`,
+      [req.session.usuario.id],
+    );
+
+    const saldo = filas[0] || {
+      billetera: 0,
+      banco: 0,
+      numero_tarjeta: null,
+      actualizado_en: null,
+    };
+
+    return res.json({
+      correcto: true,
+      saldo: {
+        billetera: Number(saldo.billetera || 0),
+        banco: Number(saldo.banco || 0),
+        numeroTarjeta: saldo.numero_tarjeta,
+        actualizadoEn: saldo.actualizado_en,
+      },
+    });
+  } catch (error) {
+    console.error("[API NEQUI]", error.message);
+    return res.status(500).json({
+      error: "No se pudo consultar el saldo Nequi.",
+    });
+  }
+});
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
