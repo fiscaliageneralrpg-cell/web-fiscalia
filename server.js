@@ -378,11 +378,15 @@ app.get("/api/whitelist/status", async (req, res) => {
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
 
-    if (aprobadaPorRol || estado?.estado === "aceptada") {
+    if (aprobadaPorRol) {
       return res.json({
         estado: "aceptada",
         redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html",
       });
+    }
+
+    if (roles.includes(ROL_WHITELIST_PENDIENTE)) {
+      return res.json({ estado: "pendiente" });
     }
 
     if (estado?.estado === "denegada") {
