@@ -381,6 +381,10 @@
             body: JSON.stringify({ respuestas }),
           });
           const d = await r.json();
+          if (d.redirect) {
+            window.location.href = d.redirect;
+            return;
+          }
           if (!r.ok) throw new Error(d.error || "No se pudo enviar");
           location.href = d.redirect || "/whitelist-pendiente.html";
         } catch (err) {
