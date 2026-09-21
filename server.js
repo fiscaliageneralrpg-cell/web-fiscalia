@@ -436,6 +436,17 @@ app.post("/api/cedula", async (req, res) => {
     roblox,
   } = req.body || {};
   const discordId = req.session.usuario.id;
+  const fechaTexto = String(fecha_nac || "").trim();
+  const coincidenciaFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(fechaTexto);
+  if (!coincidenciaFecha) {
+    return res.status(400).json({ error: "La fecha debe tener el formato DD/MM/AAAA, por ejemplo 02/02/2000." });
+  }
+  const [, dia, mes, anio] = coincidenciaFecha;
+  const fechaISO = `${anio}-${mes}-${dia}`;
+  const fechaValida = new Date(`${fechaISO}T00:00:00Z`);
+  if (fechaValida.getUTCFullYear() !== Number(anio) || fechaValida.getUTCMonth() + 1 !== Number(mes) || fechaValida.getUTCDate() !== Number(dia)) {
+    return res.status(400).json({ error: "La fecha de nacimiento no es válida." });
+  }
 
   if (!String(nombres || "").trim() || !String(apellidos || "").trim()) {
     return res
@@ -500,8 +511,8 @@ app.post("/api/cedula", async (req, res) => {
           String(nombres).trim(),
           String(apellidos).trim(),
           String(sexo),
-          String(fecha_nac),
-          String(fecha_nac),
+          fechaISO,
+          fechaTexto,
           String(nacionalidad),
           String(lugar_nac).trim(),
           String(roblox).trim(),
