@@ -639,6 +639,32 @@ app.get("/api/usuario", async (req, res) => {
   }
 });
 
+app.get("/api/cedula/imagen", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+
+  try {
+    const { pool } = require("./db");
+    const [filas] = await pool.execute(
+      `SELECT cedula_imagen
+       FROM usuarios
+       WHERE discord_id = ?
+       LIMIT 1`,
+      [req.session.usuario.id],
+    );
+
+    if (!filas[0]?.cedula_imagen) {
+      return res.status(404).send("La imagen de la cédula todavía no existe.");
+    }
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].cedula_imagen);
+  } catch (error) {
+    console.error("[API CEDULA IMAGEN]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen.");
+  }
+});
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
