@@ -732,6 +732,33 @@ app.get("/api/nequi/usuarios", async (req, res) => {
   }
 });
 
+app.get("/api/expediente", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    return res.status(503).json({
+      error: "Render no tiene configurada la conexión con la API del bot.",
+    });
+  }
+
+  try {
+    const base = process.env.NEQUI_API_URL.replace(/\/api\/nequi\/?$/, "");
+    const respuestaBot = await fetch(
+      `${base}/api/expediente/${req.session.usuario.id}`,
+      {
+        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    const datosBot = await respuestaBot.json();
+    return res.status(respuestaBot.status).json(datosBot);
+  } catch (error) {
+    console.error("[API EXPEDIENTE]", error.message);
+    return res.status(502).json({
+      error: "No se pudo consultar el expediente del bot.",
+    });
+  }
+});
+
 async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
   const cantidad = Number(monto);
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
