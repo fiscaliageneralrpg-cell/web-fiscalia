@@ -1,1 +1,120 @@
-
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashboard | Medellín RP</title>
+    <style>
+      body {
+        margin: 0;
+        background: #07101d;
+        color: #f4f7fb;
+        font-family: system-ui, sans-serif;
+      }
+      .wrap {
+        width: min(980px, calc(100% - 30px));
+        margin: 45px auto;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+      }
+      .logout {
+        color: #aebbd0;
+        text-decoration: none;
+      }
+      .hero,
+      .card {
+        padding: 28px;
+        border: 1px solid #ffffff1c;
+        border-radius: 22px;
+        background: #102238;
+      }
+      .hero {
+        background: linear-gradient(135deg, #173e65, #102238);
+      }
+      h1 {
+        margin: 0 0 8px;
+        letter-spacing: -0.05em;
+      }
+      p {
+        color: #aebbd0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 18px;
+      }
+      .card h3 {
+        margin-top: 0;
+      }
+      .value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #ffd166;
+      }
+      .muted {
+        font-size: 13px;
+        color: #aebbd0;
+      }
+      @media (max-width: 700px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .top {
+          align-items: flex-start;
+          gap: 12px;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <strong>「ME:RP」Medellín RP︱ER:LC</strong
+        ><a class="logout" href="/cerrar-sesion">Cerrar sesión</a>
+      </div>
+      <section class="hero">
+        <h1 id="saludo">Cargando dashboard...</h1>
+        <p>Bienvenido a tu espacio personal dentro de la comunidad.</p>
+      </section>
+      <section class="grid">
+        <article class="card">
+          <h3>Ciudadano</h3>
+          <div id="nombre" class="value">—</div>
+          <div class="muted">Nombre registrado</div>
+        </article>
+        <article class="card">
+          <h3>NUIP</h3>
+          <div id="nuip" class="value">—</div>
+          <div class="muted">Documento ciudadano</div>
+        </article>
+        <article class="card">
+          <h3>Whitelist</h3>
+          <div class="value">Aprobada</div>
+          <div class="muted">Acceso autorizado</div>
+        </article>
+      </section>
+    </main>
+    <script>
+      (async () => {
+        const r = await fetch("/api/usuario");
+        if (!r.ok) {
+          location.href = "/iniciar-seccion.html";
+          return;
+        }
+        const d = await r.json(),
+          u = d.usuario;
+        document.querySelector("#saludo").textContent = `Hola, ${u.nombre}`;
+        document.querySelector("#nombre").textContent =
+          u.cedula?.nombre || u.nombre;
+        document.querySelector("#nuip").textContent =
+          u.cedula?.nuip || "Sin registrar";
+      })();
+    </script>
+  </body>
+</html>
