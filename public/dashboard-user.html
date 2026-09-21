@@ -70,6 +70,33 @@
       .document-card h2 {
         margin-top: 0;
       }
+      .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .quick-action {
+        display: block;
+        padding: 18px;
+        border: 1px solid #ffffff1c;
+        border-radius: 16px;
+        color: #f4f7fb;
+        background: linear-gradient(135deg, #173e65, #102238);
+        text-decoration: none;
+      }
+      .quick-action.nequi {
+        background: linear-gradient(135deg, #3a1367, #170d2b);
+      }
+      .quick-action strong,
+      .quick-action span {
+        display: block;
+      }
+      .quick-action span {
+        margin-top: 5px;
+        color: #aebbd0;
+        font-size: 13px;
+      }
       #cedula-imagen-contenedor {
         display: none;
         margin-top: 18px;
@@ -132,6 +159,16 @@
           Usa <strong>/mostrar-cedula</strong> en Discord para generar o
           actualizar la imagen.
         </p>
+        <div class="quick-actions">
+          <a class="quick-action" href="#cedula-imagen-contenedor">
+            <strong>🪪 Documentación</strong>
+            <span>Ver tu cédula ciudadana</span>
+          </a>
+          <a class="quick-action nequi" href="/nequi.html">
+            <strong>💜 Nequi</strong>
+            <span>Consultar dinero, banco y tarjeta</span>
+          </a>
+        </div>
       </section>
     </main>
     <script>
