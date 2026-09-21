@@ -781,6 +781,70 @@ app.get("/api/expediente", async (req, res) => {
   }
 });
 
+async function solicitarApiVehiculos(req, metodo = "GET", cuerpo = null, sufijo = "") {
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    const error = new Error("Render no tiene configurada la conexión con la API del bot.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const opciones = {
+    method: metodo,
+    headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+    signal: AbortSignal.timeout(8000),
+  };
+  if (cuerpo !== null) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);
+  }
+  const baseApi = process.env.NEQUI_API_URL
+    .replace(/\/$/, "")
+    .replace(/\/api\/nequi$/, "");
+  const respuesta = await fetch(
+    `${baseApi}/api/vehiculos/${req.session.usuario.id}${sufijo}`,
+    opciones,
+  );
+  const datos = await respuesta.json();
+  return { estado: respuesta.status, datos };
+}
+
+app.get("/api/vehiculos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(req, "GET");
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS GET]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.post("/api/vehiculos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(req, "POST", req.body);
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS POST]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/vehiculos/:id", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(
+      req,
+      "DELETE",
+      null,
+      `/${encodeURIComponent(req.params.id)}`,
+    );
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS DELETE]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
 async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
   const cantidad = Number(monto);
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
