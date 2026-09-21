@@ -669,6 +669,15 @@ app.get("/api/nequi", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
   try {
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      const respuestaBot = await fetch(
+        `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}`,
+        { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY } },
+      );
+      const datosBot = await respuestaBot.json();
+      return res.status(respuestaBot.status).json(datosBot);
+    }
+
     const { pool } = require("./db");
     const [filas] = await pool.execute(
       `SELECT billetera, banco, numero_tarjeta, actualizado_en
@@ -843,6 +852,22 @@ app.post("/api/nequi/operacion", async (req, res) => {
 
   const { tipo, monto, destinoId } = req.body || {};
   try {
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      const respuestaBot = await fetch(
+        `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}/operacion`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Nequi-Key": process.env.NEQUI_API_KEY,
+          },
+          body: JSON.stringify({ tipo, monto, destinoId }),
+        },
+      );
+      const datosBot = await respuestaBot.json();
+      return res.status(respuestaBot.status).json(datosBot);
+    }
+
     await moverSaldoNequi(
       req.session.usuario.id,
       tipo,
