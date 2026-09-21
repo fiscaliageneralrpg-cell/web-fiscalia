@@ -42,6 +42,11 @@
         text-decoration: none;
         font-weight: 800;
       }
+      #estado {
+        margin-top: 18px;
+        color: #aebbd0;
+        font-size: 13px;
+      }
     </style>
   </head>
   <body>
@@ -50,9 +55,38 @@
       <h1>Whitelist en revisión</h1>
       <p>
         Tu solicitud fue enviada correctamente. El equipo de Medellín RP la
-        revisará. Vuelve a iniciar sesión más adelante para continuar.
+        revisará. Esta página comprobará automáticamente cuando exista una
+        respuesta.
       </p>
+      <div id="estado">Comprobando estado...</div>
       <a class="btn" href="/cerrar-sesion">Cerrar sesión</a>
     </main>
+    <script>
+      async function comprobarEstado() {
+        try {
+          const respuesta = await fetch("/api/whitelist/status", {
+            cache: "no-store",
+          });
+
+          if (!respuesta.ok) return;
+
+          const datos = await respuesta.json();
+
+          if (datos.redirect) {
+            window.location.href = datos.redirect;
+            return;
+          }
+
+          document.querySelector("#estado").textContent =
+            "La solicitud continúa pendiente de revisión.";
+        } catch (error) {
+          document.querySelector("#estado").textContent =
+            "Esperando conexión con el servidor...";
+        }
+      }
+
+      comprobarEstado();
+      setInterval(comprobarEstado, 5000);
+    </script>
   </body>
 </html>
