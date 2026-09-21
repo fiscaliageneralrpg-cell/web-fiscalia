@@ -6,13 +6,13 @@
     <title>Crear cédula | Medellín RP</title>
     <style>
       :root {
-        --bg: #07101d;
-        --panel: #102238;
-        --line: rgba(255, 255, 255, 0.12);
-        --text: #f4f7fb;
-        --muted: #aebbd0;
-        --yellow: #ffd166;
-        --discord: #5865f2;
+        --bg: #06141f;
+        --panel: #102b42;
+        --line: #42d8d044;
+        --text: #f4efe3;
+        --muted: #a9bac6;
+        --yellow: #42d8d0;
+        --discord: #0c7890;
       }
       * {
         box-sizing: border-box;
@@ -23,7 +23,7 @@
         padding: 24px;
         color: var(--text);
         background:
-          radial-gradient(circle at 10% 0, #15365b, transparent 42%), var(--bg);
+          linear-gradient(135deg, #06141f, #0a3140);
         font-family: Inter, system-ui, sans-serif;
       }
       .wrap {
@@ -34,8 +34,8 @@
         padding: 34px;
         border: 1px solid var(--line);
         border-radius: 24px;
-        background: rgba(16, 34, 56, 0.95);
-        box-shadow: 0 25px 70px #0006;
+        background: linear-gradient(145deg, #102b42f5, #071b2bf5);
+        box-shadow: 0 25px 70px #0008, inset 0 1px #ffffff12;
       }
       .eyebrow {
         color: var(--yellow);
@@ -73,7 +73,7 @@
         padding: 24px;
         border: 1px solid var(--line);
         border-radius: 17px;
-        background: rgba(7, 16, 29, 0.55);
+        background: #06141f99;
       }
       .option p {
         min-height: 72px;
@@ -98,7 +98,7 @@
         background: var(--discord);
       }
       .web {
-        color: #07101d;
+        color: #06141f;
         background: var(--yellow);
       }
       .form-section {
@@ -253,7 +253,10 @@
                 <input
                   name="fecha_nac"
                   placeholder="DD/MM/AAAA"
-                  pattern="\\d{2}/\\d{2}/\\d{4}"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
                   required
                 />
               </label>
