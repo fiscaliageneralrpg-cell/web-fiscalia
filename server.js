@@ -845,6 +845,61 @@ app.delete("/api/vehiculos/:id", async (req, res) => {
   }
 });
 
+async function solicitarApiTienda(req, metodo = "GET", cuerpo = null, sufijo = "") {
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    const error = new Error("Render no tiene configurada la conexión con la API del bot.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+  const opciones = { method: metodo, headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) };
+  if (cuerpo !== null) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);
+  }
+  const respuesta = await fetch(`${baseApi}/api/tienda/${req.session.usuario.id}${sufijo}`, opciones);
+  const datos = await respuesta.json();
+  return { estado: respuesta.status, datos };
+}
+
+app.get("/api/tienda", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiTienda(req);
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API TIENDA GET]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.post("/api/tienda/:productoId/comprar", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiTienda(req, "POST", { productoId: req.params.productoId }, "/comprar");
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API TIENDA COMPRA]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.get("/api/comportamiento", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/comportamiento/${req.session.usuario.id}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API COMPORTAMIENTO]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el comportamiento." });
+  }
+});
+
 async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
   const cantidad = Number(monto);
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
