@@ -104,7 +104,7 @@
       (async () => {
         const r = await fetch("/api/usuario");
         if (!r.ok) {
-          location.href = "/iniciar-seccion.html";
+          location.href = "/index.html";
           return;
         }
         const d = await r.json(),
