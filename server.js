@@ -734,27 +734,49 @@ app.get("/api/nequi/usuarios", async (req, res) => {
 
 app.get("/api/expediente", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
-    return res.status(503).json({
-      error: "Render no tiene configurada la conexión con la API del bot.",
-    });
-  }
 
   try {
-    const base = process.env.NEQUI_API_URL.replace(/\/api\/nequi\/?$/, "");
-    const respuestaBot = await fetch(
-      `${base}/api/expediente/${req.session.usuario.id}`,
-      {
-        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
-        signal: AbortSignal.timeout(8000),
+    const { pool } = require("./db");
+    const discordId = req.session.usuario.id;
+    const [arrestos, antecedentes, multas] = await Promise.all([
+      pool.execute(
+        "SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC",
+        [discordId],
+      ),
+      pool.execute(
+        "SELECT payload FROM expediente_antecedentes WHERE discord_id = ? ORDER BY fecha DESC",
+        [discordId],
+      ),
+      pool.execute(
+        "SELECT payload FROM expediente_multas WHERE discord_id = ? ORDER BY fecha DESC",
+        [discordId],
+      ),
+    ]);
+    const convertir = ([filas]) =>
+      filas.map((fila) =>
+        typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload,
+      );
+    const datos = {
+      arrestos: convertir(arrestos),
+      antecedentes: convertir(antecedentes),
+      multas: convertir(multas),
+    };
+    return res.json({
+      correcto: true,
+      expediente: {
+        ...datos,
+        conteos: {
+          arrestos: datos.arrestos.length,
+          antecedentes: datos.antecedentes.length,
+          multas: datos.multas.length,
+          ordenes: 0,
+        },
       },
-    );
-    const datosBot = await respuestaBot.json();
-    return res.status(respuestaBot.status).json(datosBot);
+    });
   } catch (error) {
     console.error("[API EXPEDIENTE]", error.message);
-    return res.status(502).json({
-      error: "No se pudo consultar el expediente del bot.",
+    return res.status(500).json({
+      error: "No se pudo consultar el expediente sincronizado en MySQL.",
     });
   }
 });
