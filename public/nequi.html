@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nequi | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #070812;
+        --panel: #17102b;
+        --purple: #7000ff;
+        --pink: #c92cff;
+        --text: #fff;
+        --muted: #c7b9df;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% 0, #3b1468, transparent 38%),
+          linear-gradient(135deg, #090513, #160b28);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .wrap {
+        width: min(920px, calc(100% - 28px));
+        margin: 32px auto;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .top a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+      }
+      .card {
+        padding: 28px;
+        border: 1px solid #ffffff1c;
+        border-radius: 25px;
+        background: linear-gradient(145deg, #25113eef, #120b20f2);
+        box-shadow:
+          0 25px 80px #0009,
+          inset 0 1px #fff1;
+      }
+      .brand {
+        color: #e2c7ff;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 9px 0 24px;
+        font-size: clamp(28px, 6vw, 55px);
+        letter-spacing: -0.06em;
+      }
+      .identity {
+        display: flex;
+        gap: 13px;
+        align-items: center;
+        margin-bottom: 20px;
+        color: var(--muted);
+      }
+      .identity strong {
+        color: #fff;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+      }
+      .balances {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+      .balance {
+        padding: 20px;
+        border: 1px solid #ffffff15;
+        border-radius: 17px;
+        background: #08061280;
+      }
+      .label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .amount {
+        margin-top: 8px;
+        font-size: clamp(23px, 4vw, 34px);
+        font-weight: 900;
+      }
+      .total {
+        margin-top: 16px;
+        padding: 22px;
+        border-radius: 18px;
+        background: linear-gradient(100deg, #7000ff55, #c92cff33);
+      }
+      .total .amount {
+        color: #e6c9ff;
+      }
+      .product {
+        margin-top: 16px;
+        padding: 16px 18px;
+        border: 1px solid #ffffff17;
+        border-radius: 14px;
+        color: var(--muted);
+      }
+      .product strong {
+        color: #fff;
+      }
+      .visa-card {
+        position: relative;
+        min-height: 190px;
+        margin-top: 18px;
+        padding: 22px;
+        overflow: hidden;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #11182f, #3d5fc4 55%, #7024b9);
+        box-shadow: 0 18px 40px #0006;
+      }
+      .visa-card::after {
+        position: absolute;
+        right: -30px;
+        bottom: -80px;
+        width: 220px;
+        height: 220px;
+        border: 1px solid #ffffff35;
+        border-radius: 50%;
+        content: "";
+      }
+      .visa-card small,
+      .visa-card strong,
+      .visa-card span {
+        position: relative;
+        z-index: 1;
+        display: block;
+      }
+      .visa-card small {
+        color: #e1e7ff;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+      }
+      .visa-card strong {
+        margin-top: 46px;
+        color: #fff;
+        font-size: 24px;
+        letter-spacing: 0.16em;
+      }
+      .visa-card span {
+        margin-top: 12px;
+        color: #dbe5ff;
+        font-size: 12px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+      }
+      .operation-panel {
+        margin-top: 20px;
+        padding: 18px;
+        border: 1px solid #ffffff17;
+        border-radius: 18px;
+        background: #08061280;
+      }
+      .operation-panel h2 {
+        margin: 0 0 14px;
+        font-size: 17px;
+      }
+      .operation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .operation {
+        padding: 13px 10px;
+        border: 1px solid #ffffff1c;
+        border-radius: 11px;
+        color: #fff;
+        background: #ffffff0c;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .operation:hover {
+        border-color: #c92cff;
+        background: #7000ff33;
+      }
+      .operation-form {
+        display: none;
+        margin-top: 14px;
+      }
+      .operation-form.visible {
+        display: block;
+      }
+      .operation-form input,
+      .operation-form select {
+        width: 100%;
+        margin: 7px 0;
+        padding: 12px;
+        border: 1px solid #ffffff22;
+        border-radius: 10px;
+        color: #fff;
+        background: #10091b;
+        font: inherit;
+      }
+      .operation-form button {
+        width: 100%;
+        margin-top: 6px;
+      }
+      button,
+      .button {
+        flex: 1;
+        min-height: 48px;
+        border: 0;
+        border-radius: 12px;
+        color: #fff;
+        background: linear-gradient(100deg, #7000ff, #a900ff);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        display: grid;
+        place-items: center;
+      }
+      .secondary {
+        color: #fff;
+        background: #ffffff14;
+        border: 1px solid #ffffff1e;
+      }
+      .foot {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .error {
+        color: #fecaca;
+      }
+      @media (max-width: 600px) {
+        .balances {
+          grid-template-columns: 1fr;
+        }
+        .top {
+          align-items: flex-start;
+          gap: 10px;
+          flex-direction: column;
+        }
+        .actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <strong>「ME:RP」Medellín RP︱ER:LC</strong
+        ><a href="/dashboard-user.html">← Volver al dashboard</a>
+      </div>
+      <section class="card">
+        <div class="brand">NEQUI | GESTIÓN DIGITAL</div>
+        <h1>Panel financiero</h1>
+        <div class="identity">
+          <div class="avatar">💳</div>
+          <div>
+            PANEL: <strong id="nombre">Cargando...</strong><br /><span
+              id="actualizado"
+              >Consultando saldo seguro</span
+            >
+          </div>
+        </div>
+        <div class="balances">
+          <article class="balance">
+            <div class="label">💰 DISPONIBLE · Mano</div>
+            <div class="amount" id="billetera">$ 0</div>
+          </article>
+          <article class="balance">
+            <div class="label">🖼️ Disponible · Nequi</div>
+            <div class="amount" id="banco">$ 0</div>
+          </article>
+        </div>
+        <article class="total">
+          <div class="label">📊 TOTAL</div>
+          <div class="amount" id="total">$ 0</div>
+        </article>
+        <div class="visa-card">
+          <small>💳 TARJETA DIGITAL · MEDELLÍN RP</small>
+          <strong id="tarjeta">VISA • ----</strong>
+          <span>Cuenta Nequi · uso digital</span>
+        </div>
+        <section class="operation-panel">
+          <h2>⚡ Operaciones Nequi</h2>
+          <div class="operation-grid">
+            <button class="operation" data-operation="depositar" type="button">
+              💰 Depositar
+            </button>
+            <button class="operation" data-operation="retirar" type="button">
+              🏧 Sacar
+            </button>
+            <button class="operation" data-operation="transferir" type="button">
+              ↗ Transferir
+            </button>
+          </div>
+          <form id="operacion-form" class="operation-form">
+            <select id="destino" hidden></select>
+            <input
+              id="monto"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Monto en pesos colombianos"
+              required
+            />
+            <button class="button" type="submit">Confirmar operación</button>
+          </form>
+          <div id="operacion-mensaje" class="foot"></div>
+        </section>
+        <div class="actions">
+          <a class="button secondary" href="/dashboard-user.html"
+            >← Volver al dashboard</a
+          ><button id="actualizar" type="button">↻ Actualizar saldo</button>
+        </div>
+        <div id="error" class="foot"></div>
+      </section>
+    </main>
+    <script>
+      const moneda = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      });
+      let operacionActual = null;
+      const formularioOperacion = document.querySelector("#operacion-form");
+      const destino = document.querySelector("#destino");
+      const mensajeOperacion = document.querySelector("#operacion-mensaje");
+
+      async function cargarUsuarios() {
+        const respuesta = await fetch("/api/nequi/usuarios", {
+          cache: "no-store",
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok)
+          throw new Error(datos.error || "No se pudieron cargar los usuarios.");
+        destino.innerHTML =
+          '<option value="">Selecciona el destinatario</option>';
+        for (const usuario of datos.usuarios) {
+          const opcion = document.createElement("option");
+          opcion.value = usuario.id;
+          opcion.textContent = `${usuario.nombre} (@${usuario.username})`;
+          destino.appendChild(opcion);
+        }
+      }
+
+      document.querySelectorAll("[data-operation]").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          operacionActual = boton.dataset.operation;
+          formularioOperacion.classList.add("visible");
+          destino.hidden = operacionActual !== "transferir";
+          mensajeOperacion.textContent = "";
+          if (operacionActual === "transferir") {
+            try {
+              await cargarUsuarios();
+            } catch (error) {
+              mensajeOperacion.textContent = error.message;
+            }
+          }
+          document.querySelector("#monto").focus();
+        });
+      });
+
+      formularioOperacion.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+        const monto = Number(document.querySelector("#monto").value);
+        const destinoId = destino.value;
+        if (operacionActual === "transferir" && !destinoId) {
+          mensajeOperacion.textContent = "Selecciona el usuario destinatario.";
+          return;
+        }
+        mensajeOperacion.textContent = "Procesando operación...";
+        try {
+          const respuesta = await fetch("/api/nequi/operacion", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tipo: operacionActual, monto, destinoId }),
+          });
+          const datos = await respuesta.json();
+          if (!respuesta.ok)
+            throw new Error(datos.error || "No se pudo completar.");
+          mensajeOperacion.textContent =
+            "✅ Operación completada correctamente.";
+          document.querySelector("#monto").value = "";
+          await cargar();
+        } catch (error) {
+          mensajeOperacion.textContent = `❌ ${error.message}`;
+        }
+      });
+
+      async function cargar() {
+        const respuesta = await fetch("/api/nequi", { cache: "no-store" });
+        if (respuesta.status === 401) {
+          location.href = "/iniciar-seccion.html";
+          return;
+        }
+        const datos = await respuesta.json();
+        if (!respuesta.ok)
+          throw new Error(datos.error || "No se pudo consultar el saldo.");
+        const s = datos.saldo;
+        document.querySelector("#nombre").textContent = "TU CUENTA";
+        document.querySelector("#billetera").textContent = moneda.format(
+          s.billetera,
+        );
+        document.querySelector("#banco").textContent = moneda.format(s.banco);
+        document.querySelector("#total").textContent = moneda.format(
+          s.billetera + s.banco,
+        );
+        document.querySelector("#tarjeta").textContent = s.numeroTarjeta
+          ? `VISA • ${String(s.numeroTarjeta).slice(-4)}`
+          : "VISA • ----";
+        document.querySelector("#actualizado").textContent = s.actualizadoEn
+          ? `Consultado • ${new Date(s.actualizadoEn).toLocaleString("es-CO")}`
+          : "Consultado ahora";
+      }
+      document
+        .querySelector("#actualizar")
+        .addEventListener("click", () =>
+          cargar().catch(
+            (e) => (document.querySelector("#error").textContent = e.message),
+          ),
+        );
+      cargar().catch(
+        (e) => (document.querySelector("#error").textContent = e.message),
+      );
+    </script>
+  </body>
+</html>
