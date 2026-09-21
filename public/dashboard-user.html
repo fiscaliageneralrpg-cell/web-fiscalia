@@ -153,12 +153,16 @@
         document.querySelector("#nuip").textContent =
           u.cedula?.nuip || "Sin registrar";
 
-        if (u.cedula?.cedula_imagen_url) {
+        if (u.cedula) {
           const contenedor = document.querySelector(
             "#cedula-imagen-contenedor",
           );
           const imagen = document.querySelector("#cedula-imagen");
-          imagen.src = u.cedula.cedula_imagen_url;
+          imagen.src = "/api/cedula/imagen?t=" + Date.now();
+          imagen.onerror = () => {
+            contenedor.style.display = "none";
+            document.querySelector("#sin-imagen").style.display = "block";
+          };
           contenedor.style.display = "block";
           document.querySelector("#sin-imagen").style.display = "none";
         }
