@@ -300,7 +300,7 @@
           <strong id="tarjeta">VISA • ----</strong>
           <span>Cuenta Nequi · uso digital</span>
         </div>
-        <section class="operation-panel">
+        <section id="operacion-panel" class="operation-panel">
           <h2>⚡ Operaciones Nequi</h2>
           <div class="operation-grid">
             <button class="operation" data-operation="depositar" type="button">
@@ -414,8 +414,16 @@
           return;
         }
         const datos = await respuesta.json();
-        if (!respuesta.ok)
+        if (!respuesta.ok) {
+          if (datos.codigo === "CUENTA_NEQUI_INEXISTENTE") {
+            document.querySelector("#operacion-panel").style.display = "none";
+            document.querySelector("#error").innerHTML =
+              "💜 <strong>No tienes una cuenta Nequi activa.</strong><br />" +
+              "Ejecuta <strong>/saldo</strong> en el servidor principal de Discord y vuelve a entrar a esta página.";
+            return;
+          }
           throw new Error(datos.error || "No se pudo consultar el saldo.");
+        }
         const s = datos.saldo;
         document.querySelector("#nombre").textContent = "TU CUENTA";
         document.querySelector("#billetera").textContent = moneda.format(
