@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Panel ciudadano | Medellín RP</title>
+    <style>
+      :root {
+        --ink: #f3f6fb;
+        --paper: #101923;
+        --blue: #42d8d0;
+        --yellow: #ffd166;
+        --red: #d84a4a;
+        --muted: #9eafbd;
+        --line: #ffffff1c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: linear-gradient(145deg, #06141f, #0a3140);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .wrap {
+        width: min(1120px, calc(100% - 30px));
+        margin: 28px auto 60px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #cde9e5;
+      }
+      .top a {
+        color: #9ec9cc;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        padding: 28px 30px;
+        border-radius: 20px 20px 8px 8px;
+        color: #fff;
+        background: linear-gradient(120deg, #0c7180, #102b42);
+        box-shadow: 0 18px 40px #0006;
+      }
+      .kicker {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #42d8d0;
+      }
+      .header h1 {
+        margin: 8px 0 0;
+        font-size: clamp(30px, 5vw, 54px);
+        letter-spacing: -0.07em;
+      }
+      .header p {
+        margin: 8px 0 0;
+        color: #dcecff;
+      }
+      .seal {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        place-items: center;
+        border: 2px solid #42d8d0;
+        border-radius: 50%;
+        color: #42d8d0;
+        font-size: 30px;
+      }
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 18px 0;
+      }
+      .tab {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: #cbd8e3;
+        background: #ffffff0a;
+        font-weight: 800;
+      }
+      .tab.active {
+        border-color: var(--yellow);
+        color: #42d8d0;
+        background: #ffffff0a4d2;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 15px;
+      }
+      .metric {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #ffffff0a;
+        box-shadow: 0 10px 25px #0003;
+      }
+      .metric.gold {
+        border-top: 4px solid var(--yellow);
+      }
+      .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .big {
+        display: block;
+        margin-top: 9px;
+        font-size: 25px;
+        font-weight: 900;
+      }
+      .content {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .paper {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #ffffff0a;
+        box-shadow: 0 10px 25px #0003;
+      }
+      .paper h2 {
+        margin: 0 0 15px;
+        font-size: 18px;
+      }
+      .id-frame {
+        padding: 10px;
+        border: 1px solid #42d8d044;
+        border-radius: 10px;
+        background: #06141f;
+      }
+      .id-frame img {
+        display: block;
+        width: 100%;
+        border-radius: 6px;
+      }
+      .empty,
+      .status {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .side {
+        display: grid;
+        gap: 16px;
+      }
+      .money {
+        display: flex;
+        justify-content: space-between;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .money:last-child {
+        border: 0;
+      }
+      .money strong {
+        color: var(--ink);
+      }
+      .visa {
+        margin-top: 14px;
+        padding: 17px;
+        border-radius: 12px;
+        color: #fff;
+        background: linear-gradient(135deg, #182d51, #3d70bf);
+      }
+      .visa small,
+      .visa strong {
+        display: block;
+      }
+      .visa strong {
+        margin-top: 24px;
+        letter-spacing: 0.15em;
+      }
+      .visa-link {
+        display: inline-block;
+        margin-top: 15px;
+        color: #9ec9cc;
+        font-weight: 800;
+        text-decoration: none;
+      }
+      .record {
+        padding: 13px 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .record:last-child {
+        border: 0;
+      }
+      .record strong {
+        color: var(--ink);
+      }
+      .status {
+        margin-top: 15px;
+      }
+      @media (max-width: 780px) {
+        .header {
+          align-items: flex-start;
+          gap: 15px;
+          flex-direction: column;
+        }
+        .summary,
+        .content {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <strong>「ME:RP」Medellín RP︱ER:LC</strong
+        ><a href="/dashboard-user.html">← Dashboard</a>
+      </div>
+      <header class="header">
+        <div>
+          <div class="kicker">Registro ciudadano digital</div>
+          <h1>Panel ciudadano</h1>
+          <p id="nombre-header">
+            Información personal y expediente de tu personaje.
+          </p>
+        </div>
+        <div class="seal">✦</div>
+      </header>
+      <nav class="tabs">
+        <span class="tab active">▣ Info general</span
+        ><span class="tab">⚒ Arrestos (<b id="arrestos">0</b>)</span
+        ><span class="tab">▤ Multas (<b id="multas">0</b>)</span
+        ><span class="tab">◉ Órdenes (0)</span>
+      </nav>
+      <section class="summary">
+        <article class="metric gold">
+          <div class="label">⚖️ Estado legal</div>
+          <strong id="estado" class="big">Consultando...</strong
+          ><span id="resumen" class="empty">Consultando registros.</span>
+        </article>
+        <article class="metric">
+          <div class="label">🚗 Vehículos registrados</div>
+          <strong class="big">0</strong
+          ><span class="empty">Registros disponibles</span>
+        </article>
+      </section>
+      <section class="content">
+        <article class="paper">
+          <h2>🪪 Documento de identidad</h2>
+          <div class="id-frame">
+            <img id="cedula" alt="Cédula de ciudadanía" />
+          </div>
+          <p id="sin-cedula" class="empty">
+            No hay una imagen de cédula guardada.
+          </p>
+        </article>
+        <aside class="side">
+          <article class="paper">
+            <h2>💜 Cuenta Nequi</h2>
+            <div class="money">
+              <span>💰 Mano</span><strong id="mano">$ 0</strong>
+            </div>
+            <div class="money">
+              <span>Nequi</span><strong id="nequi">$ 0</strong>
+            </div>
+            <div class="money">
+              <span>📊 Total</span><strong id="total">$ 0</strong>
+            </div>
+            <div class="visa">
+              <small>💳 TARJETA DIGITAL</small
+              ><strong id="tarjeta">VISA • ----</strong>
+            </div>
+            <a class="visa-link" href="/nequi.html">Abrir gestión Nequi →</a>
+          </article>
+          <article class="paper">
+            <h2>📋 Antecedentes recientes</h2>
+            <div id="registros" class="empty">Cargando registros...</div>
+          </article>
+        </aside>
+      </section>
+      <div id="estado-carga" class="status">Cargando información...</div>
+    </main>
+    <script>
+      const moneda = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      });
+      async function cargar() {
+        const rs = await Promise.all([
+          fetch("/api/usuario", { cache: "no-store" }),
+          fetch("/api/nequi", { cache: "no-store" }),
+          fetch("/api/expediente", { cache: "no-store" }),
+        ]);
+        if (rs[0].status === 401) {
+          location.href = "/iniciar-seccion.html";
+          return;
+        }
+        const u = (await rs[0].json()).usuario || {};
+        document.querySelector("#nombre-header").textContent =
+          `${u.cedula?.nombre || u.nombre || "Ciudadano"} · Registro digital`;
+        if (u.cedula) {
+          const img = document.querySelector("#cedula");
+          img.src = "/api/cedula/imagen?t=" + Date.now();
+          img.onerror = () => {
+            img.style.display = "none";
+          };
+          document.querySelector("#sin-cedula").style.display = "none";
+        }
+        const n = await rs[1].json();
+        if (rs[1].ok) {
+          const s = n.saldo;
+          document.querySelector("#mano").textContent = moneda.format(
+            s.billetera,
+          );
+          document.querySelector("#nequi").textContent = moneda.format(s.banco);
+          document.querySelector("#total").textContent = moneda.format(
+            s.billetera + s.banco,
+          );
+          document.querySelector("#tarjeta").textContent = s.numeroTarjeta
+            ? "VISA • " + String(s.numeroTarjeta).slice(-4)
+            : "VISA • ----";
+        }
+        const x = await rs[2].json();
+        if (rs[2].ok) {
+          const e = x.expediente,
+            c = e.conteos,
+            total = c.arrestos + c.antecedentes + c.multas;
+          document.querySelector("#arrestos").textContent =
+            c.arrestos + c.antecedentes;
+          document.querySelector("#multas").textContent = c.multas;
+          document.querySelector("#estado").textContent = total
+            ? "Con antecedentes"
+            : "Sin antecedentes";
+          document.querySelector("#resumen").textContent = total
+            ? `${total} registro(s) asociado(s).`
+            : "No hay registros asociados.";
+          const list = [...e.arrestos, ...e.antecedentes, ...e.multas].slice(
+              0,
+              6,
+            ),
+            box = document.querySelector("#registros");
+          box.textContent = "";
+          if (!list.length)
+            box.textContent =
+              "No tienes arrestos, antecedentes ni comparendos registrados.";
+          else
+            list.forEach((r) => {
+              const el = document.createElement("div");
+              el.className = "record";
+              el.innerHTML =
+                "<strong>" +
+                (r.tipo === "multa" || r.tipo === "comparendo" || r.placa
+                  ? "Comparendo"
+                  : "Arresto / antecedente") +
+                "</strong><br>" +
+                (r.fecha
+                  ? new Date(r.fecha).toLocaleString("es-CO")
+                  : "Fecha no registrada");
+              box.appendChild(el);
+            });
+        }
+        document.querySelector("#estado-carga").textContent =
+          "Información actualizada desde Medellín RP.";
+      }
+      cargar().catch(
+        (e) =>
+          (document.querySelector("#estado-carga").textContent =
+            "No se pudo cargar toda la información: " + e.message),
+      );
+    </script>
+  </body>
+</html>
