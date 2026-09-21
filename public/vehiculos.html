@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mis vehículos | Medellín RP</title>
+  <style>
+    :root{--bg:#06141f;--panel:#102b42;--cyan:#42d8d0;--muted:#9eafbd;--line:#ffffff1c;--red:#d84a4a}
+    *{box-sizing:border-box}body{margin:0;color:#f3f6fb;background:linear-gradient(145deg,#06141f,#0a3140);font-family:Inter,system-ui,sans-serif}
+    .wrap{width:min(1050px,calc(100% - 30px));margin:28px auto 60px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center}.top a{color:#9ec9cc;text-decoration:none;font-weight:800}.hero{margin-top:22px;padding:28px;border-radius:20px;background:linear-gradient(120deg,#0c7180,#102b42);box-shadow:0 18px 40px #0006}.kicker{color:var(--cyan);font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.hero h1{margin:8px 0;font-size:clamp(30px,5vw,54px);letter-spacing:-.06em}.hero p{margin:0;color:#dcecff}.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0;flex-wrap:wrap}.bar h2{margin:0}.panel{padding:20px;border:1px solid var(--line);border-radius:15px;background:#ffffff0a;box-shadow:0 10px 25px #0003}.form{display:grid;grid-template-columns:1fr 180px auto;gap:10px;align-items:end;margin-bottom:18px}.field label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase}.field select,.field input{width:100%;padding:12px;border:1px solid #42d8d055;border-radius:8px;color:#fff;background:#06141f}.button{padding:12px 15px;border:0;border-radius:8px;color:#06141f;background:var(--cyan);font-weight:900;cursor:pointer}.button.danger{color:#fff;background:var(--red)}.button.secondary{color:#fff;background:#ffffff1c}.button:disabled{opacity:.45;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.vehicle{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:17px;border:1px solid var(--line);border-radius:12px;background:#ffffff08}.vehicle h3{margin:0 0 7px}.vehicle p{margin:3px 0;color:var(--muted);font-size:13px}.empty,.status{color:var(--muted);font-size:14px}.pager{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px}.message{min-height:20px;margin:12px 0;color:var(--cyan);font-weight:800}.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#000b}.modal[hidden]{display:none}.modal-card{width:min(540px,100%);padding:24px;border:1px solid #42d8d077;border-radius:18px;background:#102b42;box-shadow:0 24px 80px #000a}.modal-head{display:flex;justify-content:space-between;align-items:center;gap:15px}.modal-head h2{margin:0}.close{border:0;color:#fff;background:transparent;font-size:25px;cursor:pointer}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}@media(max-width:700px){.form,.grid{grid-template-columns:1fr}.vehicle{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><strong>「ME:RP」Medellín RP︱ER:LC</strong><a href="/ciudadano.html">← Volver a ciudadano</a></div>
+  <header class="hero"><div class="kicker">Registro automotor digital</div><h1>Mis vehículos</h1><p>Solo puedes registrar vehículos que tengas en tu inventario.</p></header>
+  <section class="panel" style="margin-top:18px"><div class="bar"><button id="abrir-modal" class="button" type="button">＋ Registrar vehículo</button><span id="contador" class="status">Cargando...</span></div></section>
+  <div id="modal-registro" class="modal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+      <div class="modal-head"><h2 id="titulo-modal">🚘 Registrar vehículo</h2><button id="cerrar-modal" class="close" type="button" aria-label="Cerrar">×</button></div>
+      <p class="status">Elige un vehículo de tu inventario y escribe su placa.</p>
+      <form id="formulario" class="form">
+        <div class="field"><label for="item">Vehículo disponible</label><select id="item" required><option value="">Cargando inventario...</option></select></div>
+        <div class="field"><label for="placa">Placa</label><input id="placa" maxlength="10" placeholder="ABC123" required></div>
+        <div class="modal-actions"><button id="cancelar-modal" class="button secondary" type="button">Cancelar</button><button class="button" type="submit">Registrar</button></div>
+      </form>
+      <div id="mensaje" class="message"></div>
+    </section>
+  </div>
+  <section class="panel" style="margin-top:18px"><div class="bar"><h2>🚗 Vehículos registrados</h2></div><div id="lista" class="grid"><div class="empty">Cargando vehículos...</div></div><div class="pager"><button id="anterior" class="button" type="button">← Anterior</button><span id="pagina" class="status">Página 1</span><button id="siguiente" class="button" type="button">Siguiente →</button></div></section>
+</main>
+<script>
+  const porPagina = 5;
+  const estado = {vehiculos:[],inventario:[],pagina:1};
+  const $ = (selector) => document.querySelector(selector);
+  function mensaje(texto, error=false){ $("#mensaje").textContent=texto; $("#mensaje").style.color=error?"#ff8b8b":"#42d8d0"; }
+  function pintarInventario(){
+    const select=$("#item"); select.textContent="";
+    const disponibles=estado.inventario.filter((item)=>item?.tipo==="vehiculo" && !estado.vehiculos.some((v)=>String(v.itemId)===String(item.itemId)));
+    if(!disponibles.length){select.innerHTML='<option value="">No tienes vehículos disponibles</option>',$('#formulario button[type="submit"]').disabled=true;return;}
+    select.innerHTML='<option value="">Selecciona un vehículo</option>'+disponibles.map((item)=>`<option value="${item.itemId}">${item.emoji||"🚗"} ${item.nombre}</option>`).join("");
+    $('#formulario button[type="submit"]').disabled=false;
+  }
+  function abrirModal(){ $("#modal-registro").hidden=false; pintarInventario(); $("#item").focus(); }
+  function cerrarModal(){ $("#modal-registro").hidden=true; mensaje(""); }
+  function pintar(){
+    const total=Math.max(1,Math.ceil(estado.vehiculos.length/porPagina));estado.pagina=Math.min(estado.pagina,total);const inicio=(estado.pagina-1)*porPagina;const lista=estado.vehiculos.slice(inicio,inicio+porPagina);$("#lista").textContent="";
+    if(!lista.length){$("#lista").innerHTML='<div class="empty">No tienes vehículos registrados.</div>';}else lista.forEach((v)=>{const card=document.createElement("article");card.className="vehicle";card.innerHTML=`<div><h3>🚘 ${v.modelo||"Vehículo"}</h3><p>Placa: <strong>${v.placa||"Sin placa"}</strong></p><p>Registrado: ${v.registradoEn?new Date(v.registradoEn).toLocaleDateString("es-CO"):"Sin fecha"}</p></div><button class="button danger" data-eliminar="${v.id}" type="button">Eliminar</button>`;$("#lista").appendChild(card);});
+    $("#pagina").textContent=`Página ${estado.pagina} de ${total}`;$("#anterior").disabled=estado.pagina<=1;$("#siguiente").disabled=estado.pagina>=total;$("#contador").textContent=`${estado.vehiculos.length} registrado(s)`;pintarInventario();
+  }
+  async function cargar(){const respuesta=await fetch("/api/vehiculos",{cache:"no-store"});if(respuesta.status===401){location.href="/iniciar-seccion.html";return;}const datos=await respuesta.json();if(!respuesta.ok)throw new Error(datos.error||"No se pudieron cargar los vehículos.");estado.vehiculos=datos.vehiculos||[];estado.inventario=datos.inventario||[];pintar();}
+  $("#abrir-modal").addEventListener("click",abrirModal);$("#cerrar-modal").addEventListener("click",cerrarModal);$("#cancelar-modal").addEventListener("click",cerrarModal);$("#modal-registro").addEventListener("click",(e)=>{if(e.target.id==="modal-registro")cerrarModal();});
+  $("#formulario").addEventListener("submit",async(e)=>{e.preventDefault();mensaje("Registrando...");const respuesta=await fetch("/api/vehiculos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({itemId:$("#item").value,placa:$("#placa").value})});const datos=await respuesta.json();if(!respuesta.ok){mensaje(datos.error||"No se pudo registrar.",true);return;}$("#placa").value="";cerrarModal();await cargar();});
+  $("#lista").addEventListener("click",async(e)=>{const boton=e.target.closest("[data-eliminar]");if(!boton)return;if(!confirm("¿Eliminar este vehículo registrado?"))return;const respuesta=await fetch(`/api/vehiculos/${encodeURIComponent(boton.dataset.eliminar)}`,{method:"DELETE"});const datos=await respuesta.json();if(!respuesta.ok){mensaje(datos.error||"No se pudo eliminar.",true);return;}mensaje("Vehículo eliminado.");await cargar();});
+  $("#anterior").onclick=()=>{estado.pagina--;pintar()};$("#siguiente").onclick=()=>{estado.pagina++;pintar()};cargar().catch((error)=>mensaje(error.message,true));
+</script>
+</body>
+</html>
