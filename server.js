@@ -626,7 +626,7 @@ app.get("/cerrar-sesion", (req, res) => {
     }
 
     res.clearCookie("connect.sid");
-    return res.redirect("/iniciar-seccion.html");
+    return res.redirect("/index.html");
   });
 });
 
