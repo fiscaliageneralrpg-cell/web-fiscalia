@@ -246,7 +246,7 @@ app.get("/auth/discord/callback", async (req, res) => {
         `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`,
     );
 
-    if (whitelistPendiente || estadoWhitelist === "pendiente") {
+    if (estadoWhitelist === "pendiente") {
       console.log(`[LOGIN] ${usuario.id} tiene whitelist pendiente.`);
       return redirigirDespuesDeLogin(req, res, "/whitelist-pendiente.html");
     }
@@ -406,7 +406,7 @@ app.get("/api/whitelist/status", async (req, res) => {
       });
     }
 
-    if (roles.includes(ROL_WHITELIST_PENDIENTE)) {
+    if (roles.includes(ROL_WHITELIST_PENDIENTE) && estado?.estado === "pendiente") {
       return res.json({ estado: "pendiente" });
     }
 
@@ -418,7 +418,7 @@ app.get("/api/whitelist/status", async (req, res) => {
       });
     }
 
-    return res.json({ estado: "pendiente" });
+    return res.json({ estado: "sin_solicitud", redirect: "/whitelist.html" });
   } catch (error) {
     console.error("[WHITELIST STATUS]", error.message);
     return res.status(500).json({
