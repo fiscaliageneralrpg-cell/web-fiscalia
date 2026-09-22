@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PDA Policial | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #080d15;
+        --panel: #151d29;
+        --panel2: #1b2634;
+        --green: #79e2aa;
+        --blue: #4d86f7;
+        --red: #d95665;
+        --gold: #f0c75e;
+        --muted: #91a0b4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: #e9eef5;
+        background:
+          radial-gradient(circle at 20% 0, #183044, transparent 35%), #080d15;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .wrap {
+        width: min(1100px, calc(100% - 28px));
+        margin: 24px auto 60px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand {
+        font-weight: 900;
+      }
+      .brand small {
+        display: block;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 5px;
+      }
+      .back {
+        color: #b8c9df;
+        text-decoration: none;
+      }
+      .header {
+        margin-top: 20px;
+        padding: 18px 22px;
+        border-radius: 15px;
+        background: #111824;
+        border: 1px solid #2d3b50;
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+      }
+      .ok {
+        color: var(--green);
+        font-weight: 800;
+      }
+      .search {
+        margin-top: 15px;
+        padding: 18px;
+        border-radius: 15px;
+        background: var(--panel);
+        border: 1px solid #2d3b50;
+      }
+      .searchrow {
+        display: flex;
+        gap: 10px;
+      }
+      .search input,
+      .search select {
+        flex: 1;
+        padding: 13px;
+        border: 1px solid #3b4a60;
+        border-radius: 9px;
+        color: #fff;
+        background: #0c121c;
+        font: inherit;
+      }
+      .btn {
+        border: 0;
+        border-radius: 9px;
+        padding: 12px 17px;
+        color: #fff;
+        background: var(--blue);
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .btn.red {
+        background: var(--red);
+      }
+      .btn.gold {
+        background: #806719;
+      }
+      .profile {
+        display: none;
+        margin-top: 15px;
+        border: 1px solid #34445a;
+        border-radius: 15px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+      .profile.show {
+        display: block;
+      }
+      .pda-title {
+        padding: 12px 18px;
+        background: #202b3a;
+        color: #dce7f5;
+        font-weight: 900;
+      }
+      .pda {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        padding: 16px;
+      }
+      .official,
+      .card {
+        background: var(--panel2);
+        border: 1px solid #34445a;
+        border-radius: 9px;
+        padding: 16px;
+      }
+      .official h3,
+      .card h3 {
+        margin: 0 0 14px;
+        color: var(--green);
+        font-size: 13px;
+      }
+      .official ul {
+        padding-left: 18px;
+        line-height: 2;
+        color: #ced8e5;
+        font-size: 13px;
+      }
+      .idcard {
+        min-height: 190px;
+        display: grid;
+        grid-template-columns: 1fr 150px;
+        gap: 14px;
+      }
+      .idcard dl {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 10px;
+        font-size: 13px;
+      }
+      .idcard dt {
+        color: var(--muted);
+      }
+      .idcard dd {
+        margin: 0;
+        font-weight: 800;
+      }
+      .qr {
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #f4f6fa;
+        color: #111;
+        font-size: 58px;
+      }
+      .tabs {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+      }
+      .tab {
+        padding: 12px 17px;
+        border: 0;
+        border-radius: 9px;
+        color: #fff;
+        background: #303b4c;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .tab.green {
+        background: #15955c;
+      }
+      .tab.red {
+        background: var(--red);
+      }
+      .tab.blue {
+        background: #476fe3;
+      }
+      .results {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .record {
+        padding: 13px;
+        border-left: 3px solid var(--blue);
+        background: #111a27;
+        border-radius: 8px;
+      }
+      .empty {
+        color: var(--muted);
+        padding: 18px;
+        text-align: center;
+      }
+      .footer {
+        padding: 13px 18px;
+        color: #7d8da3;
+        font-size: 12px;
+        background: #101720;
+      }
+      @media (max-width: 760px) {
+        .top,
+        .header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .searchrow,
+        .pda {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        .idcard {
+          grid-template-columns: 1fr;
+        }
+        .qr {
+          min-height: 120px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <div class="brand">
+          「ME:RP」Medellín RP︱ER:LC<small
+            >PDA · Policía Metropolitana del Valle de Aburrá</small
+          >
+        </div>
+        <a class="back" href="/dashboard-user.html">← Dashboard</a>
+      </div>
+      <section class="header">
+        <div>
+          <strong>PDA PERSONAL DIGITAL ASSISTANT</strong>
+          <div style="color: var(--muted); font-size: 13px; margin-top: 5px">
+            Sistema de datos policiales
+          </div>
+        </div>
+        <span class="ok">✓ Oficial autorizado</span>
+      </section>
+      <section class="search">
+        <strong>Buscar ciudadano</strong>
+        <p style="color: var(--muted); font-size: 13px">
+          Busca por nombre, usuario o Discord ID.
+        </p>
+        <div class="searchrow">
+          <input id="q" placeholder="Nombre o Discord ID..." /><select
+            id="user"
+          >
+            <option value="">Selecciona un ciudadano</option></select
+          ><button class="btn" id="consultar">Consultar</button>
+        </div>
+        <div id="status" class="empty">
+          Selecciona un ciudadano para comenzar.
+        </div>
+      </section>
+      <section id="profile" class="profile">
+        <div class="pda-title">
+          ✅ PDA generada para <span id="nombreTitulo">el ciudadano</span>
+        </div>
+        <div class="pda">
+          <aside class="official">
+            <h3>INFORMACIÓN DEL OFICIAL</h3>
+            <ul>
+              <li>Oficial: <b id="oficial">—</b></li>
+              <li>División: Policía Metropolitana</li>
+              <li>Ubicación: Medellín, Antioquia</li>
+            </ul>
+            <div style="margin-top: 35px; color: var(--muted); font-size: 12px">
+              “Dios y Patria”<br />Policía Nacional de Colombia
+            </div>
+          </aside>
+          <div>
+            <article class="card idcard">
+              <div>
+                <h3>♟ CÉDULA DE CIUDADANÍA</h3>
+                <dl>
+                  <dt>Nombre:</dt>
+                  <dd id="nombre">—</dd>
+                  <dt>Cédula:</dt>
+                  <dd id="nuip">—</dd>
+                  <dt>Nacionalidad:</dt>
+                  <dd>COLOMBIANA</dd>
+                  <dt>Fecha de nacimiento:</dt>
+                  <dd id="fecha">—</dd>
+                  <dt>Sexo:</dt>
+                  <dd id="sexo">—</dd>
+                </dl>
+              </div>
+              <div class="qr">▦</div>
+            </article>
+            <article class="card" style="margin-top: 12px">
+              <h3>Antecedentes</h3>
+              <div id="resumen">Sin información consultada.</div>
+            </article>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab blue" data-view="cedula">▣ Ver cédula</button
+          ><button class="tab red" data-view="arrestos">⚖ Arrestar</button
+          ><button class="tab green" data-view="alertas">🚨 Alertas</button
+          ><button class="tab" data-view="antecedentes">ⓘ Antecedentes</button>
+        </div>
+        <div id="records" class="results"></div>
+        <div class="footer">ME:RP PDA v1.0.0 · Sistema de Datos Policiales</div>
+        <div style="padding: 16px; background: #0b1018">
+          <h3>Imagen PDA sincronizada</h3>
+          <img
+            id="pda-img"
+            alt="PDA policial guardada"
+            style="
+              display: none;
+              width: 100%;
+              border: 1px solid #34445a;
+              border-radius: 10px;
+            "
+          />
+        </div>
+      </section>
+    </main>
+    <script>
+      let usuarios = [],
+        datos = null;
+      const $ = (s) => document.querySelector(s);
+      function mostrarEstado(t, cl = "empty") {
+        const e = $("#status");
+        e.className = cl;
+        e.textContent = t;
+      }
+      function pintar() {
+        const q = $("#q").value.toLowerCase();
+        const lista = usuarios.filter((u) =>
+          `${u.nombre} ${u.username} ${u.id}`.toLowerCase().includes(q),
+        );
+        $("#user").innerHTML =
+          '<option value="">Selecciona un ciudadano</option>' +
+          lista
+            .map(
+              (u) =>
+                `<option value="${u.id}">${u.nombre || u.username} · ${u.id}</option>`,
+            )
+            .join("");
+      }
+      async function init() {
+        const a = await fetch("/api/usuario", { cache: "no-store" });
+        if (!a.ok) {
+          location.href = "/iniciar-seccion.html";
+          return;
+        }
+        const ad = await a.json();
+        if (!ad.policialAutorizado) {
+          document.body.innerHTML =
+            '<main class="wrap"><section class="search"><h1>Acceso denegado</h1><p>No tienes uno de los roles policiales autorizados.</p><a class="back" href="/dashboard-user.html">Volver</a></section></main>';
+          return;
+        }
+        const r = await fetch("/api/policial/usuarios"),
+          d = await r.json();
+        usuarios = d.usuarios || [];
+        pintar();
+        $("#oficial").textContent =
+          ad.usuario?.nombre || ad.usuario?.username || "Oficial";
+      }
+      $("#q").addEventListener("input", pintar);
+      $("#consultar").addEventListener("click", async () => {
+        const id = $("#user").value;
+        if (!id) {
+          mostrarEstado("Selecciona un ciudadano.", "empty");
+          return;
+        }
+        mostrarEstado("Consultando PDA...", "empty");
+        const r = await fetch("/api/policial/ciudadano/" + id),
+          d = await r.json();
+        if (!r.ok) {
+          mostrarEstado(d.error || "No se pudo consultar.", "empty");
+          return;
+        }
+        datos = d;
+        const c = d.ciudadano || {};
+        $("#profile").classList.add("show");
+        $("#nombreTitulo").textContent =
+          c.nombre || c.nombres || $("#user").selectedOptions[0].textContent;
+        $("#nombre").textContent = c.nombre || c.nombres || "Sin registro";
+        $("#nuip").textContent = c.nuip || c.cedula || "—";
+        $("#fecha").textContent =
+          c.fechaNacimiento || c.fecha_nacimiento || "—";
+        $("#sexo").textContent = c.sexo || "—";
+        $("#resumen").textContent =
+          `Arrestos: ${d.expediente.arrestos.length} · Antecedentes: ${d.expediente.antecedentes.length} · Multas: ${d.expediente.multas.length}`;
+        mostrarEstado("PDA generada correctamente.", "ok");
+      });
+      function ver(tipo) {
+        if (!datos) return;
+        let lista =
+          tipo === "arrestos"
+            ? datos.expediente.arrestos
+            : tipo === "antecedentes"
+              ? datos.expediente.antecedentes
+              : tipo === "alertas"
+                ? datos.expediente.multas
+                : [];
+        $("#records").innerHTML =
+          tipo === "cedula"
+            ? '<div class="record">Cédula consultada y vinculada al ciudadano seleccionado.</div>'
+            : lista.length
+              ? lista
+                  .map(
+                    (x) =>
+                      `<div class="record"><b>${x.motivo || x.tipo || x.titulo || "Registro policial"}</b><br><small>${x.descripcion || x.contenido || x.fecha || x.fechaHora || "Sin detalles"}</small></div>`,
+                  )
+                  .join("")
+              : '<div class="empty">No hay registros en esta sección.</div>';
+      }
+      document.querySelectorAll("[data-view]").forEach((b) =>
+        b.addEventListener("click", () => {
+          ver(b.dataset.view);
+          if (b.dataset.view === "arrestos")
+            $("#records").insertAdjacentHTML(
+              "afterbegin",
+              '<div class="record" style="border-color:var(--red)">La creación de arrestos se conecta con el PDA del bot. Selecciona el comando policial correspondiente para registrar el arresto.</div>',
+            );
+        }),
+      );
+      init();
+    </script>
+  </body>
+</html>
