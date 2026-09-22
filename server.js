@@ -31,6 +31,7 @@ if (faltantes.length > 0) {
 const ROL_WHITELIST_APROBADA = "1500316176960716940";
 const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
 const ROL_STAFF_WHITELIST = "1510018366964891829";
+const ROL_FUNDACION = "1508156676350673017";
 const EMOJI_ESPERA = "<:8810datetime:1538599244678692934>";
 const EMOJI_ACEPTADO = "<:1507611843198451915:1538596251879219371>";
 const EMOJI_DENEGADO = "<a:1485274567520948324:1549034139456380978>";
@@ -102,6 +103,30 @@ async function obtenerRolesDelServidor(discordId) {
 
   const miembro = await respuesta.json();
   return Array.isArray(miembro.roles) ? miembro.roles : [];
+}
+
+async function obtenerMiembrosDelServidor() {
+  const miembros = [];
+  let after = "0";
+  for (let pagina = 0; pagina < 20; pagina += 1) {
+    const url = new URL(`https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members`);
+    url.searchParams.set("limit", "1000");
+    if (after !== "0") url.searchParams.set("after", after);
+    const respuesta = await fetch(url, {
+      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, "User-Agent": "Medellin-RP-Web/1.0" },
+    });
+    if (!respuesta.ok) throw new Error(`Discord no devolvió los miembros: ${respuesta.status}`);
+    const paginaMiembros = await respuesta.json();
+    miembros.push(...paginaMiembros.map((miembro) => ({
+      id: miembro.user.id,
+      username: miembro.user.username,
+      nombre: miembro.nick || miembro.user.global_name || miembro.user.username,
+      avatar: obtenerAvatarUrl(miembro.user),
+    })));
+    if (paginaMiembros.length < 1000) break;
+    after = paginaMiembros.at(-1)?.user?.id || after;
+  }
+  return miembros;
 }
 
 function obtenerAvatarUrl(usuario) {
@@ -275,6 +300,23 @@ function exigirSesion(req, res) {
   }
 
   return true;
+}
+
+async function exigirFundacion(req, res) {
+  if (!exigirSesion(req, res)) return false;
+  try {
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    if (!roles?.includes(ROL_FUNDACION)) {
+      res.status(403).json({ error: "No tienes el rol autorizado para acceder al Panel Fundación." });
+      return false;
+    }
+    req.session.usuario.roles = roles;
+    return true;
+  } catch (error) {
+    console.error("[FUNDACION AUTH]", error.message);
+    res.status(503).json({ error: "No se pudo verificar tu rol de Fundación." });
+    return false;
+  }
 }
 
 app.post("/api/whitelist", async (req, res) => {
@@ -666,6 +708,7 @@ app.get("/api/usuario", async (req, res) => {
     return res.json({
       autenticado: true,
       usuario: req.session.usuario,
+      fundacionAutorizada: rolesActualizados.includes(ROL_FUNDACION),
       redireccion: tieneWhitelistPendiente ? "/whitelist-pendiente.html" : null,
     });
   } catch (error) {
@@ -935,6 +978,38 @@ app.get("/api/comportamiento", async (req, res) => {
   } catch (error) {
     console.error("[API COMPORTAMIENTO]", error.message);
     return res.status(500).json({ error: "No se pudo consultar el comportamiento." });
+  }
+});
+
+app.post("/api/fundacion", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+  }
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ ...req.body, adminId: req.session.usuario.id, adminTag: req.session.usuario.username }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API FUNDACION]", error.message);
+    return res.status(500).json({ error: "No se pudo completar la operación de Fundación." });
+  }
+});
+
+app.get("/api/fundacion/usuarios", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const usuarios = await obtenerMiembrosDelServidor();
+    return res.json({ correcto: true, usuarios });
+  } catch (error) {
+    console.error("[FUNDACION USUARIOS]", error.message);
+    return res.status(503).json({ error: "No se pudo cargar la lista de usuarios del servidor." });
   }
 });
 
