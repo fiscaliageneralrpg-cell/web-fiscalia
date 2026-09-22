@@ -1002,6 +1002,39 @@ app.post("/api/fundacion", async (req, res) => {
   }
 });
 
+app.get("/api/fundacion/catalogo", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const resultado = await solicitarApiTienda(req, "GET");
+    return res.status(resultado.estado).json({ correcto: resultado.estado >= 200 && resultado.estado < 300, tienda: resultado.datos.tienda || [], inventario: resultado.datos.inventario || [], error: resultado.datos.error });
+  } catch (error) {
+    console.error("[API FUNDACION CATALOGO]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message || "No se pudo cargar la tienda." });
+  }
+});
+
+app.delete("/api/fundacion/catalogo/:productoId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/${encodeURIComponent(req.params.productoId)}`, {
+      method: "DELETE", headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) { return res.status(500).json({ error: "No se pudo eliminar el objeto." }); }
+});
+
+app.get("/api/fundacion/comportamiento/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}?vista=comportamiento&discordId=${encodeURIComponent(req.params.discordId)}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) { return res.status(500).json({ error: "No se pudo cargar el comportamiento." }); }
+});
+
 app.get("/api/fundacion/usuarios", async (req, res) => {
   if (!(await exigirFundacion(req, res))) return;
   try {
