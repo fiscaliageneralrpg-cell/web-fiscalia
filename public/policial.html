@@ -248,6 +248,15 @@
         border-radius: 10px;
         background: #080d15;
       }
+      .pda-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .pda-actions .tab {
+        flex: 1 1 160px;
+      }
       .modal {
         display: none;
         position: fixed;
@@ -292,6 +301,27 @@
         border: 1px solid #40536b;
         border-radius: 12px;
         background: #080d15;
+      }
+      .arrest-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .btn.secondary {
+        background: #34445a;
+      }
+      .btn.danger {
+        background: #b71c1c;
+      }
+      .modal-card select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #3b4a60;
+        border-radius: 9px;
+        color: #fff;
+        background: #0c121c;
+        font: inherit;
       }
       .modal-card input {
         padding: 13px;
@@ -344,18 +374,33 @@
         <div id="oficial-pda-status" class="empty">
           Cargando la PDA del oficial...
         </div>
-      </section>
-      <section class="search">
-        <strong>Buscar cédula de un ciudadano</strong>
-        <p style="color: var(--muted); font-size: 13px">
-          Pulsa el botón e introduce el número de cédula/NUIP para consultar al
-          ciudadano.
-        </p>
-        <button class="btn" id="consultar">▣ Buscar cédula</button>
-        <div id="status" class="empty">
-          Todavía no se ha consultado una cédula.
+        <div class="pda-actions">
+          <button class="tab blue" id="pda-ver-cedula" type="button">
+            ▣ Ver cédula
+          </button>
+          <button class="tab red" id="pda-arrestar" type="button">
+            ⚖ Arrestar
+          </button>
+          <button class="tab green" id="pda-alertas" type="button">
+            🚨 Alertas
+          </button>
+          <button class="tab" id="pda-antecedentes" type="button">
+            ⓘ Antecedentes
+          </button>
         </div>
       </section>
+      <div id="alertas-modal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+          <button id="cerrar-alertas" class="modal-close" type="button">
+            ×
+          </button>
+          <h2>🚨 Alertas activas</h2>
+          <p>Alertas vigentes del sistema policial.</p>
+          <div id="alertas-list" class="alert-list">
+            <div class="status">Cargando alertas...</div>
+          </div>
+        </div>
+      </div>
       <div id="cedula-modal" class="modal" aria-hidden="true">
         <div class="modal-card">
           <button id="cerrar-modal" class="modal-close" type="button">×</button>
@@ -385,60 +430,66 @@
           <div id="cedula-result-status" class="status"></div>
         </div>
       </div>
-      <section id="profile" class="profile">
-        <div class="pda-title">
-          ✅ PDA generada para <span id="nombreTitulo">el ciudadano</span>
-        </div>
-        <div class="pda">
-          <aside class="official">
-            <h3>INFORMACIÓN DEL OFICIAL</h3>
-            <ul>
-              <li>Oficial: <b id="oficial">—</b></li>
-              <li>División: Policía Metropolitana</li>
-              <li>Ubicación: Medellín, Antioquia</li>
-            </ul>
-            <div style="margin-top: 35px; color: var(--muted); font-size: 12px">
-              “Dios y Patria”<br />Policía Nacional de Colombia
-            </div>
-          </aside>
-          <div>
-            <article class="card idcard">
-              <div>
-                <h3>♟ CÉDULA DE CIUDADANÍA</h3>
-                <dl>
-                  <dt>Nombre:</dt>
-                  <dd id="nombre">—</dd>
-                  <dt>Cédula:</dt>
-                  <dd id="nuip">—</dd>
-                  <dt>Nacionalidad:</dt>
-                  <dd>COLOMBIANA</dd>
-                  <dt>Fecha de nacimiento:</dt>
-                  <dd id="fecha">—</dd>
-                  <dt>Sexo:</dt>
-                  <dd id="sexo">—</dd>
-                </dl>
-              </div>
-              <div class="qr">▦</div>
-            </article>
-            <article class="card" style="margin-top: 12px">
-              <h3>Antecedentes</h3>
-              <div id="resumen">Sin información consultada.</div>
-            </article>
+      <div id="arresto-modal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+          <button id="cerrar-arresto" class="modal-close" type="button">
+            ×
+          </button>
+          <h2>⚖ Registrar arresto</h2>
+          <p id="arresto-ciudadano">Ciudadano seleccionado</p>
+          <p>
+            Selecciona uno o varios delitos. Puedes agregar otro antecedente
+            antes de confirmar.
+          </p>
+          <select id="delitos-arresto" multiple size="8">
+            <option>Homicidio simple</option>
+            <option>Homicidio culposo</option>
+            <option>Lesiones personales graves</option>
+            <option>Amenazas de muerte</option>
+            <option>Intento de homicidio</option>
+            <option>Hurto simple</option>
+            <option>Hurto calificado</option>
+            <option>Estafa</option>
+            <option>Daño en bien ajeno</option>
+            <option>Extorsión</option>
+            <option>Secuestro simple</option>
+            <option>Porte ilegal de armas</option>
+            <option>Tráfico de estupefacientes</option>
+            <option>Conducción temeraria</option>
+            <option>Fuga de la justicia</option>
+            <option>Desacato a la autoridad</option>
+          </select>
+          <label class="evidence-label"
+            >📷 Evidencia fotográfica
+            <input
+              id="evidencia-arresto"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              required
+            />
+          </label>
+          <small class="hint"
+            >Selecciona una imagen desde una carpeta de tu computador. Máximo 8
+            MB.</small
+          >
+          <div class="arrest-actions">
+            <button
+              id="agregar-antecedente"
+              class="btn secondary"
+              type="button"
+            >
+              ＋ Agregar otro antecedente</button
+            ><button id="confirmar-arresto" class="btn danger" type="button">
+              ✅ Confirmar arresto
+            </button>
           </div>
+          <div id="arresto-status" class="status"></div>
         </div>
-        <div class="tabs">
-          <button class="tab blue" data-view="cedula">▣ Ver cédula</button
-          ><button class="tab red" data-view="arrestos">⚖ Arrestar</button
-          ><button class="tab green" data-view="alertas">🚨 Alertas</button
-          ><button class="tab" data-view="antecedentes">ⓘ Antecedentes</button>
-        </div>
-        <div id="records" class="results"></div>
-        <div class="footer">ME:RP PDA v1.0.0 · Sistema de Datos Policiales</div>
-      </section>
+      </div>
     </main>
     <script>
-      let usuarios = [],
-        datos = null;
+      let ciudadanoSeleccionado = null,
+        modoArresto = false;
       const $ = (s) => document.querySelector(s);
       function mostrarEstado(t, cl = "empty") {
         const e = $("#status");
@@ -471,8 +522,6 @@
             '<main class="wrap"><section class="search"><h1>Acceso denegado</h1><p>No tienes uno de los roles policiales autorizados.</p><a class="back" href="/dashboard-user.html">Volver</a></section></main>';
           return;
         }
-        $("#oficial").textContent =
-          ad.usuario?.nombre || ad.usuario?.username || "Oficial";
         const oficialId = ad.usuario?.id;
         $("#oficial-pda").src =
           "/api/policial/imagen/" + oficialId + "?t=" + Date.now();
@@ -482,10 +531,50 @@
           ($("#oficial-pda-status").textContent =
             "Todavía no existe una PDA guardada. Ejecuta /pda-fuerza-publica en Discord.");
       }
-      $("#consultar").addEventListener("click", () => {
+      function abrirNuipModal(arresto = false) {
+        modoArresto = arresto;
         $("#cedula-modal").classList.add("open");
         $("#cedula-modal").setAttribute("aria-hidden", "false");
         $("#nuip-busqueda").focus();
+        $("#modal-status").textContent = arresto
+          ? "Digite la cédula para continuar el arresto."
+          : "Digite el número de cédula del ciudadano.";
+      }
+      $("#pda-ver-cedula").addEventListener("click", () =>
+        abrirNuipModal(false),
+      );
+      $("#pda-arrestar").addEventListener("click", () => abrirNuipModal(true));
+      $("#pda-alertas").addEventListener("click", cargarAlertas);
+      $("#pda-antecedentes").addEventListener("click", () =>
+        abrirNuipModal(false),
+      );
+      async function cargarAlertas() {
+        $("#alertas-modal").classList.add("open");
+        const lista = $("#alertas-list");
+        lista.innerHTML = '<div class="status">Cargando alertas...</div>';
+        try {
+          const r = await fetch("/api/policial/alertas", { cache: "no-store" });
+          const d = await r.json();
+          if (!r.ok)
+            throw new Error(d.error || "No se pudieron cargar las alertas.");
+          lista.innerHTML = d.alertas?.length
+            ? d.alertas
+                .map(
+                  (a) =>
+                    `<article class="alert-item"><strong>${a.tipoLabel || a.tipo || "Alerta"}</strong><br>📍 Código postal: ${a.codigoPostal || "—"}<br>📝 ${a.descripcion || "Sin descripción"}<br><small>⏳ ${a.restanteMinutos ?? ""} minutos restantes</small></article>`,
+                )
+                .join("")
+            : '<div class="status">No hay alertas activas.</div>';
+        } catch (error) {
+          lista.innerHTML = `<div class="status">${error.message}</div>`;
+        }
+      }
+      $("#cerrar-alertas").addEventListener("click", () =>
+        $("#alertas-modal").classList.remove("open"),
+      );
+      $("#alertas-modal").addEventListener("click", (e) => {
+        if (e.target.id === "alertas-modal")
+          $("#alertas-modal").classList.remove("open");
       });
       $("#cerrar-modal").addEventListener("click", () =>
         $("#cedula-modal").classList.remove("open"),
@@ -500,6 +589,60 @@
       $("#cedula-result-modal").addEventListener("click", (e) => {
         if (e.target.id === "cedula-result-modal")
           $("#cedula-result-modal").classList.remove("open");
+      });
+      $("#cerrar-arresto").addEventListener("click", () =>
+        $("#arresto-modal").classList.remove("open"),
+      );
+      $("#agregar-antecedente").addEventListener("click", () => {
+        const seleccionados = [...$("#delitos-arresto").selectedOptions].map(
+          (x) => x.value,
+        );
+        $("#arresto-status").textContent = seleccionados.length
+          ? `Antecedentes seleccionados: ${seleccionados.join(", ")}`
+          : "Selecciona al menos un antecedente.";
+      });
+      $("#confirmar-arresto").addEventListener("click", async () => {
+        const delitos = [...$("#delitos-arresto").selectedOptions].map(
+          (x) => x.value,
+        );
+        const estado = $("#arresto-status");
+        const archivo = $("#evidencia-arresto").files[0];
+        if (!delitos.length) {
+          estado.textContent =
+            "Selecciona al menos un antecedente antes de confirmar.";
+          return;
+        }
+        if (!archivo) {
+          estado.textContent =
+            "Selecciona la imagen de evidencia antes de confirmar.";
+          return;
+        }
+        if (archivo.size > 8 * 1024 * 1024) {
+          estado.textContent = "La imagen no puede superar 8 MB.";
+          return;
+        }
+        estado.textContent = "Registrando arresto...";
+        const imagenBase64 = await new Promise((resolve, reject) => {
+          const lector = new FileReader();
+          lector.onload = () => resolve(lector.result);
+          lector.onerror = reject;
+          lector.readAsDataURL(archivo);
+        });
+        const r = await fetch("/api/policial/arresto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            discordId: ciudadanoSeleccionado.discordId,
+            delitos,
+            imagenBase64,
+          }),
+        });
+        const d = await r.json();
+        estado.textContent = r.ok
+          ? "✅ Arresto registrado correctamente."
+          : d.error || "No se pudo registrar el arresto.";
+        if (r.ok)
+          setTimeout(() => $("#arresto-modal").classList.remove("open"), 1200);
       });
       $("#cedula-form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -516,6 +659,17 @@
         }
         $("#cedula-modal").classList.remove("open");
         const c = encontrado.ciudadano || {};
+        ciudadanoSeleccionado = encontrado;
+        $("#arresto-ciudadano").textContent =
+          `Ciudadano: ${c.nombres || c.nombre || ""} ${c.apellidos || ""} · NUIP: ${c.nuip || nuip}`;
+        if (modoArresto) {
+          $("#arresto-modal").classList.add("open");
+          $("#arresto-modal").setAttribute("aria-hidden", "false");
+          $("#arresto-status").textContent =
+            "Selecciona los antecedentes y confirma el arresto.";
+          modoArresto = false;
+          return;
+        }
         $("#cedula-result-title").textContent =
           `Cédula de ${c.nombres || c.nombre || "ciudadano"} ${c.apellidos || ""}`.trim();
         const imagen = $("#cedula-result-img");
@@ -540,38 +694,6 @@
         $("#cedula-result-modal").setAttribute("aria-hidden", "false");
         mostrarEstado("Cédula consultada correctamente.", "ok");
       });
-      function ver(tipo) {
-        if (!datos) return;
-        let lista =
-          tipo === "arrestos"
-            ? datos.expediente.arrestos
-            : tipo === "antecedentes"
-              ? datos.expediente.antecedentes
-              : tipo === "alertas"
-                ? datos.expediente.multas
-                : [];
-        $("#records").innerHTML =
-          tipo === "cedula"
-            ? '<div class="record">Cédula consultada y vinculada al ciudadano seleccionado.</div>'
-            : lista.length
-              ? lista
-                  .map(
-                    (x) =>
-                      `<div class="record"><b>${x.motivo || x.tipo || x.titulo || "Registro policial"}</b><br><small>${x.descripcion || x.contenido || x.fecha || x.fechaHora || "Sin detalles"}</small></div>`,
-                  )
-                  .join("")
-              : '<div class="empty">No hay registros en esta sección.</div>';
-      }
-      document.querySelectorAll("[data-view]").forEach((b) =>
-        b.addEventListener("click", () => {
-          ver(b.dataset.view);
-          if (b.dataset.view === "arrestos")
-            $("#records").insertAdjacentHTML(
-              "afterbegin",
-              '<div class="record" style="border-color:var(--red)">La creación de arrestos se conecta con el PDA del bot. Selecciona el comando policial correspondiente para registrar el arresto.</div>',
-            );
-        }),
-      );
       init();
     </script>
   </body>
