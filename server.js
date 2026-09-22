@@ -818,7 +818,20 @@ app.get("/api/policial/cedula/:nuip", async (req, res) => {
     const ciudadano = filas[0];
     const discordId = String(ciudadano.discord_id || "");
     if (!discordId) return res.status(404).json({ error: "La cédula existe, pero no está vinculada a un Discord." });
-    return res.json({ correcto: true, discordId, ciudadano });
+    let expediente = { arrestos: [], antecedentes: [], multas: [] };
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      try {
+        const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+        const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+        if (respuestaBot.ok) {
+          const datosBot = await respuestaBot.json();
+          expediente = datosBot.expediente || expediente;
+        }
+      } catch (error) {
+        console.warn("[API PDA NUIP] No se pudo leer el expediente del bot:", error.message);
+      }
+    }
+    return res.json({ correcto: true, discordId, ciudadano, expediente });
   } catch (error) {
     console.error("[API PDA NUIP]", error.message);
     return res.status(500).json({ error: "No se pudo consultar la cédula." });
