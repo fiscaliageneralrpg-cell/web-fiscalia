@@ -727,7 +727,7 @@
         }
         const respuestaUsuario = rs[0].value;
         if (respuestaUsuario.status === 401) {
-          location.href = "/iniciar-seccion.html";
+          location.href = "/index.html";
           return;
         }
         const u = (await respuestaUsuario.json()).usuario || {};
