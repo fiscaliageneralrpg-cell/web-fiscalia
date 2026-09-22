@@ -795,6 +795,24 @@ app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
   }
 });
 
+app.get("/api/policial/cedula/:nuip", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const nuip = String(req.params.nuip || "").trim();
+  if (!nuip) return res.status(400).json({ error: "Debes escribir el número de cédula." });
+  try {
+    const { pool } = require("./db");
+    const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [nuip]);
+    if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada o no está vinculada al sistema civil. Indícale al ciudadano que utilice /mostrar-cedula en Discord." });
+    const ciudadano = filas[0];
+    const discordId = String(ciudadano.discord_id || "");
+    if (!discordId) return res.status(404).json({ error: "La cédula existe, pero no está vinculada a un Discord." });
+    return res.json({ correcto: true, discordId, ciudadano });
+  } catch (error) {
+    console.error("[API PDA NUIP]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar la cédula." });
+  }
+});
+
 app.get("/api/policial/usuarios", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   try {
