@@ -889,6 +889,22 @@ app.get("/api/policial/alertas", async (req, res) => {
   }
 });
 
+app.get("/api/policial/vehiculo/:placa", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const placa = String(req.params.placa || "").trim().toUpperCase();
+  if (!/^[A-Z0-9-]{3,10}$/.test(placa)) return res.status(400).json({ error: "La placa no es válida." });
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}?placa=${encodeURIComponent(placa)}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA VEHÍCULO]", error.message);
+    return res.status(503).json({ error: "No se pudo consultar el vehículo." });
+  }
+});
+
 app.get("/api/policial/usuarios", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   try {
