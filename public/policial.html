@@ -430,6 +430,18 @@
           <div id="cedula-result-status" class="status"></div>
         </div>
       </div>
+      <div id="antecedentes-modal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+          <button id="cerrar-antecedentes" class="modal-close" type="button">
+            ×
+          </button>
+          <h2>ⓘ Antecedentes del ciudadano</h2>
+          <p id="antecedentes-ciudadano">Consulta por NUIP</p>
+          <div id="antecedentes-list" class="alert-list">
+            <div class="status">Cargando...</div>
+          </div>
+        </div>
+      </div>
       <div id="arresto-modal" class="modal" aria-hidden="true">
         <div class="modal-card">
           <button id="cerrar-arresto" class="modal-close" type="button">
@@ -489,7 +501,9 @@
     </main>
     <script>
       let ciudadanoSeleccionado = null,
-        modoArresto = false;
+        modoArresto = false,
+        modoAntecedentes = false,
+        delitosAcumulados = new Set();
       const $ = (s) => document.querySelector(s);
       function mostrarEstado(t, cl = "empty") {
         const e = $("#status");
@@ -545,9 +559,10 @@
       );
       $("#pda-arrestar").addEventListener("click", () => abrirNuipModal(true));
       $("#pda-alertas").addEventListener("click", cargarAlertas);
-      $("#pda-antecedentes").addEventListener("click", () =>
-        abrirNuipModal(false),
-      );
+      $("#pda-antecedentes").addEventListener("click", () => {
+        modoAntecedentes = true;
+        abrirNuipModal(false);
+      });
       async function cargarAlertas() {
         $("#alertas-modal").classList.add("open");
         const lista = $("#alertas-list");
@@ -593,18 +608,21 @@
       $("#cerrar-arresto").addEventListener("click", () =>
         $("#arresto-modal").classList.remove("open"),
       );
+      $("#delitos-arresto").addEventListener("change", () => {
+        for (const option of $("#delitos-arresto").selectedOptions)
+          delitosAcumulados.add(option.value);
+        $("#delitos-arresto").selectedIndex = -1;
+        $("#arresto-status").textContent =
+          `✅ Se agregó el antecedente. Total seleccionados: ${delitosAcumulados.size}. Puedes pulsar «Agregar otro antecedente» para continuar.`;
+      });
       $("#agregar-antecedente").addEventListener("click", () => {
-        const seleccionados = [...$("#delitos-arresto").selectedOptions].map(
-          (x) => x.value,
-        );
-        $("#arresto-status").textContent = seleccionados.length
-          ? `Antecedentes seleccionados: ${seleccionados.join(", ")}`
-          : "Selecciona al menos un antecedente.";
+        $("#arresto-status").textContent = delitosAcumulados.size
+          ? `✅ Se agregó el siguiente antecedente. Total seleccionados: ${delitosAcumulados.size}. Elige otro.`
+          : "Selecciona un antecedente primero.";
+        $("#delitos-arresto").focus();
       });
       $("#confirmar-arresto").addEventListener("click", async () => {
-        const delitos = [...$("#delitos-arresto").selectedOptions].map(
-          (x) => x.value,
-        );
+        const delitos = [...delitosAcumulados];
         const estado = $("#arresto-status");
         const archivo = $("#evidencia-arresto").files[0];
         if (!delitos.length) {
@@ -642,7 +660,10 @@
           ? "✅ Arresto registrado correctamente."
           : d.error || "No se pudo registrar el arresto.";
         if (r.ok)
-          setTimeout(() => $("#arresto-modal").classList.remove("open"), 1200);
+          setTimeout(() => {
+            $("#arresto-modal").classList.remove("open");
+            delitosAcumulados.clear();
+          }, 1200);
       });
       $("#cedula-form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -662,6 +683,27 @@
         ciudadanoSeleccionado = encontrado;
         $("#arresto-ciudadano").textContent =
           `Ciudadano: ${c.nombres || c.nombre || ""} ${c.apellidos || ""} · NUIP: ${c.nuip || nuip}`;
+        if (modoAntecedentes) {
+          const expediente = encontrado.expediente || {};
+          const registros = [
+            ...(expediente.arrestos || []),
+            ...(expediente.antecedentes || []),
+          ];
+          $("#antecedentes-ciudadano").textContent =
+            `Ciudadano: ${c.nombres || c.nombre || ""} ${c.apellidos || ""} · NUIP: ${c.nuip || nuip}`;
+          $("#antecedentes-list").innerHTML = registros.length
+            ? registros
+                .map(
+                  (registro) =>
+                    `<article class="alert-item"><strong>⚖ ${registro.titulo || "Antecedente / arresto"}</strong><br>${(registro.delitos || []).map((d) => d.delito || d.codigo || d).join(", ") || registro.motivo || registro.contenido || "Registro policial"}<br><small>${registro.fecha || "Fecha no registrada"}</small></article>`,
+                )
+                .join("")
+            : '<div class="status">Este ciudadano no tiene antecedentes registrados.</div>';
+          $("#antecedentes-modal").classList.add("open");
+          $("#antecedentes-modal").setAttribute("aria-hidden", "false");
+          modoAntecedentes = false;
+          return;
+        }
         if (modoArresto) {
           $("#arresto-modal").classList.add("open");
           $("#arresto-modal").setAttribute("aria-hidden", "false");
