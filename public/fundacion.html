@@ -76,7 +76,7 @@
       }
       .nav {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 10px;
         margin: 18px 0;
       }
@@ -306,6 +306,9 @@
       .record small {
         color: var(--muted);
       }
+      .record-line { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+      .record-actions { flex:0 0 auto; }
+      .btn-small { padding:8px 10px; font-size:11px; }
       .empty {
         padding: 20px;
         text-align: center;
@@ -393,6 +396,8 @@
         margin-top: 20px;
         font-size: 12px;
       }
+      .section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+      .section-heading h2 { margin:0; }
       @keyframes show {
         from {
           opacity: 0;
@@ -441,7 +446,8 @@
       <nav class="nav">
         <button class="active" data-view="dinero">💰 Dinero</button
         ><button data-view="tienda">🛍️ Tienda</button
-        ><button data-view="comportamiento">📋 Comportamiento</button>
+        ><button data-view="comportamiento">📋 Comportamiento</button
+        ><button data-view="trabajos">💼 Trabajos</button>
       </nav>
       <section id="dinero" class="view active">
         <div class="section">
@@ -679,6 +685,24 @@
           </div>
         </div>
       </section>
+      <section id="trabajos" class="view">
+        <div class="section">
+          <div class="section-heading"><div><h2>💼 Trabajos disponibles</h2><p>Administra los convenios laborales guardados en data/trabajos.json.</p></div><button id="abrir-trabajo" class="btn gold">＋ Agregar trabajo</button></div>
+          <div id="trabajos-status" class="status"></div>
+          <div id="trabajos-lista" class="catalog"><div class="empty">Cargando trabajos...</div></div>
+        </div>
+      </section>
+      <div id="trabajo-panel" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-card"><div class="modal-head"><h3>＋ Agregar trabajo</h3><button type="button" class="close-modal" id="cerrar-trabajo">×</button></div>
+          <form id="trabajo-form" class="form">
+            <label>ID del rol de Discord<input name="rolId" inputmode="numeric" pattern="\d{10,25}" required placeholder="Ej. 1500316176960716940"></label>
+            <label>Nombre del trabajo<input name="rolNombre" required maxlength="100" placeholder="Ej. Policía Metropolitana"></label>
+            <div class="row"><label>Pago<input name="pago" type="number" min="1" step="1" required></label><label>Cada<input name="tiempo" type="number" min="1" step="1" required></label></div>
+            <label>Unidad<select name="unidad" required><option value="minutos">Minutos</option><option value="horas">Horas</option><option value="dias">Días</option></select></label>
+            <button class="btn gold">Guardar trabajo</button><div id="trabajo-status" class="status"></div>
+          </form>
+        </div>
+      </div>
       <div class="logout">
         <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
       </div>
@@ -755,14 +779,20 @@
         const datos = d[registroActivo] || [];
         document.querySelector("#records").innerHTML = datos.length
           ? datos
-              .map(
-                (x) =>
-                  `<article class="record ${registroActivo === "sanciones" ? "sancion" : ""}"><strong>${registroActivo === "sanciones" ? "⚠️ " + (x.motivo || "Sanción") : "📝 " + (x.contenido || "Nota")}</strong><small>${x.autorTag || "Fundación"} · ${x.fecha ? new Date(x.fecha).toLocaleString("es-CO") : ""}</small></article>`,
-              )
+              .map((x, indice) => `<article class="record ${registroActivo === "sanciones" ? "sancion" : ""}"><div class="record-line"><div><strong>${registroActivo === "sanciones" ? "⚠️ " + (x.motivo || "Sanción") : "📝 " + (x.contenido || "Nota")}</strong><small>${x.autorTag || "Fundación"} · ${x.fecha ? new Date(x.fecha).toLocaleString("es-CO") : ""}</small></div><button class="btn red btn-small cancel-record" data-index="${indice}">Cancelar</button></div></article>`)
               .join("")
           : '<div class="empty">Este usuario no tiene ' +
             registroActivo +
             " registradas.</div>";
+        document.querySelectorAll(".cancel-record").forEach((b) => b.addEventListener("click", () => cancelarRegistro(b.dataset.index)));
+      }
+      async function cancelarRegistro(indice) {
+        if (!seleccionado || !confirm("¿Cancelar este registro de comportamiento?")) return;
+        const tipo = registroActivo === "sanciones" ? "sancion" : "nota";
+        const r = await fetch(`/api/fundacion/comportamiento/${seleccionado.id}/${tipo}/${indice}`, { method: "DELETE" });
+        const d = await r.json();
+        if (!r.ok) return alert(d.error || "No se pudo cancelar el registro.");
+        cargarComportamiento();
       }
       document.querySelectorAll(".nav button").forEach((b) =>
         b.addEventListener("click", () => {
@@ -775,6 +805,7 @@
           b.classList.add("active");
           document.querySelector("#" + b.dataset.view).classList.add("active");
           if (b.dataset.view === "tienda") cargarCatalogo();
+          if (b.dataset.view === "trabajos") cargarTrabajos();
         }),
       );
       document.querySelectorAll("[data-record]").forEach((b) =>
@@ -860,6 +891,36 @@
           "✅ Objeto eliminado y log enviado.";
         cargarCatalogo();
       }
+      async function cargarTrabajos() {
+        const box = document.querySelector("#trabajos-lista");
+        box.innerHTML = '<div class="empty">Cargando trabajos...</div>';
+        const r = await fetch("/api/fundacion/trabajos", { cache: "no-store" });
+        const d = await r.json();
+        if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar los trabajos."}</div>`; return; }
+        const trabajos = d.trabajos || [];
+        box.innerHTML = trabajos.length ? trabajos.map((x) => `<article class="product"><div><h3>💼 ${x.rolNombre || x.rolId}</h3><p>Pago: <span class="price">$${Number(x.pago || 0).toLocaleString("es-CO")}</span> · Cada ${x.tiempo} ${x.unidad}</p><small>Rol: ${x.rolId}</small></div><button class="btn red delete-work" data-id="${x.id}">Eliminar</button></article>`).join("") : '<div class="empty">No hay trabajos configurados.</div>';
+        box.querySelectorAll(".delete-work").forEach((b) => b.addEventListener("click", () => eliminarTrabajo(b.dataset.id)));
+      }
+      async function eliminarTrabajo(id) {
+        if (!confirm("¿Eliminar este trabajo?")) return;
+        const r = await fetch(`/api/fundacion/trabajos/${encodeURIComponent(id)}`, { method: "DELETE" });
+        const d = await r.json();
+        document.querySelector("#trabajos-status").textContent = r.ok ? "✅ Trabajo eliminado y log enviado." : `❌ ${d.error || "No se pudo eliminar"}`;
+        if (r.ok) cargarTrabajos();
+      }
+      const trabajoModal = document.querySelector("#trabajo-panel");
+      document.querySelector("#abrir-trabajo").addEventListener("click", () => trabajoModal.classList.add("open"));
+      document.querySelector("#cerrar-trabajo").addEventListener("click", () => trabajoModal.classList.remove("open"));
+      trabajoModal.addEventListener("click", (e) => { if (e.target === trabajoModal) trabajoModal.classList.remove("open"); });
+      document.querySelector("#trabajo-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.querySelector("#trabajo-status"), data = Object.fromEntries(new FormData(e.target));
+        data.accion = "add_trabajo"; status.textContent = "Guardando...";
+        const r = await fetch("/api/fundacion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        const d = await r.json();
+        status.textContent = r.ok ? "✅ Trabajo guardado y log enviado." : `❌ ${d.error || "No se pudo guardar"}`;
+        if (r.ok) { e.target.reset(); trabajoModal.classList.remove("open"); cargarTrabajos(); }
+      });
       document
         .querySelector("#item-form")
         .addEventListener("submit", async (e) => {
@@ -925,12 +986,16 @@
       async function iniciar() {
         const auth = await fetch("/api/usuario", { cache: "no-store" });
         if (!auth.ok) {
-          location.href = "/iniciar-seccion.html";
+          location.href = "/index.html";
           return;
         }
         const a = await auth.json();
         if (a.redireccion) {
           location.href = a.redireccion;
+          return;
+        }
+        if (a.estaEnServidor === false) {
+          location.href = "/no-estas-en-el-servidor.html";
           return;
         }
         if (!a.fundacionAutorizada) {
@@ -942,8 +1007,13 @@
           a.usuario?.nombre || a.usuario?.username || "fundador";
         const r = await fetch("/api/fundacion/usuarios", { cache: "no-store" }),
           d = await r.json();
-        if (!r.ok)
+        if (!r.ok) {
+          if (d.redirect) {
+            location.href = d.redirect;
+            return;
+          }
           throw new Error(d.error || "No se pudieron cargar los usuarios");
+        }
         usuarios = d.usuarios || [];
         document.querySelectorAll("#dinero .picker").forEach((p) => {
           const form = p.closest("form");
