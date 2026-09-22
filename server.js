@@ -1182,7 +1182,7 @@ app.get("/cerrar-sesion", (req, res) => {
     }
 
     res.clearCookie("connect.sid");
-    return res.redirect("/index.html");
+    return res.redirect(req.query.automatico === "1" ? "/se-cerro-seccion.html" : "/index.html");
   });
 });
 
