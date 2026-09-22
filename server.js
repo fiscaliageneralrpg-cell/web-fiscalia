@@ -999,6 +999,27 @@ app.get("/api/nequi/usuarios", async (req, res) => {
   }
 });
 
+app.post("/api/multas/:multaId/pagar", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    }
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/multas/${req.session.usuario.id}/pagar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ multaId: req.params.multaId }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PAGAR MULTA]", error.message);
+    return res.status(500).json({ error: "No se pudo procesar el pago de la multa." });
+  }
+});
+
 app.get("/api/expediente", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
