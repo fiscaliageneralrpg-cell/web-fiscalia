@@ -813,6 +813,23 @@ app.get("/api/policial/cedula/:nuip", async (req, res) => {
   }
 });
 
+app.get("/api/policial/cedula-imagen/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
+  try {
+    const { pool } = require("./db");
+    const [filas] = await pool.execute("SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!filas[0]?.cedula_imagen) return res.status(404).send("La cédula no tiene imagen. El ciudadano debe ejecutar /mostrar-cedula en Discord.");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].cedula_imagen);
+  } catch (error) {
+    console.error("[API IMAGEN CÉDULA POLICIAL]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen de la cédula.");
+  }
+});
+
 app.get("/api/policial/usuarios", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   try {
