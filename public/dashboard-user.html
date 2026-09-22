@@ -241,16 +241,7 @@
           if (d.staffAutorizado || u.roles?.includes("1510018366964891829")) {
             document.querySelector("#panel-staff").style.display = "block";
           }
-          const rolesPoliciales = [
-            "1500310263960834200",
-            "1500310124181323786",
-            "1500310980675244112",
-            "1500310467254423552",
-          ];
-          if (
-            d.policialAutorizado ||
-            rolesPoliciales.some((rol) => u.roles?.includes(rol))
-          ) {
+          if (d.policialAutorizado === true) {
             document.querySelector("#panel-policial").style.display = "block";
           }
           document.querySelector("#saludo").textContent =
