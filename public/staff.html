@@ -309,6 +309,9 @@
       .record small {
         color: var(--muted);
       }
+      .record-line { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+      .record-actions { flex:0 0 auto; }
+      .btn-small { padding:8px 10px; font-size:11px; }
       .empty {
         padding: 20px;
         text-align: center;
@@ -756,14 +759,20 @@
         const datos = d[registroActivo] || [];
         document.querySelector("#records").innerHTML = datos.length
           ? datos
-              .map(
-                (x) =>
-                  `<article class="record ${registroActivo === "sanciones" ? "sancion" : ""}"><strong>${registroActivo === "sanciones" ? "⚠️ " + (x.motivo || "Sanción") : "📝 " + (x.contenido || "Nota")}</strong><small>${x.autorTag || "Fundación"} · ${x.fecha ? new Date(x.fecha).toLocaleString("es-CO") : ""}</small></article>`,
-              )
+              .map((x, indice) => `<article class="record ${registroActivo === "sanciones" ? "sancion" : ""}"><div class="record-line"><div><strong>${registroActivo === "sanciones" ? "⚠️ " + (x.motivo || "Sanción") : "📝 " + (x.contenido || "Nota")}</strong><small>${x.autorTag || "Staff"} · ${x.fecha ? new Date(x.fecha).toLocaleString("es-CO") : ""}</small></div><button class="btn red btn-small cancel-record" data-index="${indice}">Cancelar</button></div></article>`)
               .join("")
           : '<div class="empty">Este usuario no tiene ' +
             registroActivo +
             " registradas.</div>";
+        document.querySelectorAll(".cancel-record").forEach((b) => b.addEventListener("click", () => cancelarRegistro(b.dataset.index)));
+      }
+      async function cancelarRegistro(indice) {
+        if (!seleccionado || !confirm("¿Cancelar este registro de comportamiento?")) return;
+        const tipo = registroActivo === "sanciones" ? "sancion" : "nota";
+        const r = await fetch(`/api/fundacion/comportamiento/${seleccionado.id}/${tipo}/${indice}`, { method: "DELETE" });
+        const d = await r.json();
+        if (!r.ok) return alert(d.error || "No se pudo cancelar el registro.");
+        cargarComportamiento();
       }
       document.querySelectorAll(".nav button").forEach((b) =>
         b.addEventListener("click", () => {
@@ -926,7 +935,7 @@
       async function iniciar() {
         const auth = await fetch("/api/usuario", { cache: "no-store" });
         if (!auth.ok) {
-          location.href = "/iniciar-seccion.html";
+          location.href = "/index.html";
           return;
         }
         const a = await auth.json();
