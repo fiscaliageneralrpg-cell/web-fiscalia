@@ -50,7 +50,7 @@ const NOMBRE_SERVIDOR = "「ME:RP」Medellín RP︱ER:LC";
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 app.use(
@@ -240,10 +240,9 @@ app.get("/auth/discord/callback", async (req, res) => {
       return res.status(401).send("No se pudo obtener tu usuario de Discord.");
     }
 
-    const roles = await obtenerRolesDelServidor(usuario.id);
-    if (roles === null) {
-      return res.redirect("/no-estas-en-el-servidor.html");
-    }
+    const rolesDiscord = await obtenerRolesDelServidor(usuario.id);
+    const estaEnServidor = Array.isArray(rolesDiscord);
+    const roles = rolesDiscord || [];
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
     const whitelistPendiente = roles.includes(ROL_WHITELIST_PENDIENTE);
 
@@ -266,6 +265,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       avatar: usuario.avatar,
       avatarUrl: obtenerAvatarUrl(usuario),
       roles,
+      estaEnServidor,
       whitelistAprobada,
       whitelistPendiente,
       estadoWhitelist,
@@ -277,6 +277,10 @@ app.get("/auth/discord/callback", async (req, res) => {
       `[LOGIN] ${usuario.username} (${usuario.id}) | ` +
         `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`,
     );
+
+    if (!estaEnServidor) {
+      return redirigirDespuesDeLogin(req, res, "/dashboard-user.html");
+    }
 
     if (estadoWhitelist === "pendiente") {
       console.log(`[LOGIN] ${usuario.id} tiene whitelist pendiente.`);
@@ -313,6 +317,10 @@ async function exigirFundacion(req, res) {
   if (!exigirSesion(req, res)) return false;
   try {
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    if (roles === null) {
+      res.status(403).json({ redirect: "/no-estas-en-el-servidor.html" });
+      return false;
+    }
     if (!roles?.includes(ROL_FUNDACION) && !roles?.includes(ROL_STAFF)) {
       res.status(403).json({ error: "No tienes el rol autorizado para acceder al panel administrativo." });
       return false;
@@ -706,9 +714,11 @@ app.get("/api/usuario", async (req, res) => {
     const cedulaActualizada = await buscarUsuarioPorDiscord(
       req.session.usuario.id,
     );
-    const rolesActualizados = await obtenerRolesDelServidor(
+    const rolesDiscord = await obtenerRolesDelServidor(
       req.session.usuario.id,
     );
+    const estaEnServidor = Array.isArray(rolesDiscord);
+    const rolesActualizados = rolesDiscord || [];
     const conservaRolPendiente = rolesActualizados.includes(
       ROL_WHITELIST_PENDIENTE,
     );
@@ -727,6 +737,7 @@ app.get("/api/usuario", async (req, res) => {
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
     req.session.usuario.roles = rolesActualizados;
+    req.session.usuario.estaEnServidor = estaEnServidor;
     req.session.usuario.whitelistPendiente = tieneWhitelistPendiente;
 
     return res.json({
@@ -735,6 +746,7 @@ app.get("/api/usuario", async (req, res) => {
       fundacionAutorizada: rolesActualizados.includes(ROL_FUNDACION),
       staffAutorizado: rolesActualizados.includes(ROL_STAFF),
       policialAutorizado: rolesActualizados.some((rol) => ROLES_POLICIA.has(String(rol))),
+      estaEnServidor,
       redireccion: tieneWhitelistPendiente ? "/whitelist-pendiente.html" : null,
     });
   } catch (error) {
@@ -827,6 +839,40 @@ app.get("/api/policial/cedula-imagen/:discordId", async (req, res) => {
   } catch (error) {
     console.error("[API IMAGEN CÉDULA POLICIAL]", error.message);
     return res.status(500).send("No se pudo cargar la imagen de la cédula.");
+  }
+});
+
+app.post("/api/policial/arresto", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.body?.discordId || "").trim();
+  const delitos = Array.isArray(req.body?.delitos) ? req.body.delitos.map(String).filter(Boolean).slice(0, 25) : [];
+  const imagenBase64 = String(req.body?.imagenBase64 || "");
+  if (!/^\d{10,25}$/.test(discordId) || !delitos.length || !imagenBase64) {
+    return res.status(400).json({ error: "Debes seleccionar ciudadano, antecedentes y una imagen de evidencia." });
+  }
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/arrestos/${req.session.usuario.id}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY }, body: JSON.stringify({ discordId, delitos, imagenBase64, oficialId: req.session.usuario.id, oficial: req.session.usuario.nombre || req.session.usuario.username }), signal: AbortSignal.timeout(30000) });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA ARRESTO]", error.message);
+    return res.status(500).json({ error: "No se pudo registrar el arresto. Verifica las tablas del expediente." });
+  }
+});
+
+app.get("/api/policial/alertas", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/alertas/${req.session.usuario.id}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA ALERTAS]", error.message);
+    return res.status(503).json({ error: "No se pudieron cargar las alertas del bot." });
   }
 });
 
