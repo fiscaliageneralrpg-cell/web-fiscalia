@@ -1242,6 +1242,53 @@ app.get("/api/fundacion/comportamiento/:discordId", async (req, res) => {
   } catch (error) { return res.status(500).json({ error: "No se pudo cargar el comportamiento." }); }
 });
 
+app.delete("/api/fundacion/comportamiento/:discordId/:tipo/:indice", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/comportamiento/${encodeURIComponent(req.params.discordId)}/${encodeURIComponent(req.params.tipo)}/${encodeURIComponent(req.params.indice)}`, {
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API CANCELAR COMPORTAMIENTO]", error.message);
+    return res.status(500).json({ error: "No se pudo cancelar el registro." });
+  }
+});
+
+app.get("/api/fundacion/trabajos", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}?vista=trabajos`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API TRABAJOS]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar los trabajos." });
+  }
+});
+
+app.delete("/api/fundacion/trabajos/:trabajoId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/trabajo/${encodeURIComponent(req.params.trabajoId)}`, {
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API ELIMINAR TRABAJO]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar el trabajo." });
+  }
+});
+
 app.get("/api/fundacion/usuarios", async (req, res) => {
   if (!(await exigirFundacion(req, res))) return;
   try {
