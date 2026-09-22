@@ -363,6 +363,15 @@
         cursor: not-allowed;
         opacity: 0.45;
       }
+      .selector-oculto {
+        display: none !important;
+      }
+      .vehicle-result {
+        margin-top: 14px;
+      }
+      .vehicle-result .record {
+        margin-top: 8px;
+      }
     </style>
   </head>
   <body>
@@ -402,6 +411,9 @@
           </button>
           <button class="tab" id="pda-antecedentes" type="button">
             ⓘ Antecedentes
+          </button>
+          <button class="tab blue" id="pda-vehiculo" type="button">
+            🚘 Buscar placa
           </button>
         </div>
       </section>
@@ -458,6 +470,30 @@
           </div>
         </div>
       </div>
+      <div id="vehiculo-modal" class="modal" aria-hidden="true">
+        <div class="modal-card">
+          <button id="cerrar-vehiculo" class="modal-close" type="button">
+            ×
+          </button>
+          <h2>🚘 Buscar vehículo por placa</h2>
+          <p>
+            Escribe la placa para consultar el propietario y los datos
+            registrados.
+          </p>
+          <form id="vehiculo-form">
+            <input
+              id="placa-busqueda"
+              autocomplete="off"
+              placeholder="Ejemplo: ABC-123"
+              maxlength="10"
+              required
+            />
+            <button class="btn" type="submit">Consultar placa</button>
+          </form>
+          <div id="vehiculo-status" class="status"></div>
+          <div id="vehiculo-resultado" class="vehicle-result"></div>
+        </div>
+      </div>
       <div id="arresto-modal" class="modal" aria-hidden="true">
         <div class="modal-card">
           <button id="cerrar-arresto" class="modal-close" type="button">
@@ -470,23 +506,136 @@
             antes de confirmar.
           </p>
           <select id="delitos-arresto" multiple size="8">
-            <option>Homicidio simple</option>
-            <option>Homicidio culposo</option>
-            <option>Lesiones personales graves</option>
-            <option>Amenazas de muerte</option>
-            <option>Intento de homicidio</option>
-            <option>Hurto simple</option>
-            <option>Hurto calificado</option>
-            <option>Estafa</option>
-            <option>Daño en bien ajeno</option>
-            <option>Extorsión</option>
-            <option>Secuestro simple</option>
-            <option>Porte ilegal de armas</option>
-            <option>Tráfico de estupefacientes</option>
-            <option>Conducción temeraria</option>
-            <option>Fuga de la justicia</option>
-            <option>Desacato a la autoridad</option>
+            <option value="AC-01 — Homicidio simple">
+              AC-01 — Homicidio simple
+            </option>
+            <option value="AC-02 — Homicidio culposo">
+              AC-02 — Homicidio culposo
+            </option>
+            <option value="AC-03 — Lesiones personales graves">
+              AC-03 — Lesiones personales graves
+            </option>
+            <option value="AC-04 — Lesiones leves">
+              AC-04 — Lesiones leves
+            </option>
+            <option value="AC-05 — Amenazas de muerte">
+              AC-05 — Amenazas de muerte
+            </option>
+            <option value="AC-2.1 — Intento de homicidio">
+              AC-2.1 — Intento de homicidio
+            </option>
+            <option value="AC-06 — Hurto simple">AC-06 — Hurto simple</option>
+            <option value="AC-07 — Hurto calificado">
+              AC-07 — Hurto calificado
+            </option>
+            <option value="AC-08 — Estafa">AC-08 — Estafa</option>
+            <option value="AC-09 — Daño en bien ajeno">
+              AC-09 — Daño en bien ajeno
+            </option>
+            <option value="AC-10 — Extorsión">AC-10 — Extorsión</option>
+            <option value="AC-11 — Secuestro simple">
+              AC-11 — Secuestro simple
+            </option>
+            <option value="AC-12">
+              AC-12 — Privación ilegal de la libertad
+            </option>
+            <option value="AC-13 — Amenaza">AC-13 — Amenaza</option>
+            <option value="AC-14 — Chantaje">AC-14 — Chantaje</option>
+            <option value="AC-15 — Acoso">AC-15 — Acoso</option>
+            <option value="AC-16 — Porte ilegal de armas">
+              AC-16 — Porte ilegal de armas
+            </option>
+            <option value="AC-17">
+              AC-17 — Fabricación o tráfico de armas
+            </option>
+            <option value="AC-18 — Explosivos no autorizados">
+              AC-18 — Explosivos no autorizados
+            </option>
+            <option value="AC-19 — Concierto para delinquir">
+              AC-19 — Concierto para delinquir
+            </option>
+            <option value="AC-20">
+              AC-20 — Perturbación del orden público
+            </option>
+            <option value="AC-21 — Cohecho (soborno)">
+              AC-21 — Cohecho (soborno)
+            </option>
+            <option value="AC-22 — Peculado">AC-22 — Peculado</option>
+            <option value="AC-23 — Abuso de autoridad">
+              AC-23 — Abuso de autoridad
+            </option>
+            <option value="AC-24 — Prevaricato">AC-24 — Prevaricato</option>
+            <option value="AC-25 — Falsedad en documento público">
+              AC-25 — Falsedad en documento público
+            </option>
+            <option value="AC-26">
+              AC-26 — Conducción en estado de embriaguez
+            </option>
+            <option value="AC-27 — Transporte de contrabando">
+              AC-27 — Transporte de contrabando
+            </option>
+            <option value="AC-28 — Conducción temeraria">
+              AC-28 — Conducción temeraria
+            </option>
+            <option value="AC-29 — Fuga en accidente de tránsito">
+              AC-29 — Fuga en accidente de tránsito
+            </option>
+            <option value="AC-29.1 — Fuga de la justicia">
+              AC-29.1 — Fuga de la justicia
+            </option>
+            <option value="AC-30">
+              AC-30 — Transporte ilegal de armas o drogas
+            </option>
+            <option value="AC-31 — Tráfico de estupefacientes">
+              AC-31 — Tráfico de estupefacientes
+            </option>
+            <option value="AC-32 — Porte de estupefacientes">
+              AC-32 — Porte de estupefacientes
+            </option>
+            <option value="AC-32.1">
+              AC-32.1 — Porte de prendas militares
+            </option>
+            <option value="AC-33 — Cultivo ilícito">
+              AC-33 — Cultivo ilícito
+            </option>
+            <option value="AC-34 — Distribución de drogas">
+              AC-34 — Distribución de drogas
+            </option>
+            <option value="AC-35 — Consumo en vía pública">
+              AC-35 — Consumo en vía pública
+            </option>
+            <option value="AC-36">
+              AC-36 — Acceso no autorizado a sistemas
+            </option>
+            <option value="AC-37 — Hurto de datos personales">
+              AC-37 — Hurto de datos personales
+            </option>
+            <option value="AC-38 — Estafa electrónica">
+              AC-38 — Estafa electrónica
+            </option>
+            <option value="AC-39 — Daño informático">
+              AC-39 — Daño informático
+            </option>
+            <option value="AC-40 — Suplantación de identidad">
+              AC-40 — Suplantación de identidad
+            </option>
+            <option value="AC-41 — Desacato a la autoridad">
+              AC-41 — Desacato a la autoridad
+            </option>
+            <option value="AC-42 — Fuga de presos">
+              AC-42 — Fuga de presos
+            </option>
+            <option value="AC-43 — Obstrucción a la justicia">
+              AC-43 — Obstrucción a la justicia
+            </option>
+            <option value="AC-44 — Soborno a testigos">
+              AC-44 — Soborno a testigos
+            </option>
+            <option value="AC-45 — Asociación ilícita">
+              AC-45 — Asociación ilícita
+            </option>
           </select>
+
           <label class="evidence-label"
             >📷 Evidencia fotográfica
             <input
@@ -638,13 +787,15 @@
         for (const option of $("#delitos-arresto").selectedOptions)
           delitosAcumulados.add(option.value);
         $("#delitos-arresto").selectedIndex = -1;
+        $("#delitos-arresto").classList.add("selector-oculto");
         $("#arresto-status").textContent =
-          `✅ Se agregó el antecedente. Total seleccionados: ${delitosAcumulados.size}. Puedes pulsar «Agregar otro antecedente» para continuar.`;
+          `✅ Antecedente agregado. Total: ${delitosAcumulados.size}. Pulsa «Agregar otro antecedente» si necesitas añadir otro.`;
       });
       $("#agregar-antecedente").addEventListener("click", () => {
         $("#arresto-status").textContent = delitosAcumulados.size
           ? `✅ Se agregó el siguiente antecedente. Total seleccionados: ${delitosAcumulados.size}. Elige otro.`
           : "Selecciona un antecedente primero.";
+        $("#delitos-arresto").classList.remove("selector-oculto");
         $("#delitos-arresto").focus();
       });
       $("#confirmar-arresto").addEventListener("click", async () => {
@@ -763,8 +914,11 @@
         if (modoArresto) {
           $("#arresto-modal").classList.add("open");
           $("#arresto-modal").setAttribute("aria-hidden", "false");
+          delitosAcumulados.clear();
+          $("#delitos-arresto").classList.remove("selector-oculto");
+          $("#delitos-arresto").selectedIndex = -1;
           $("#arresto-status").textContent =
-            "Selecciona los antecedentes y confirma el arresto.";
+            "Selecciona un antecedente. El selector se ocultará después de elegirlo.";
           modoArresto = false;
           return;
         }
@@ -792,6 +946,42 @@
         $("#cedula-result-modal").setAttribute("aria-hidden", "false");
         mostrarEstado("Cédula consultada correctamente.", "ok");
       });
+      $("#pda-vehiculo").addEventListener("click", () => {
+        $("#vehiculo-modal").classList.add("open");
+        $("#vehiculo-modal").setAttribute("aria-hidden", "false");
+        $("#placa-busqueda").focus();
+      });
+      $("#cerrar-vehiculo").addEventListener("click", () => {
+        $("#vehiculo-modal").classList.remove("open");
+        $("#vehiculo-modal").setAttribute("aria-hidden", "true");
+      });
+      $("#vehiculo-modal").addEventListener("click", (event) => {
+        if (event.target.id === "vehiculo-modal") $("#cerrar-vehiculo").click();
+      });
+      $("#vehiculo-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const placa = $("#placa-busqueda").value.trim().toUpperCase();
+        const estado = $("#vehiculo-status");
+        const resultado = $("#vehiculo-resultado");
+        estado.textContent = "Buscando vehículo...";
+        resultado.innerHTML = "";
+        try {
+          const respuesta = await fetch(
+            `/api/policial/vehiculo/${encodeURIComponent(placa)}`,
+            { cache: "no-store" },
+          );
+          const datos = await respuesta.json();
+          if (!respuesta.ok)
+            throw new Error(datos.error || "Vehículo no encontrado.");
+          const v = datos.vehiculo || {};
+          const p = datos.propietario || {};
+          resultado.innerHTML = `<div class="record"><strong>🚘 Vehículo registrado</strong><br><b>Propietario:</b> ${p.nombre || "No registrado"}<br><b>NUIP:</b> ${p.nuip || "—"}<br><b>Placa:</b> ${v.placa || placa}<br><b>Modelo:</b> ${v.modelo || v.nombre || "—"}<br><b>Detalles:</b> ${Object.keys(v.detalles || {}).length ? JSON.stringify(v.detalles) : "Sin detalles adicionales"}</div>`;
+          estado.textContent = "Consulta completada.";
+        } catch (error) {
+          estado.textContent = error.message;
+        }
+      });
+
       init();
     </script>
   </body>
