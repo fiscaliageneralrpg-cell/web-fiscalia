@@ -32,6 +32,13 @@ const ROL_WHITELIST_APROBADA = "1500316176960716940";
 const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
 const ROL_STAFF_WHITELIST = "1510018366964891829";
 const ROL_FUNDACION = "1508156676350673017";
+const ROL_STAFF = "1510018366964891829";
+const ROLES_POLICIA = new Set([
+  "1500310263960834200",
+  "1500310124181323786",
+  "1500310980675244112",
+  "1500310467254423552",
+]);
 const EMOJI_ESPERA = "<:8810datetime:1538599244678692934>";
 const EMOJI_ACEPTADO = "<:1507611843198451915:1538596251879219371>";
 const EMOJI_DENEGADO = "<a:1485274567520948324:1549034139456380978>";
@@ -306,8 +313,8 @@ async function exigirFundacion(req, res) {
   if (!exigirSesion(req, res)) return false;
   try {
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
-    if (!roles?.includes(ROL_FUNDACION)) {
-      res.status(403).json({ error: "No tienes el rol autorizado para acceder al Panel Fundación." });
+    if (!roles?.includes(ROL_FUNDACION) && !roles?.includes(ROL_STAFF)) {
+      res.status(403).json({ error: "No tienes el rol autorizado para acceder al panel administrativo." });
       return false;
     }
     req.session.usuario.roles = roles;
@@ -315,6 +322,23 @@ async function exigirFundacion(req, res) {
   } catch (error) {
     console.error("[FUNDACION AUTH]", error.message);
     res.status(503).json({ error: "No se pudo verificar tu rol de Fundación." });
+    return false;
+  }
+}
+
+async function exigirPolicia(req, res) {
+  if (!exigirSesion(req, res)) return false;
+  try {
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    if (!roles?.some((rol) => ROLES_POLICIA.has(String(rol)))) {
+      res.status(403).json({ error: "No tienes un rol policial autorizado para usar el PDA." });
+      return false;
+    }
+    req.session.usuario.roles = roles;
+    return true;
+  } catch (error) {
+    console.error("[POLICIA AUTH]", error.message);
+    res.status(503).json({ error: "No se pudo verificar tu rol policial." });
     return false;
   }
 }
@@ -709,6 +733,8 @@ app.get("/api/usuario", async (req, res) => {
       autenticado: true,
       usuario: req.session.usuario,
       fundacionAutorizada: rolesActualizados.includes(ROL_FUNDACION),
+      staffAutorizado: rolesActualizados.includes(ROL_STAFF),
+      policialAutorizado: rolesActualizados.some((rol) => ROLES_POLICIA.has(String(rol))),
       redireccion: tieneWhitelistPendiente ? "/whitelist-pendiente.html" : null,
     });
   } catch (error) {
@@ -743,6 +769,56 @@ app.get("/api/cedula/imagen", async (req, res) => {
   } catch (error) {
     console.error("[API CEDULA IMAGEN]", error.message);
     return res.status(500).send("No se pudo cargar la imagen.");
+  }
+});
+
+app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  try {
+    const { pool } = require("./db");
+    const cedula = await buscarUsuarioPorDiscord(discordId);
+    const leer = async (tabla) => {
+      const [filas] = await pool.execute(`SELECT payload FROM ${tabla} WHERE discord_id = ? ORDER BY fecha DESC`, [discordId]);
+      return filas.map((fila) => typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload);
+    };
+    const [arrestos, antecedentes, multas] = await Promise.all([
+      leer("expediente_arrestos"),
+      leer("expediente_antecedentes"),
+      leer("expediente_multas"),
+    ]);
+    return res.json({ correcto: true, ciudadano: cedula, expediente: { arrestos, antecedentes, multas } });
+  } catch (error) {
+    console.error("[API PDA POLICIAL]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el ciudadano." });
+  }
+});
+
+app.get("/api/policial/usuarios", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    return res.json({ correcto: true, usuarios: await obtenerMiembrosDelServidor() });
+  } catch (error) {
+    console.error("[API PDA USUARIOS]", error.message);
+    return res.status(503).json({ error: "No se pudo cargar la lista de ciudadanos." });
+  }
+});
+
+app.get("/api/policial/imagen/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
+  try {
+    const { pool } = require("./db");
+    const [filas] = await pool.execute("SELECT imagen_png FROM pda_fuerza_publica WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!filas[0]?.imagen_png) return res.status(404).send("El ciudadano todavía no ha generado su PDA.");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].imagen_png);
+  } catch (error) {
+    console.error("[API PDA IMAGEN]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen PDA.");
   }
 });
 
