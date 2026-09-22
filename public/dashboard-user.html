@@ -191,7 +191,27 @@
       >
       <a id="panel-fundacion" class="panel foundation" href="/fundacion.html"
         ><strong>✦ Panel Fundación</strong
-        ><span>Administra tienda, dinero, sanciones y notas del servidor.</span></a
+        ><span
+          >Administra tienda, dinero, sanciones y notas del servidor.</span
+        ></a
+      >
+      <a
+        id="panel-staff"
+        class="panel foundation"
+        href="/staff.html"
+        style="display: none"
+        ><strong>✦ Panel Staff</strong
+        ><span>Gestiona dinero, notas y sanciones de los ciudadanos.</span></a
+      >
+      <a
+        id="panel-policial"
+        class="panel"
+        href="/policial.html"
+        style="display: none"
+        ><strong>▣ PDA Policial</strong
+        ><span
+          >Consulta cédulas, antecedentes, arrestos y multas del servidor.</span
+        ></a
       >
       <div class="foot">
         Sistema digital de Medellín RP · Información protegida para usuarios
@@ -212,8 +232,17 @@
             return;
           }
           const u = d.usuario || {};
-          if (d.fundacionAutorizada || u.roles?.includes("1508156676350673017")) {
+          if (
+            d.fundacionAutorizada ||
+            u.roles?.includes("1508156676350673017")
+          ) {
             document.querySelector("#panel-fundacion").style.display = "block";
+          }
+          if (d.staffAutorizado || u.roles?.includes("1510018366964891829")) {
+            document.querySelector("#panel-staff").style.display = "block";
+          }
+          if (d.policialAutorizado) {
+            document.querySelector("#panel-policial").style.display = "block";
           }
           document.querySelector("#saludo").textContent =
             "Hola, " + (u.nombre || "ciudadano");
