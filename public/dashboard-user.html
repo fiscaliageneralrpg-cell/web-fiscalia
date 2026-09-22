@@ -117,6 +117,11 @@
         transform: translateY(-3px);
         background: #0d6170;
       }
+      .panel.foundation {
+        display: none;
+        border-color: #f3c96966;
+        background: linear-gradient(135deg, #624c16, #17394a);
+      }
       .panel strong,
       .panel span {
         display: block;
@@ -184,6 +189,10 @@
         ><strong>▣ Panel ciudadano</strong
         ><span>Consulta tu cédula, expediente, Nequi y antecedentes.</span></a
       >
+      <a id="panel-fundacion" class="panel foundation" href="/fundacion.html"
+        ><strong>✦ Panel Fundación</strong
+        ><span>Administra tienda, dinero, sanciones y notas del servidor.</span></a
+      >
       <div class="foot">
         Sistema digital de Medellín RP · Información protegida para usuarios
         autenticados.
@@ -203,6 +212,9 @@
             return;
           }
           const u = d.usuario || {};
+          if (d.fundacionAutorizada || u.roles?.includes("1508156676350673017")) {
+            document.querySelector("#panel-fundacion").style.display = "block";
+          }
           document.querySelector("#saludo").textContent =
             "Hola, " + (u.nombre || "ciudadano");
           document.querySelector("#nombre").textContent =
