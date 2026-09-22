@@ -238,7 +238,10 @@
         padding: 14px;
         border: 1px solid #34445a;
         border-radius: 15px;
-        background: #111824;
+        background: linear-gradient(145deg, #111d2b, #0e151f 65%, #122b3a);
+        box-shadow:
+          0 18px 45px #0008,
+          inset 0 1px #ffffff10;
       }
       .official-pda img {
         display: block;
@@ -256,6 +259,14 @@
       }
       .pda-actions .tab {
         flex: 1 1 160px;
+        transition:
+          transform 0.18s ease,
+          filter 0.18s ease;
+        box-shadow: 0 8px 18px #0005;
+      }
+      .pda-actions .tab:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.15);
       }
       .modal {
         display: none;
@@ -275,8 +286,37 @@
         padding: 26px;
         border: 1px solid #4d86f7;
         border-radius: 16px;
-        background: #151d29;
-        box-shadow: 0 24px 80px #000;
+        background: linear-gradient(145deg, #182638, #101722);
+        box-shadow:
+          0 24px 80px #000,
+          inset 0 1px #ffffff12;
+        animation: modalIn 0.18s ease-out;
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .arrest-card {
+        width: min(680px, 100%);
+        border-color: #d95665;
+      }
+      .arrest-card h2 {
+        color: #ff9aa5;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #ffffff16;
+      }
+      .arrest-card select {
+        min-height: 190px;
+        box-shadow: inset 0 0 0 1px #ffffff08;
+      }
+      .arrest-card option {
+        padding: 6px;
       }
       .modal-card h2 {
         margin-top: 0;
@@ -346,6 +386,12 @@
         margin-top: 10px;
         color: var(--muted);
         font-size: 13px;
+      }
+      .status b {
+        color: #ffb4bc;
+      }
+      .status span {
+        color: var(--muted);
       }
 
       .pagination {
@@ -495,7 +541,7 @@
         </div>
       </div>
       <div id="arresto-modal" class="modal" aria-hidden="true">
-        <div class="modal-card">
+        <div class="modal-card arrest-card">
           <button id="cerrar-arresto" class="modal-close" type="button">
             ×
           </button>
@@ -784,12 +830,21 @@
         $("#arresto-modal").classList.remove("open"),
       );
       $("#delitos-arresto").addEventListener("change", () => {
-        for (const option of $("#delitos-arresto").selectedOptions)
-          delitosAcumulados.add(option.value);
+        const repetidos = [];
+        for (const option of $("#delitos-arresto").selectedOptions) {
+          if (delitosAcumulados.has(option.value)) repetidos.push(option.value);
+          else delitosAcumulados.add(option.value);
+        }
         $("#delitos-arresto").selectedIndex = -1;
+        if (repetidos.length && !delitosAcumulados.size) {
+          $("#arresto-status").textContent =
+            `⚠️ Este delito ya está agregado: ${repetidos[0]}`;
+          return;
+        }
         $("#delitos-arresto").classList.add("selector-oculto");
-        $("#arresto-status").textContent =
-          `✅ Antecedente agregado. Total: ${delitosAcumulados.size}. Pulsa «Agregar otro antecedente» si necesitas añadir otro.`;
+        $("#arresto-status").innerHTML = repetidos.length
+          ? `⚠️ Este delito ya está agregado: <b>${repetidos.join(", ")}</b><br><span>Los demás antecedentes nuevos sí fueron agregados. Total: ${delitosAcumulados.size}.</span>`
+          : `✅ Antecedente agregado. Total: ${delitosAcumulados.size}. Pulsa «Agregar otro antecedente» si necesitas añadir otro.`;
       });
       $("#agregar-antecedente").addEventListener("click", () => {
         $("#arresto-status").textContent = delitosAcumulados.size
