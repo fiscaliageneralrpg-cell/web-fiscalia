@@ -1394,6 +1394,12 @@ app.get("/cerrar-sesion", (req, res) => {
 });
 
 app.use((req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ error: "Ruta API no encontrada." });
+  }
+  if (req.method === "GET") {
+    return res.redirect("/index.html");
+  }
   return res.status(404).send("Página no encontrada.");
 });
 
