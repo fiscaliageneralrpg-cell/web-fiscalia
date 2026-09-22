@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sesión cerrada | Medellín RP</title>
+    <style>
+      :root {
+        --cyan: #42d8d0;
+        --bg: #06141f;
+        --card: #0b2737;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        color: #f4efe3;
+        background:
+          radial-gradient(circle at 15% 0, #154556, transparent 38%),
+          linear-gradient(135deg, #06141f, #071d2c);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .card {
+        width: min(560px, 100%);
+        padding: 38px;
+        border: 1px solid #42d8d055;
+        border-radius: 24px;
+        text-align: center;
+        background: #0b2737e8;
+        box-shadow: 0 20px 70px #0007;
+      }
+      h1 {
+        margin: 12px 0;
+        color: var(--cyan);
+      }
+      p {
+        color: #a9bac6;
+        line-height: 1.6;
+      }
+      .icon {
+        font-size: 52px;
+      }
+      .btn {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 13px 20px;
+        border-radius: 11px;
+        color: #06141f;
+        background: var(--cyan);
+        font-weight: 900;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="icon">🔒</div>
+      <h1>Sesión cerrada automáticamente</h1>
+      <p>
+        Tu sesión se cerró después de 5 minutos de inactividad para proteger tu
+        cuenta y los datos de Fundación.
+      </p>
+      <a class="btn" href="/iniciar-seccion.html">Volver a iniciar sesión</a>
+    </main>
+  </body>
+</html>
