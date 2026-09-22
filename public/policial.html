@@ -279,6 +279,20 @@
         display: grid;
         gap: 12px;
       }
+      .cedula-result-card {
+        width: min(960px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+      }
+      .cedula-result-card #cedula-result-img {
+        display: block;
+        width: 100%;
+        max-height: 72vh;
+        object-fit: contain;
+        border: 1px solid #40536b;
+        border-radius: 12px;
+        background: #080d15;
+      }
       .modal-card input {
         padding: 13px;
         border: 1px solid #3b4a60;
@@ -358,6 +372,17 @@
             <button class="btn" type="submit">Consultar ciudadano</button>
           </form>
           <div id="modal-status" class="status"></div>
+        </div>
+      </div>
+      <div id="cedula-result-modal" class="modal" aria-hidden="true">
+        <div class="modal-card cedula-result-card">
+          <button id="cerrar-cedula-result" class="modal-close" type="button">
+            ×
+          </button>
+          <h2>▣ Cédula ciudadana</h2>
+          <p id="cedula-result-title">Imagen oficial de la cédula</p>
+          <img id="cedula-result-img" alt="Imagen de cédula ciudadana" />
+          <div id="cedula-result-status" class="status"></div>
         </div>
       </div>
       <section id="profile" class="profile">
@@ -469,6 +494,13 @@
         if (e.target.id === "cedula-modal")
           $("#cedula-modal").classList.remove("open");
       });
+      $("#cerrar-cedula-result").addEventListener("click", () =>
+        $("#cedula-result-modal").classList.remove("open"),
+      );
+      $("#cedula-result-modal").addEventListener("click", (e) => {
+        if (e.target.id === "cedula-result-modal")
+          $("#cedula-result-modal").classList.remove("open");
+      });
       $("#cedula-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const nuip = $("#nuip-busqueda").value.trim();
@@ -482,32 +514,31 @@
           ms.textContent = encontrado.error || "La cédula no está registrada.";
           return;
         }
-        const r = await fetch(
-            "/api/policial/ciudadano/" + encontrado.discordId,
-          ),
-          d = await r.json();
-        if (!r.ok) {
-          ms.textContent = d.error || "No se pudo consultar.";
-          return;
-        }
         $("#cedula-modal").classList.remove("open");
-        mostrarEstado("PDA del ciudadano generada correctamente.", "ok");
-        datos = d;
-        const c = d.ciudadano || encontrado.ciudadano || {};
-        $("#profile").classList.add("show");
-        $("#nombreTitulo").textContent =
-          c.nombre ||
-          c.nombres ||
-          `${c.nombres || ""} ${c.apellidos || ""}`.trim() ||
-          "el ciudadano";
-        $("#nombre").textContent = c.nombre || c.nombres || "Sin registro";
-        $("#nuip").textContent = c.nuip || c.cedula || "—";
-        $("#fecha").textContent =
-          c.fechaNacimiento || c.fecha_nacimiento || "—";
-        $("#sexo").textContent = c.sexo || "—";
-        $("#resumen").textContent =
-          `Arrestos: ${d.expediente.arrestos.length} · Antecedentes: ${d.expediente.antecedentes.length} · Multas: ${d.expediente.multas.length}`;
-        mostrarEstado("PDA generada correctamente.", "ok");
+        const c = encontrado.ciudadano || {};
+        $("#cedula-result-title").textContent =
+          `Cédula de ${c.nombres || c.nombre || "ciudadano"} ${c.apellidos || ""}`.trim();
+        const imagen = $("#cedula-result-img");
+        const estadoImagen = $("#cedula-result-status");
+        estadoImagen.textContent = "Cargando imagen oficial...";
+        imagen.style.display = "block";
+        imagen.src =
+          "/api/policial/cedula-imagen/" +
+          encontrado.discordId +
+          "?t=" +
+          Date.now();
+        imagen.onload = () => {
+          estadoImagen.textContent =
+            "Imagen generada por /mostrar-cedula en Discord.";
+        };
+        imagen.onerror = () => {
+          imagen.style.display = "none";
+          estadoImagen.textContent =
+            "La cédula está registrada, pero no tiene imagen guardada. El ciudadano debe ejecutar /mostrar-cedula en Discord.";
+        };
+        $("#cedula-result-modal").classList.add("open");
+        $("#cedula-result-modal").setAttribute("aria-hidden", "false");
+        mostrarEstado("Cédula consultada correctamente.", "ok");
       });
       function ver(tipo) {
         if (!datos) return;
