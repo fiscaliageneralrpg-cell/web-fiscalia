@@ -347,6 +347,22 @@
         color: var(--muted);
         font-size: 13px;
       }
+
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #ffffff18;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .pagination button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
     </style>
   </head>
   <body>
@@ -503,7 +519,9 @@
       let ciudadanoSeleccionado = null,
         modoArresto = false,
         modoAntecedentes = false,
-        delitosAcumulados = new Set();
+        delitosAcumulados = new Set(),
+        antecedentesPagina = 1,
+        antecedentesRegistros = [];
       const $ = (s) => document.querySelector(s);
       function mostrarEstado(t, cl = "empty") {
         const e = $("#status");
@@ -601,6 +619,14 @@
       $("#cerrar-cedula-result").addEventListener("click", () =>
         $("#cedula-result-modal").classList.remove("open"),
       );
+      $("#cerrar-antecedentes").addEventListener("click", () => {
+        $("#antecedentes-modal").classList.remove("open");
+        $("#antecedentes-modal").setAttribute("aria-hidden", "true");
+      });
+      $("#antecedentes-modal").addEventListener("click", (event) => {
+        if (event.target.id === "antecedentes-modal")
+          $("#cerrar-antecedentes").click();
+      });
       $("#cedula-result-modal").addEventListener("click", (e) => {
         if (e.target.id === "cedula-result-modal")
           $("#cedula-result-modal").classList.remove("open");
@@ -665,6 +691,41 @@
             delitosAcumulados.clear();
           }, 1200);
       });
+      function renderAntecedentes() {
+        const porPagina = 5;
+        const totalPaginas = Math.max(
+          1,
+          Math.ceil(antecedentesRegistros.length / porPagina),
+        );
+        antecedentesPagina = Math.min(
+          Math.max(antecedentesPagina, 1),
+          totalPaginas,
+        );
+        const inicio = (antecedentesPagina - 1) * porPagina;
+        const pagina = antecedentesRegistros.slice(inicio, inicio + porPagina);
+        const lista = $("#antecedentes-list");
+        lista.innerHTML = pagina.length
+          ? pagina
+              .map(
+                (registro) =>
+                  `<article class="alert-item"><strong>⚖ ${registro.titulo || "Antecedente / arresto"}</strong><br>${(registro.delitos || []).map((d) => d.delito || d.codigo || d).join(", ") || registro.motivo || registro.contenido || "Registro policial"}<br><small>${registro.fecha || "Fecha no registrada"}</small></article>`,
+              )
+              .join("")
+          : '<div class="status">Este ciudadano no tiene antecedentes registrados.</div>';
+        if (antecedentesRegistros.length)
+          lista.insertAdjacentHTML(
+            "beforeend",
+            `<div class="pagination"><button id="antecedentes-anterior" class="btn secondary" type="button" ${antecedentesPagina <= 1 ? "disabled" : ""}>← Regresar</button><span>Página ${antecedentesPagina} de ${totalPaginas}</span><button id="antecedentes-siguiente" class="btn" type="button" ${antecedentesPagina >= totalPaginas ? "disabled" : ""}>Siguiente →</button></div>`,
+          );
+        $("#antecedentes-anterior")?.addEventListener("click", () => {
+          antecedentesPagina--;
+          renderAntecedentes();
+        });
+        $("#antecedentes-siguiente")?.addEventListener("click", () => {
+          antecedentesPagina++;
+          renderAntecedentes();
+        });
+      }
       $("#cedula-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const nuip = $("#nuip-busqueda").value.trim();
@@ -691,14 +752,9 @@
           ];
           $("#antecedentes-ciudadano").textContent =
             `Ciudadano: ${c.nombres || c.nombre || ""} ${c.apellidos || ""} · NUIP: ${c.nuip || nuip}`;
-          $("#antecedentes-list").innerHTML = registros.length
-            ? registros
-                .map(
-                  (registro) =>
-                    `<article class="alert-item"><strong>⚖ ${registro.titulo || "Antecedente / arresto"}</strong><br>${(registro.delitos || []).map((d) => d.delito || d.codigo || d).join(", ") || registro.motivo || registro.contenido || "Registro policial"}<br><small>${registro.fecha || "Fecha no registrada"}</small></article>`,
-                )
-                .join("")
-            : '<div class="status">Este ciudadano no tiene antecedentes registrados.</div>';
+          antecedentesRegistros = registros;
+          antecedentesPagina = 1;
+          renderAntecedentes();
           $("#antecedentes-modal").classList.add("open");
           $("#antecedentes-modal").setAttribute("aria-hidden", "false");
           modoAntecedentes = false;
