@@ -25,6 +25,16 @@
       .btn.done { color:#06141f; background:var(--green); pointer-events:none; }
       .empty { grid-column:1/-1; padding:35px; border:1px dashed #42d8d055; border-radius:14px; color:var(--muted); text-align:center; }
       .status { margin-top:12px; color:var(--muted); }
+      .modal { display:none; position:fixed; inset:0; z-index:20; place-items:center; padding:18px; background:#0009; }
+      .modal.open { display:grid; }
+      .modal-card { width:min(760px,100%); max-height:90vh; overflow:auto; padding:24px; border:1px solid #42d8d066; border-radius:18px; background:#0a2736; box-shadow:0 24px 70px #000b; }
+      .modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:15px; }
+      .modal-head h2 { color:var(--blue); }
+      .question { display:grid; gap:8px; margin:15px 0; padding:15px; border:1px solid var(--line); border-radius:12px; background:#ffffff08; }
+      .question textarea, .question select { width:100%; padding:11px; border:1px solid #ffffff2b; border-radius:8px; color:var(--ink); background:#06141f; font:inherit; }
+      .question label { display:flex; gap:8px; align-items:center; padding:6px 0; color:#dcecff; }
+      .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+      .btn.cancel { color:#fff; background:#ffffff20; }
       @media(max-width:720px){ .grid { grid-template-columns:1fr; } .top,.head { align-items:flex-start; flex-direction:column; } }
     </style>
   </head>
@@ -36,17 +46,27 @@
       <section id="list" class="grid"><div class="empty">Cargando encuestas…</div></section>
       <p id="status" class="status" aria-live="polite"></p>
     </main>
+    <div id="survey-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="survey-title">
+      <div class="modal-card"><div class="modal-head"><h2 id="survey-title">Responder encuesta</h2><button id="close-survey" class="btn cancel" type="button">Cancelar</button></div><p id="survey-description"></p><form id="survey-form"><div id="survey-questions"></div><div class="modal-actions"><button id="cancel-survey" class="btn cancel" type="button">Cancelar</button><button class="btn" type="submit">Enviar respuestas</button></div><p id="survey-status" class="status"></p></form></div>
+    </div>
     <script>
       "use strict";
       const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
       let encuestas = []; let filtro = "todas";
-      const rutasFuerza = { policia_nacional: "/encuesta-policia-nacional.html", copes: "/encuesta-copes.html", ejercito: "/encuesta-ejercito.html", fiscalia: "/encuesta-fiscalia.html" };
-      async function api(url) { const r = await fetch(url,{cache:"no-store"}); let d={}; try{d=await r.json();}catch{} if(r.status===401){location.href="/index.html";throw new Error("Sesión finalizada.");} if(!r.ok)throw new Error(d.error||"No se pudieron cargar las encuestas."); return d; }
+      async function api(url, options={}) { const r = await fetch(url,{cache:"no-store",...options}); let d={}; try{d=await r.json();}catch{} if(r.status===401){location.href="/index.html";throw new Error("Sesión finalizada.");} if(!r.ok)throw new Error(d.error||"No se pudieron cargar las encuestas."); return d; }
+      function cerrarModal() { document.querySelector("#survey-modal").classList.remove("open"); document.querySelector("#survey-status").textContent=""; }
+      async function abrirEncuesta(id) {
+        const modal=document.querySelector("#survey-modal"), questions=document.querySelector("#survey-questions"); questions.innerHTML="Cargando…"; modal.classList.add("open");
+        try { const d=await api(`/api/encuestas/${encodeURIComponent(id)}`); const x=d.encuesta; document.querySelector("#survey-title").textContent=x.titulo; document.querySelector("#survey-description").textContent=x.descripcion||"Evaluación institucional"; questions.innerHTML=x.preguntas.map((p,i)=>`<div class="question"><strong>${i+1}. ${esc(p.texto)}</strong>${p.tipo==="cerrada" ? p.opciones.map((o,j)=>`<label><input type="radio" name="pregunta-${esc(p.id)}" value="${j}" required> ${esc(o)}</label>`).join("") : `<textarea name="pregunta-${esc(p.id)}" rows="4" required placeholder="Escribe tu respuesta"></textarea>`}</div>`).join(""); document.querySelector("#survey-form").dataset.id=id; } catch(error) { questions.innerHTML=`<p class="status">${esc(error.message)}</p>`; }
+      }
       function pintar() {
         const visibles = filtro === "todas" ? encuestas : encuestas.filter((x) => x.fuerza === filtro);
-        document.querySelector("#list").innerHTML = visibles.length ? visibles.map((x) => `<article class="card"><div class="head"><h2>${esc(x.titulo)}</h2><span class="pill">${esc(x.fuerzaNombre)}</span></div><p>${esc(x.descripcion || "Evaluación institucional")}</p><div class="meta">Cierra: <strong>${new Date(x.fechaCierre).toLocaleString("es-CO")}</strong> · mínimo ${x.minimoAprobacion}%</div>${x.respondida ? '<span class="btn done">✓ Respuesta enviada</span>' : `<a class="btn" href="${rutasFuerza[x.fuerza] || "/encuesta.html"}?id=${encodeURIComponent(x.id)}">Responder encuesta</a>`}</article>`).join("") : '<div class="empty">No hay encuestas activas para esta fuerza.</div>';
+        document.querySelector("#list").innerHTML = visibles.length ? visibles.map((x) => `<article class="card"><div class="head"><h2>${esc(x.titulo)}</h2><span class="pill">${esc(x.fuerzaNombre)}</span></div><p>${esc(x.descripcion || "Evaluación institucional")}</p><div class="meta">Cierra: <strong>${new Date(x.fechaCierre).toLocaleString("es-CO")}</strong> · mínimo ${x.minimoAprobacion}%</div>${x.respondida ? '<span class="btn done">✓ Respuesta enviada</span>' : `<button class="btn responder-btn" type="button" data-id="${esc(x.id)}">Responder encuesta</button>`}</article>`).join("") : '<div class="empty">No hay encuestas activas para esta fuerza.</div>';
+        document.querySelectorAll(".responder-btn").forEach((button) => button.addEventListener("click", () => abrirEncuesta(button.dataset.id)));
       }
       document.querySelectorAll(".filter").forEach((button) => button.addEventListener("click", () => { document.querySelectorAll(".filter").forEach((x)=>x.classList.remove("active")); button.classList.add("active"); filtro=button.dataset.force; pintar(); }));
+      document.querySelector("#close-survey").addEventListener("click", cerrarModal); document.querySelector("#cancel-survey").addEventListener("click", cerrarModal); document.querySelector("#survey-modal").addEventListener("click", (e) => { if(e.target.id === "survey-modal") cerrarModal(); });
+      document.querySelector("#survey-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget, respuestas=[...form.querySelectorAll("[name^='pregunta-']")].filter((el)=>el.type!=="radio" || el.checked).map((el)=>({ preguntaId:el.name.replace("pregunta-",""), valor:el.type==="radio" ? Number(el.value) : el.value.trim() })); const status=document.querySelector("#survey-status"); status.textContent="Enviando…"; try { await api(`/api/encuestas/${encodeURIComponent(form.dataset.id)}/responder`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({respuestas}) }); status.textContent="✅ Respuestas enviadas correctamente."; setTimeout(()=>{ cerrarModal(); cargar(); },700); } catch(error) { status.textContent=`❌ ${esc(error.message)}`; } });
       async function cargar(){ try { const auth=await api("/api/usuario"); if(auth.estaEnServidor===false){location.href="/no-estas-en-el-servidor.html";return;} ({encuestas}=await api("/api/encuestas")); pintar(); document.querySelector("#status").textContent=`${encuestas.length} encuesta(s) activa(s).`; } catch(error){ document.querySelector("#list").innerHTML=`<div class="empty">${esc(error.message)}</div>`; } }
       cargar();
     </script>
