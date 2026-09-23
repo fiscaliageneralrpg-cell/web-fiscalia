@@ -112,6 +112,27 @@ async function obtenerRolesDelServidor(discordId) {
   return Array.isArray(miembro.roles) ? miembro.roles : [];
 }
 
+async function agregarRolDiscord(discordId, rolId, motivo) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}/roles/${rolId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+        "X-Audit-Log-Reason": motivo || "Rol de whitelist",
+      },
+    },
+  );
+
+  if (!respuesta.ok && respuesta.status !== 204) {
+    const detalle = await respuesta.text();
+    throw new Error(
+      `Discord no pudo agregar el rol ${rolId}: ${respuesta.status} ${detalle}`,
+    );
+  }
+}
+
 async function obtenerMiembrosDelServidor() {
   const miembros = [];
   let after = "0";
@@ -283,7 +304,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
     }
 
-    if (estadoWhitelist === "pendiente") {
+    if (estadoWhitelist === "pendiente" || (!estadoWhitelist && whitelistPendiente)) {
       console.log(`[LOGIN] ${usuario.id} tiene whitelist pendiente.`);
       return redirigirDespuesDeLogin(req, res, "/whitelist-pendiente.html");
     }
@@ -390,6 +411,25 @@ app.post("/api/whitelist", async (req, res) => {
       ],
     );
 
+    try {
+      await agregarRolDiscord(
+        req.session.usuario.id,
+        ROL_WHITELIST_PENDIENTE,
+        "Whitelist enviada desde la web",
+      );
+    } catch (errorRol) {
+      console.error("[WHITELIST] No se pudo agregar el rol pendiente:", errorRol);
+      await pool.execute(
+        `DELETE FROM whitelist_solicitudes
+         WHERE id = ? AND estado = 'pendiente'`,
+        [resultadoWhitelist.insertId],
+      );
+      return res.status(503).json({
+        error:
+          "No se pudo asignar el rol pendiente en Discord. La solicitud no fue creada.",
+      });
+    }
+
     const camposWhitelist = Object.entries(respuestas).map(
       ([pregunta, respuesta]) => ({
         name: pregunta.replaceAll("_", " ").slice(0, 256),
@@ -487,6 +527,7 @@ app.get("/api/whitelist/status", async (req, res) => {
     const estado = solicitudes[0] || null;
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
+    const pendientePorRol = roles.includes(ROL_WHITELIST_PENDIENTE);
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
 
     if (aprobadaPorRol) {
@@ -496,7 +537,7 @@ app.get("/api/whitelist/status", async (req, res) => {
       });
     }
 
-    if (estado?.estado === "pendiente") {
+    if (estado?.estado === "pendiente" || (!estado?.estado && pendientePorRol)) {
       return res.json({ estado: "pendiente" });
     }
 
@@ -732,8 +773,9 @@ app.get("/api/usuario", async (req, res) => {
        LIMIT 1`,
       [req.session.usuario.id],
     );
+    const estadoSolicitud = solicitudes[0]?.estado || null;
     const tieneWhitelistPendiente =
-      conservaRolPendiente || solicitudes[0]?.estado === "pendiente";
+      estadoSolicitud === "pendiente" || (!estadoSolicitud && conservaRolPendiente);
 
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
