@@ -70,8 +70,12 @@ app.use(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/iniciar-sesion.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
+});
+
 app.get("/iniciar-seccion.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "iniciar-seccion.html"));
+  res.redirect("/iniciar-sesion.html");
 });
 
 function redirigirDespuesDeLogin(req, res, destino) {
