@@ -346,6 +346,11 @@
 
           const datos = await respuesta.json();
 
+          if (datos.estado === "pendiente") {
+            window.location.replace("/whitelist-pendiente.html");
+            return;
+          }
+
           if (datos.estado === "aceptada" && datos.redirect) {
             window.location.href = datos.redirect;
             return;
@@ -367,6 +372,7 @@
       });
 
       revisarEstadoAnterior();
+      setInterval(revisarEstadoAnterior, 3000);
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
