@@ -975,6 +975,16 @@
         if (r.ok) cargarTrabajos();
       }
       let numeroPreguntaEncuesta = 0;
+      function renumerarPreguntasEncuesta() {
+        document.querySelectorAll("#preguntas-encuesta .encuesta-pregunta").forEach((box, indice) => {
+          const numero = indice + 1;
+          box.dataset.numero = numero;
+          const titulo = box.querySelector(".record-line strong");
+          if (titulo) titulo.textContent = `Pregunta ${numero}`;
+          box.querySelectorAll(".correcta-opcion").forEach((radio) => { radio.name = `correcta-${numero}`; });
+        });
+        numeroPreguntaEncuesta = document.querySelectorAll("#preguntas-encuesta .encuesta-pregunta").length;
+      }
       function agregarPreguntaEncuesta() {
         numeroPreguntaEncuesta += 1;
         const n = numeroPreguntaEncuesta;
@@ -986,8 +996,9 @@
         const agregarOpcion = () => { const fila = document.createElement("label"); fila.className = "row"; fila.innerHTML = `<span>Respuesta <input class="texto-opcion" maxlength="200" required></span><span>Correcta <input class="correcta-opcion" type="radio" name="correcta-${n}"></span>`; opciones.append(fila); };
         box.querySelector(".tipo-pregunta").addEventListener("change", (e) => { box.querySelector(".opciones-pregunta").hidden = e.target.value !== "cerrada"; if (e.target.value === "cerrada" && !opciones.children.length) { agregarOpcion(); agregarOpcion(); } });
         box.querySelector(".agregar-opcion").addEventListener("click", agregarOpcion);
-        box.querySelector(".eliminar-pregunta").addEventListener("click", () => box.remove());
+        box.querySelector(".eliminar-pregunta").addEventListener("click", () => { box.remove(); renumerarPreguntasEncuesta(); });
         document.querySelector("#preguntas-encuesta").append(box);
+        renumerarPreguntasEncuesta();
       }
       async function cargarEncuestas() {
         const lista = document.querySelector("#encuestas-lista");
