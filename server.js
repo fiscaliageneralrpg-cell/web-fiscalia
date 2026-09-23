@@ -1650,6 +1650,19 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
     }
   });
 
+  app.put("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
+        { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION EDITAR ENCUESTA");
+    }
+  });
+
   app.delete("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
