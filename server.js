@@ -1472,6 +1472,220 @@ app.post("/api/nequi/operacion", async (req, res) => {
   }
 });
 
+function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = console } = {}) {
+  if (!app || typeof app.get !== "function") {
+    throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
+  }
+  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") {
+    throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
+  }
+
+  const intentos = new Map();
+
+  function configuracionBot() {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      const error = new Error("El servidor web no tiene configurada la conexión con la API del bot.");
+      error.statusCode = 503;
+      throw error;
+    }
+    return {
+      base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""),
+      clave: process.env.NEQUI_API_KEY,
+    };
+  }
+
+  function exigirOrigenMismoSitio(req, res, next) {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    const origen = req.get("origin");
+    if (!origen) return next();
+    try {
+      if (new URL(origen).host !== req.get("host")) {
+        return res.status(403).json({ error: "Origen de solicitud no permitido." });
+      }
+    } catch {
+      return res.status(403).json({ error: "Origen de solicitud inválido." });
+    }
+    return next();
+  }
+
+  function limitarRespuestas(req, res, next) {
+    const clave = String(req.session?.usuario?.id || req.ip || "desconocido");
+    const ahora = Date.now();
+    const historial = (intentos.get(clave) || []).filter((marca) => ahora - marca < 60_000);
+    if (historial.length >= 10) {
+      return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
+    }
+    historial.push(ahora);
+    intentos.set(clave, historial);
+    if (intentos.size > 5000) {
+      for (const [id, marcas] of intentos) {
+        if (!marcas.some((marca) => ahora - marca < 60_000)) intentos.delete(id);
+      }
+    }
+    return next();
+  }
+
+  async function solicitarBot(ruta, { method = "GET", body, timeout = 10_000 } = {}) {
+    const { base, clave } = configuracionBot();
+    const opciones = {
+      method,
+      headers: {
+        "X-Nequi-Key": clave,
+        "User-Agent": "Medellin-RP-Web/1.0",
+      },
+      signal: AbortSignal.timeout(timeout),
+    };
+    if (body !== undefined) {
+      opciones.headers["Content-Type"] = "application/json";
+      opciones.body = JSON.stringify(body);
+    }
+
+    const respuesta = await fetch(`${base}${ruta}`, opciones);
+    const tipo = respuesta.headers.get("content-type") || "";
+    if (!tipo.includes("application/json")) {
+      const detalle = (await respuesta.text()).slice(0, 300);
+      const error = new Error(`La API del bot devolvió una respuesta inválida (${respuesta.status}): ${detalle}`);
+      error.statusCode = 502;
+      throw error;
+    }
+    return { status: respuesta.status, datos: await respuesta.json() };
+  }
+
+  function manejarError(res, error, contexto) {
+    logger.error(`[${contexto}]`, error.message);
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
+    }
+    return res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas.",
+    });
+  }
+
+  app.use("/api/encuestas", exigirOrigenMismoSitio);
+  app.use("/api/fundacion/encuestas", exigirOrigenMismoSitio);
+
+  app.get("/api/encuestas", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTAS LISTA");
+    }
+  });
+
+  app.get("/api/encuestas/:encuestaId", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`,
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA DETALLE");
+    }
+  });
+
+  app.post("/api/encuestas/:encuestaId/responder", limitarRespuestas, async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`,
+        { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA RESPUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION ENCUESTAS");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas`,
+        {
+          method: "POST",
+          body: {
+            titulo: req.body?.titulo,
+            descripcion: req.body?.descripcion,
+            fuerza: req.body?.fuerza,
+            minimoAprobacion: req.body?.minimoAprobacion,
+            fechaCierre: req.body?.fechaCierre,
+            preguntas: req.body?.preguntas,
+          },
+          timeout: 15_000,
+        },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CREAR ENCUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas/:encuestaId", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION DETALLE ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/calificar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`,
+        {
+          method: "POST",
+          body: {
+            usuarioId: req.body?.usuarioId,
+            preguntaId: req.body?.preguntaId,
+            puntuacion: req.body?.puntuacion,
+            comentario: req.body?.comentario,
+          },
+          timeout: 15_000,
+        },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CALIFICAR ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/cerrar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`,
+        { method: "POST", body: {}, timeout: 30_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CERRAR ENCUESTA");
+    }
+  });
+
+  return app;
+}
+
+
+montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
