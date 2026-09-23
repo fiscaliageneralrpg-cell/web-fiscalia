@@ -47,6 +47,21 @@
           BlinkMacSystemFont,
           "Segoe UI",
           sans-serif;
+        overflow-x: hidden;
+      }
+      @keyframes aparecer { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes pulso { 0%, 100% { box-shadow: 0 10px 30px rgba(255, 209, 102, .2); } 50% { box-shadow: 0 10px 42px rgba(116, 230, 255, .34); } }
+      @keyframes brilloFondo { 0%, 100% { background-position: 0 0, 100% 100%; } 50% { background-position: 10% 18%, 90% 82%; } }
+      body { animation: brilloFondo 12s ease-in-out infinite; background-size: 140% 140%, 140% 140%, auto; }
+      .shell { animation: aparecer .8s ease both; border-color: rgba(116, 230, 255, .24); }
+      .visual-content, .form-content { animation: aparecer .75s .15s ease both; }
+      .logo { animation: pulso 4s ease-in-out infinite; }
+      .discord-button { box-shadow: 0 14px 32px rgba(88, 101, 242, .25); }
+      .notice { transition: transform .25s ease, border-color .25s ease, background .25s ease; }
+      .notice:hover { transform: translateY(-3px); border-color: rgba(116, 230, 255, .34); background: rgba(116, 230, 255, .06); }
+      .server-warning { animation: aparecer .5s ease both; }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
       }
       .shell {
         width: min(1060px, calc(100% - 32px));
