@@ -76,7 +76,7 @@
       }
       .nav {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 10px;
         margin: 18px 0;
       }
@@ -96,6 +96,35 @@
         color: #211b08;
         background: var(--gold);
       }
+      .nav-link {
+        display: grid;
+        place-items: center;
+        border: 1px solid #42d8d055;
+        border-radius: 14px;
+        padding: 16px;
+        color: #cde9e5;
+        background: #0b2737;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 900;
+        font-size: 14px;
+      }
+      .nav-link:hover {
+        border-color: var(--gold);
+        color: #211b08;
+        background: var(--gold);
+      }
+      .subnav { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+      .subnav button { border:1px solid #42d8d055; border-radius:10px; padding:12px 16px; color:#cde9e5; background:#0b2737; cursor:pointer; font-weight:900; }
+      .subnav button.active, .subnav button:hover { border-color:var(--gold); color:#211b08; background:var(--gold); }
+      .encuesta-subvista[hidden] { display:none !important; }
+      #encuestas-panel[hidden] { display:none !important; }
+      .force-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+      .force-grid button { min-height:130px; display:grid; place-items:center; gap:8px; border:1px solid #42d8d055; border-radius:18px; color:#f4efe3; background:#0b2737; cursor:pointer; font-size:38px; font-weight:900; }
+      .force-grid button strong { color:#42d8d0; font-size:18px; }
+      .force-grid button:hover { border-color:var(--gold); background:#173f4a; transform:translateY(-2px); }
+      .selected-force-title { margin:12px 0 16px; color:var(--muted); font-weight:800; }
+      .selected-force-title strong { color:var(--cyan); }
       .view {
         display: none;
       }
@@ -447,7 +476,8 @@
         <button class="active" data-view="dinero">💰 Dinero</button
         ><button data-view="tienda">🛍️ Tienda</button
         ><button data-view="comportamiento">📋 Comportamiento</button
-        ><button data-view="trabajos">💼 Trabajos</button>
+        ><button data-view="trabajos">💼 Trabajos</button
+        ><button data-view="encuestas">🛡️ Fuerza Pública</button>
       </nav>
       <section id="dinero" class="view active">
         <div class="section">
@@ -692,6 +722,41 @@
           <div id="trabajos-lista" class="catalog"><div class="empty">Cargando trabajos...</div></div>
         </div>
       </section>
+      <section id="encuestas" class="view">
+        <div id="fuerzas-menu" class="section">
+          <h2>🛡️ Fuerza Pública</h2><p>Selecciona la fuerza que deseas administrar.</p>
+          <div class="force-grid"><button type="button" data-force-select="policia_nacional">🚓<strong>Policía Nacional</strong></button><button type="button" data-force-select="copes">🛡️<strong>COPES</strong></button><button type="button" data-force-select="ejercito">🎖️<strong>Ejército</strong></button><button type="button" data-force-select="fiscalia">⚖️<strong>Fiscalía</strong></button></div>
+        </div>
+        <div id="encuestas-panel" hidden>
+        <button id="volver-fuerzas" class="btn ghost" type="button">← Volver a Fuerza Pública</button>
+        <div class="selected-force-title">Fuerza seleccionada: <strong id="fuerza-seleccionada">Policía Nacional</strong></div>
+        <div class="subnav" id="encuestas-subnav">
+          <button class="active" type="button" data-encuesta-vista="configurar">⚙️ Configurar encuesta</button>
+          <button type="button" data-encuesta-vista="publicar">📢 Publicar</button>
+          <button type="button" data-encuesta-vista="resultados">📊 Resultados</button>
+        </div>
+        <div id="encuestas-configurar" class="encuesta-subvista">
+        <div class="section">
+          <div class="section-heading"><div><h2>🛡️ Formularios Fuerza Pública</h2><p>Configura, publica y revisa las encuestas de cada fuerza desde esta misma página.</p></div></div>
+          <form id="encuesta-form" class="form">
+            <input type="hidden" name="fuerza" value="policia_nacional">
+            <label>Título<input name="titulo" minlength="4" maxlength="120" required placeholder="Ej. Formulario de ingreso Policía Nacional"></label>
+            <label>Descripción<textarea name="descripcion" maxlength="1500"></textarea></label>
+            <div class="row"><label>Mínimo de aprobación<input name="minimoAprobacion" type="number" min="67" max="100" value="67" required></label><label>Fecha de cierre<input name="fechaCierre" type="datetime-local" required></label></div>
+            <div class="section-heading"><h3>Preguntas</h3><button id="agregar-pregunta-encuesta" class="btn" type="button">＋ Agregar pregunta</button></div>
+            <div id="preguntas-encuesta"></div>
+            <button class="btn gold" type="submit">Publicar encuesta</button><div id="encuesta-status" class="status"></div>
+          </form>
+        </div>
+        </div>
+        <div id="encuestas-publicar" class="encuesta-subvista" hidden>
+          <div class="section"><div class="section-heading"><div><h2>📢 Publicar encuestas</h2><p>Las encuestas creadas desde Configurar se publican y llegan al canal de Discord automáticamente.</p></div><button id="actualizar-publicadas" class="btn" type="button">Actualizar</button></div><div id="encuestas-publicadas" class="records"><div class="empty">Carga las encuestas publicadas.</div></div></div>
+        </div>
+        <div id="encuestas-resultados" class="encuesta-subvista" hidden>
+          <div class="section"><div class="section-heading"><div><h2>📊 Resultados</h2><p>Elige una encuesta para revisar respuestas, calificar abiertas y cerrar.</p></div><button id="actualizar-encuestas" class="btn" type="button">Actualizar</button></div><div id="encuestas-lista" class="records"><div class="empty">Carga las encuestas para ver resultados.</div></div><div id="encuesta-detalle" class="records"></div></div>
+        </div>
+        </div>
+      </section>
       <div id="trabajo-panel" class="modal" role="dialog" aria-modal="true">
         <div class="modal-card"><div class="modal-head"><h3>＋ Agregar trabajo</h3><button type="button" class="close-modal" id="cerrar-trabajo">×</button></div>
           <form id="trabajo-form" class="form">
@@ -806,6 +871,7 @@
           document.querySelector("#" + b.dataset.view).classList.add("active");
           if (b.dataset.view === "tienda") cargarCatalogo();
           if (b.dataset.view === "trabajos") cargarTrabajos();
+          if (b.dataset.view === "encuestas") { document.querySelector("#fuerzas-menu").hidden = false; document.querySelector("#encuestas-panel").hidden = true; }
         }),
       );
       document.querySelectorAll("[data-record]").forEach((b) =>
@@ -908,6 +974,62 @@
         document.querySelector("#trabajos-status").textContent = r.ok ? "✅ Trabajo eliminado y log enviado." : `❌ ${d.error || "No se pudo eliminar"}`;
         if (r.ok) cargarTrabajos();
       }
+      let numeroPreguntaEncuesta = 0;
+      function agregarPreguntaEncuesta() {
+        numeroPreguntaEncuesta += 1;
+        const n = numeroPreguntaEncuesta;
+        const box = document.createElement("article");
+        box.className = "record encuesta-pregunta";
+        box.dataset.numero = n;
+        box.innerHTML = `<div class="record-line"><div><strong>Pregunta ${n}</strong></div><button type="button" class="btn red btn-small eliminar-pregunta">Eliminar</button></div><label>Pregunta<textarea class="texto-pregunta" maxlength="500" required></textarea></label><label>Tipo<select class="tipo-pregunta"><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option></select></label><div class="opciones-pregunta" hidden><div class="opciones-lista"></div><button type="button" class="btn btn-small agregar-opcion">＋ Agregar respuesta</button></div>`;
+        const opciones = box.querySelector(".opciones-lista");
+        const agregarOpcion = () => { const fila = document.createElement("label"); fila.className = "row"; fila.innerHTML = `<span>Respuesta <input class="texto-opcion" maxlength="200" required></span><span>Correcta <input class="correcta-opcion" type="radio" name="correcta-${n}"></span>`; opciones.append(fila); };
+        box.querySelector(".tipo-pregunta").addEventListener("change", (e) => { box.querySelector(".opciones-pregunta").hidden = e.target.value !== "cerrada"; if (e.target.value === "cerrada" && !opciones.children.length) { agregarOpcion(); agregarOpcion(); } });
+        box.querySelector(".agregar-opcion").addEventListener("click", agregarOpcion);
+        box.querySelector(".eliminar-pregunta").addEventListener("click", () => box.remove());
+        document.querySelector("#preguntas-encuesta").append(box);
+      }
+      async function cargarEncuestas() {
+        const lista = document.querySelector("#encuestas-lista");
+        lista.innerHTML = '<div class="empty">Cargando encuestas...</div>';
+        const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" });
+        const d = await r.json();
+        if (!r.ok) { lista.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar las encuestas."}</div>`; return; }
+        lista.innerHTML = (d.encuestas || []).length ? d.encuestas.map((x) => `<article class="record"><div class="record-line"><div><strong>${x.titulo}</strong><small>${x.fuerzaNombre} · ${x.estado} · ${x.respuestas} respuesta(s) · cierre ${new Date(x.fechaCierre).toLocaleString("es-CO")}</small></div><button class="btn btn-small ver-encuesta" data-id="${x.id}">Resultados</button></div></article>`).join("") : '<div class="empty">Aún no hay encuestas creadas.</div>';
+        lista.querySelectorAll(".ver-encuesta").forEach((b) => b.addEventListener("click", () => cargarDetalleEncuesta(b.dataset.id)));
+      }
+      async function cargarDetalleEncuesta(id) {
+        const r = await fetch(`/api/fundacion/encuestas/${encodeURIComponent(id)}`, { cache: "no-store" });
+        const d = await r.json();
+        const box = document.querySelector("#encuesta-detalle");
+        if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudo cargar el resultado."}</div>`; return; }
+        const encuesta = d.encuesta;
+        box.innerHTML = `<article class="record"><strong>${encuesta.titulo} · ${encuesta.fuerzaNombre}</strong><small>Estado: ${encuesta.estado} · mínimo: ${encuesta.minimoAprobacion}%</small>${(encuesta.respuestas || []).map((u) => `<div class="record"><strong>Usuario: &lt;@${u.usuarioId}&gt;</strong><small>${u.resultado?.completo ? `${u.resultado.porcentaje}% · ${u.resultado.aprobado ? "APROBÓ" : "NO APROBÓ"}` : "Pendiente de calificar"}</small>${(u.respuestas || []).map((a) => { const p = encuesta.preguntas.find((q) => q.id === a.preguntaId); return `<p><b>${p?.texto || "Pregunta"}:</b> ${p?.tipo === "cerrada" ? p.opciones[a.valor] : a.valor}${p?.tipo === "abierta" ? `<button class="btn btn-small calificar-abierta" data-encuesta="${encuesta.id}" data-user="${u.usuarioId}" data-pregunta="${p.id}">Calificar</button>` : ""}</p>`; }).join("")}</div>`).join("")}<button class="btn red cerrar-encuesta" data-id="${encuesta.id}" ${encuesta.estado !== "activa" ? "disabled" : ""}>Publicar resultados y cerrar</button></article>`;
+        box.querySelectorAll(".calificar-abierta").forEach((b) => b.addEventListener("click", async () => { const nota = Number(prompt("Puntuación de 0 a 1", "1")); if (!Number.isFinite(nota) || nota < 0 || nota > 1) return; await fetch(`/api/fundacion/encuestas/${b.dataset.encuesta}/calificar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuarioId: b.dataset.user, preguntaId: b.dataset.pregunta, puntuacion: nota }) }); cargarDetalleEncuesta(encuesta.id); }));
+        box.querySelector(".cerrar-encuesta")?.addEventListener("click", async () => { if (!confirm("¿Cerrar y publicar los resultados?")) return; await fetch(`/api/fundacion/encuestas/${encuesta.id}/cerrar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); cargarDetalleEncuesta(encuesta.id); cargarEncuestas(); });
+      }
+      function mostrarVistaEncuesta(vista) {
+        document.querySelectorAll("#encuestas-subnav [data-encuesta-vista]").forEach((b) => b.classList.toggle("active", b.dataset.encuestaVista === vista));
+        document.querySelectorAll("#encuestas .encuesta-subvista").forEach((box) => { box.hidden = box.id !== `encuestas-${vista}`; });
+        if (vista === "resultados") cargarEncuestas();
+        if (vista === "publicar") cargarPublicadas();
+      }
+      async function cargarPublicadas() {
+        const box = document.querySelector("#encuestas-publicadas");
+        box.innerHTML = '<div class="empty">Cargando publicaciones...</div>';
+        const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" }); const d = await r.json();
+        if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar las publicaciones."}</div>`; return; }
+        box.innerHTML = (d.encuestas || []).length ? d.encuestas.map((x) => `<article class="record"><div class="record-line"><div><strong>${x.titulo}</strong><small>${x.fuerzaNombre} · ${x.estado} · cierre ${new Date(x.fechaCierre).toLocaleString("es-CO")}</small></div><span class="pill">${x.estado}</span></div></article>`).join("") : '<div class="empty">No hay encuestas publicadas.</div>';
+      }
+      document.querySelector("#agregar-pregunta-encuesta").addEventListener("click", agregarPreguntaEncuesta);
+      document.querySelector("#actualizar-encuestas").addEventListener("click", cargarEncuestas);
+      document.querySelector("#actualizar-publicadas").addEventListener("click", cargarPublicadas);
+      document.querySelectorAll("#encuestas-subnav [data-encuesta-vista]").forEach((b) => b.addEventListener("click", () => mostrarVistaEncuesta(b.dataset.encuestaVista)));
+      const nombresFuerza = { policia_nacional: "Policía Nacional", copes: "COPES", ejercito: "Ejército", fiscalia: "Fiscalía" };
+      function seleccionarFuerza(fuerza) { document.querySelector("#fuerzas-menu").hidden = true; document.querySelector("#encuestas-panel").hidden = false; document.querySelector("#fuerza-seleccionada").textContent = nombresFuerza[fuerza] || fuerza; document.querySelector('#encuesta-form input[name="fuerza"]').value = fuerza; mostrarVistaEncuesta("configurar"); if (!document.querySelector(".encuesta-pregunta")) agregarPreguntaEncuesta(); }
+      document.querySelectorAll("[data-force-select]").forEach((b) => b.addEventListener("click", () => seleccionarFuerza(b.dataset.forceSelect)));
+      document.querySelector("#volver-fuerzas").addEventListener("click", () => { document.querySelector("#encuestas-panel").hidden = true; document.querySelector("#fuerzas-menu").hidden = false; });
+      document.querySelector("#encuesta-form").addEventListener("submit", async (event) => { event.preventDefault(); const form = event.currentTarget; const preguntas = [...document.querySelectorAll(".encuesta-pregunta")].map((box) => { const tipo = box.querySelector(".tipo-pregunta").value; const p = { tipo, texto: box.querySelector(".texto-pregunta").value.trim() }; if (tipo === "cerrada") { const filas = [...box.querySelectorAll(".row")]; p.opciones = filas.map((x) => x.querySelector(".texto-opcion").value.trim()); p.correcta = filas.findIndex((x) => x.querySelector(".correcta-opcion").checked); if (p.correcta < 0) throw new Error("Marca una respuesta correcta en cada pregunta cerrada."); } return p; }); if (!preguntas.length) { document.querySelector("#encuesta-status").textContent = "Agrega al menos una pregunta."; return; } const body = Object.fromEntries(new FormData(form)); body.preguntas = preguntas; const r = await fetch("/api/fundacion/encuestas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const d = await r.json(); document.querySelector("#encuesta-status").textContent = r.ok ? "✅ Encuesta publicada y enviada al canal de resultados." : `❌ ${d.error || "No se pudo publicar."}`; if (r.ok) { form.reset(); document.querySelector("#preguntas-encuesta").innerHTML = ""; numeroPreguntaEncuesta = 0; agregarPreguntaEncuesta(); cargarEncuestas(); } });
       const trabajoModal = document.querySelector("#trabajo-panel");
       document.querySelector("#abrir-trabajo").addEventListener("click", () => trabajoModal.classList.add("open"));
       document.querySelector("#cerrar-trabajo").addEventListener("click", () => trabajoModal.classList.remove("open"));
