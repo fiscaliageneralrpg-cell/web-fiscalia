@@ -279,7 +279,8 @@ app.get("/auth/discord/callback", async (req, res) => {
     );
 
     if (!estaEnServidor) {
-      return redirigirDespuesDeLogin(req, res, "/dashboard-user.html");
+      console.log(`[LOGIN] ${usuario.id} no pertenece al servidor; acceso rechazado.`);
+      return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
     }
 
     if (estadoWhitelist === "pendiente") {
