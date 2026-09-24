@@ -1651,17 +1651,17 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
         const enlace = `${base}/${paginas[encuesta.fuerza] || "encuesta.html"}?id=${encodeURIComponent(encuesta.id)}`;
         await enviarEmbedDiscord("1539310490805735496", {
           color: 0x167d8d,
-          title: `📢 ${encuesta.titulo}`,
-          description: `🛡️ **${encuesta.fuerzaNombre}**\n\n📝 Hay una nueva encuesta disponible. Participa antes de la fecha de cierre.\n\n⏰ **Cierra:** <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F>`,
+          title: `La Región RP | Formulario de Ingreso - ${encuesta.fuerzaNombre}`,
+          description: `📋 **Postulaciones abiertas**\n\nDesde: <t:${Math.floor(Date.now() / 1000)}:F>\nHasta: <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F>\n\n**Requisitos**\n• No tener @Antecedentes Penales o ser @・Miembro Criminal.\n• Mostrar respeto y compromiso con la ley.\n• Tener disponibilidad y ser activo.\n• Superar el proceso de selección.\n• No pertenecer a otro departamento de ley.`,
           fields: [
-            { name: "✅ Requisito", value: `Mínimo **${encuesta.minimoAprobacion}%** de aprobación`, inline: true },
-            { name: "📋 Preguntas", value: `${encuesta.preguntas?.length || "Ver encuesta"}`, inline: true },
+            { name: "🎯 Puntaje mínimo", value: `**${encuesta.minimoAprobacion}%** de aprobación`, inline: true },
+            { name: "📝 Formulario de ingreso", value: "Pulsa el botón para abrir el panel de postulaciones.", inline: true },
           ],
-          footer: { text: "Medellín RP · Fuerza Pública" },
+          footer: { text: "Importante: responde con sinceridad y responsabilidad. La calidad humana y el compromiso son lo más importante." },
           timestamp: new Date().toISOString(),
         }, [
           { type: 1, components: [{ type: 2, style: 5, label: "📝 Ir a la encuesta", url: enlace }, { type: 2, style: 5, label: "↩️ Volver al dashboard", url: `${base}/dashboard-user.html` }] },
-        ]);
+        ], { content: "👤・Ciudadano" });
       }
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
@@ -1717,6 +1717,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
           body: {
             usuarioId: req.body?.usuarioId,
             preguntaId: req.body?.preguntaId,
+            calificacion: req.body?.calificacion,
             puntuacion: req.body?.puntuacion,
             comentario: req.body?.comentario,
           },
