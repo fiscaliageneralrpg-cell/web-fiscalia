@@ -127,6 +127,18 @@
       #encuestas .record:hover { transform: translateY(-3px); border-color: #42d8d088; box-shadow: 0 12px 28px #0005; }
       #encuestas .btn { transition: transform .18s ease, filter .18s ease; }
       #encuestas .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+      .encuestas-hero { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:22px; margin-bottom:16px; border:1px solid #f3c96955; border-radius:20px; background:linear-gradient(120deg,#3d3215,#123746); box-shadow:0 14px 35px #0004; }
+      .encuestas-hero .mark { display:grid; place-items:center; width:64px; height:64px; border-radius:18px; color:#211b08; background:var(--gold); font-size:32px; box-shadow:0 0 0 8px #f3c96918; }
+      .encuestas-hero h2 { margin:0 0 5px; color:#fff5d2; } .encuestas-hero p { margin:0; color:#d8d0b5; }
+      .result-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:16px 0; }
+      .result-stat { padding:14px; border:1px solid #42d8d044; border-radius:14px; background:#071d2b99; }
+      .result-stat small { display:block; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:800; font-size:10px; }
+      .result-stat strong { display:block; margin-top:5px; color:var(--cyan); font-size:22px; }
+      .result-user { margin-top:12px; padding:16px; border-left:3px solid var(--cyan); border-radius:12px; background:#071d2b99; }
+      .result-user-head { display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+      .answer-line { margin-top:10px; padding:10px 12px; border-radius:9px; color:#dcecff; background:#ffffff08; }
+      .answer-line b { color:#fff; } .result-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+      @media(max-width:650px){ .encuestas-hero { align-items:flex-start; flex-direction:column; } .result-summary { grid-template-columns:1fr; } }
       .selected-force-title { margin:12px 0 16px; color:var(--muted); font-weight:800; }
       .selected-force-title strong { color:var(--cyan); }
       .view {
@@ -734,6 +746,7 @@
         <div id="encuestas-panel" hidden>
         <button id="volver-fuerzas" class="btn ghost" type="button">← Volver a Fuerza Pública</button>
         <div class="selected-force-title">Fuerza seleccionada: <strong id="fuerza-seleccionada">Policía Nacional</strong></div>
+        <div class="encuestas-hero"><div><h2>📋 Centro de formularios</h2><p>Configura una encuesta reutilizable por facción, publícala y administra sus resultados.</p></div><div class="mark">✦</div></div>
         <div class="subnav" id="encuestas-subnav">
           <button class="active" type="button" data-encuesta-vista="configurar">⚙️ Configurar encuesta</button>
           <button type="button" data-encuesta-vista="publicar">📢 Publicar</button>
@@ -1017,7 +1030,7 @@
         const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" });
         const d = await r.json();
         if (!r.ok) { lista.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar las encuestas."}</div>`; return; }
-        lista.innerHTML = (d.encuestas || []).length ? d.encuestas.map((x) => `<article class="record"><div class="record-line"><div><strong>${x.titulo}</strong><small>${x.fuerzaNombre} · ${x.estado} · ${x.respuestas} respuesta(s) · cierre ${new Date(x.fechaCierre).toLocaleString("es-CO")}</small></div><button class="btn btn-small ver-encuesta" data-id="${x.id}">Resultados</button></div></article>`).join("") : '<div class="empty">Aún no hay encuestas creadas.</div>';
+        lista.innerHTML = (d.encuestas || []).length ? d.encuestas.map((x) => `<article class="record result-card"><div class="record-line"><div><strong>📋 ${x.titulo}</strong><small>🛡️ ${x.fuerzaNombre} · ${x.estado} · 📝 ${x.preguntas} pregunta(s)</small></div><span class="pill">👥 ${x.respuestas} respuesta(s)</span></div><div class="result-summary"><div class="result-stat"><small>Estado</small><strong>${x.estado === "activa" ? "🟢 Activa" : x.estado === "cerrada" ? "🔴 Cerrada" : "🟡 Borrador"}</strong></div><div class="result-stat"><small>Porcentaje mínimo</small><strong>${x.minimoAprobacion}%</strong></div><div class="result-stat"><small>Cierre</small><strong>${x.fechaCierre ? new Date(x.fechaCierre).toLocaleDateString("es-CO") : "—"}</strong></div></div><div class="result-actions"><button class="btn btn-small ver-encuesta" data-id="${x.id}">📊 Ver resultados</button></div></article>`).join("") : '<div class="empty">Aún no hay encuestas creadas.</div>';
         lista.querySelectorAll(".ver-encuesta").forEach((b) => b.addEventListener("click", () => cargarDetalleEncuesta(b.dataset.id)));
       }
       async function cargarDetalleEncuesta(id) {
@@ -1026,7 +1039,7 @@
         const box = document.querySelector("#encuesta-detalle");
         if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudo cargar el resultado."}</div>`; return; }
         const encuesta = d.encuesta;
-        box.innerHTML = `<article class="record"><strong>${encuesta.titulo} · ${encuesta.fuerzaNombre}</strong><small>Estado: ${encuesta.estado} · mínimo: ${encuesta.minimoAprobacion}%</small>${(encuesta.respuestas || []).map((u) => `<div class="record"><strong>Usuario: &lt;@${u.usuarioId}&gt;</strong><small>${u.resultado?.completo ? `${u.resultado.porcentaje}% · ${u.resultado.aprobado ? "APROBÓ" : "NO APROBÓ"}` : "Pendiente de calificar"}</small>${(u.respuestas || []).map((a) => { const p = encuesta.preguntas.find((q) => q.id === a.preguntaId); return `<p><b>${p?.texto || "Pregunta"}:</b> ${p?.tipo === "cerrada" ? p.opciones[a.valor] : a.valor}${p?.tipo === "abierta" ? `<button class="btn btn-small calificar-abierta" data-encuesta="${encuesta.id}" data-user="${u.usuarioId}" data-pregunta="${p.id}">Calificar</button>` : ""}</p>`; }).join("")}</div>`).join("")}<button class="btn red cerrar-encuesta" data-id="${encuesta.id}" ${encuesta.estado !== "activa" ? "disabled" : ""}>Publicar resultados y cerrar</button></article>`;
+        box.innerHTML = `<article class="record"><div class="record-line"><div><strong>📊 ${encuesta.titulo}</strong><small>🛡️ ${encuesta.fuerzaNombre} · mínimo ${encuesta.minimoAprobacion}% · estado ${encuesta.estado}</small></div><span class="pill">👥 ${(encuesta.respuestas || []).length} respuesta(s)</span></div><div class="result-summary"><div class="result-stat"><small>Preguntas</small><strong>${encuesta.preguntas.length}</strong></div><div class="result-stat"><small>Completas</small><strong>${(encuesta.respuestas || []).filter((u) => u.resultado?.completo).length}</strong></div><div class="result-stat"><small>Aprobados</small><strong>${(encuesta.respuestas || []).filter((u) => u.resultado?.aprobado === true).length}</strong></div></div>${(encuesta.respuestas || []).length ? (encuesta.respuestas || []).map((u) => `<div class="result-user"><div class="result-user-head"><strong>👤 &lt;@${u.usuarioId}&gt;</strong><span class="pill">${u.resultado?.completo ? `${u.resultado.porcentaje}% · ${u.resultado.aprobado ? "✅ APROBÓ" : "❌ NO APROBÓ"}` : "⏳ Pendiente"}</span></div>${(u.respuestas || []).map((a) => { const p = encuesta.preguntas.find((q) => q.id === a.preguntaId); return `<div class="answer-line"><b>${p?.texto || "Pregunta"}</b><br>${p?.tipo === "cerrada" ? p.opciones[a.valor] : a.valor}${p?.tipo === "abierta" ? ` <button class="btn btn-small calificar-abierta" data-encuesta="${encuesta.id}" data-user="${u.usuarioId}" data-pregunta="${p.id}">✎ Calificar</button>` : ""}</div>`; }).join("")}</div>`).join("") : '<div class="empty">📭 Todavía no hay respuestas.</div>'}<div class="result-actions"><button class="btn red cerrar-encuesta" data-id="${encuesta.id}" ${encuesta.estado !== "activa" ? "disabled" : ""}>📣 Publicar resultados y cerrar</button></div></article>`;
         box.querySelectorAll(".calificar-abierta").forEach((b) => b.addEventListener("click", async () => { const nota = Number(prompt("Puntuación de 0 a 1", "1")); if (!Number.isFinite(nota) || nota < 0 || nota > 1) return; await fetch(`/api/fundacion/encuestas/${b.dataset.encuesta}/calificar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuarioId: b.dataset.user, preguntaId: b.dataset.pregunta, puntuacion: nota }) }); cargarDetalleEncuesta(encuesta.id); }));
         box.querySelector(".cerrar-encuesta")?.addEventListener("click", async () => { if (!confirm("¿Cerrar y publicar los resultados?")) return; await fetch(`/api/fundacion/encuestas/${encuesta.id}/cerrar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); cargarDetalleEncuesta(encuesta.id); cargarEncuestas(); });
       }
