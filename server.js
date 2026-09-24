@@ -1645,25 +1645,6 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
         `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`,
         { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 },
       );
-      if (resultado.status >= 200 && resultado.status < 300 && resultado.datos?.encuesta) {
-        const encuesta = resultado.datos.encuesta;
-        const paginas = { policia_nacional: "encuesta-policia-nacional.html", copes: "encuesta-copes.html", ejercito: "encuesta-ejercito.html", fiscalia: "encuesta-fiscalia.html" };
-        const base = String(process.env.PUBLIC_WEB_URL || process.env.WEB_ORIGIN || "").replace(/\/$/, "");
-        const enlace = `${base}/${paginas[encuesta.fuerza] || "encuesta.html"}?id=${encodeURIComponent(encuesta.id)}`;
-        await enviarEmbedDiscord(CANAL_PUBLICACION_ENCUESTAS, {
-          color: 0x167d8d,
-          title: `🇨🇴 「ME:RP」Medellín RP︱ER:LC | Formulario de Ingreso - ${encuesta.fuerzaNombre}`,
-          description: `📅 **Postulaciones abiertas:** desde <t:${Math.floor(Date.now() / 1000)}:F> hasta <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F> *(America/Bogota)*\n\n🔹 **Requisitos**\n• No tener @Antecedentes Penales o ser @・Miembro Criminal.\n• Mostrar respeto y compromiso con la ley.\n• Tener disponibilidad y ser activo.\n• Superar el proceso de selección.\n• No pertenecer a otro departamento de ley.\n\n📋 **Pasos para responder**\n1. Entra a la web e inicia sesión.\n2. Ve al dashboard de Civil.\n3. Pulsa **Encuestas activas**.\n4. Selecciona la encuesta de **${encuesta.fuerzaNombre}**.\n5. Responde todas las preguntas y envía el formulario.`,
-          fields: [
-            { name: "📋 Formulario de ingreso", value: `[Abrir panel de postulaciones](${enlace})`, inline: false },
-            { name: "🎯 Puntaje mínimo", value: `**${encuesta.minimoAprobacion}%** de aprobación`, inline: true },
-          ],
-          footer: { text: "⚠️ Importante: responde con sinceridad y responsabilidad. La calidad humana y el compromiso son lo más importante para ser parte de nuestra institución." },
-          timestamp: new Date().toISOString(),
-        }, [
-          { type: 1, components: [{ type: 2, style: 5, label: "📝 Ir a la encuesta", url: enlace }, { type: 2, style: 5, label: "↩️ Volver al dashboard", url: `${base}/dashboard-user.html` }] },
-        ], { content: "👤・Ciudadano" });
-      }
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
