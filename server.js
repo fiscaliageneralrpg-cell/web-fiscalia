@@ -1652,13 +1652,13 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
         const enlace = `${base}/${paginas[encuesta.fuerza] || "encuesta.html"}?id=${encodeURIComponent(encuesta.id)}`;
         await enviarEmbedDiscord(CANAL_PUBLICACION_ENCUESTAS, {
           color: 0x167d8d,
-          title: `La Región RP | Formulario de Ingreso - ${encuesta.fuerzaNombre}`,
-          description: `📋 **Postulaciones abiertas**\n\nDesde: <t:${Math.floor(Date.now() / 1000)}:F>\nHasta: <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F>\n\n**Requisitos**\n• No tener @Antecedentes Penales o ser @・Miembro Criminal.\n• Mostrar respeto y compromiso con la ley.\n• Tener disponibilidad y ser activo.\n• Superar el proceso de selección.\n• No pertenecer a otro departamento de ley.`,
+          title: `🇨🇴 「ME:RP」Medellín RP︱ER:LC | Formulario de Ingreso - ${encuesta.fuerzaNombre}`,
+          description: `📅 **Postulaciones abiertas:** desde <t:${Math.floor(Date.now() / 1000)}:F> hasta <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F> *(America/Bogota)*\n\n🔹 **Requisitos**\n• No tener @Antecedentes Penales o ser @・Miembro Criminal.\n• Mostrar respeto y compromiso con la ley.\n• Tener disponibilidad y ser activo.\n• Superar el proceso de selección.\n• No pertenecer a otro departamento de ley.\n\n📋 **Pasos para responder**\n1. Entra a la web e inicia sesión.\n2. Ve al dashboard de Civil.\n3. Pulsa **Encuestas activas**.\n4. Selecciona la encuesta de **${encuesta.fuerzaNombre}**.\n5. Responde todas las preguntas y envía el formulario.`,
           fields: [
+            { name: "📋 Formulario de ingreso", value: `[Abrir panel de postulaciones](${enlace})`, inline: false },
             { name: "🎯 Puntaje mínimo", value: `**${encuesta.minimoAprobacion}%** de aprobación`, inline: true },
-            { name: "📝 Formulario de ingreso", value: "Pulsa el botón para abrir el panel de postulaciones.", inline: true },
           ],
-          footer: { text: "Importante: responde con sinceridad y responsabilidad. La calidad humana y el compromiso son lo más importante." },
+          footer: { text: "⚠️ Importante: responde con sinceridad y responsabilidad. La calidad humana y el compromiso son lo más importante para ser parte de nuestra institución." },
           timestamp: new Date().toISOString(),
         }, [
           { type: 1, components: [{ type: 2, style: 5, label: "📝 Ir a la encuesta", url: enlace }, { type: 2, style: 5, label: "↩️ Volver al dashboard", url: `${base}/dashboard-user.html` }] },
