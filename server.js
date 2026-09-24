@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
-const path = require("path");
+const path = require("node:path");
+const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1539310490805735496";
 const { probarConexion, buscarUsuarioPorDiscord } = require("./db");
 
 require("dotenv").config();
@@ -1649,7 +1650,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
         const paginas = { policia_nacional: "encuesta-policia-nacional.html", copes: "encuesta-copes.html", ejercito: "encuesta-ejercito.html", fiscalia: "encuesta-fiscalia.html" };
         const base = String(process.env.PUBLIC_WEB_URL || process.env.WEB_ORIGIN || "").replace(/\/$/, "");
         const enlace = `${base}/${paginas[encuesta.fuerza] || "encuesta.html"}?id=${encodeURIComponent(encuesta.id)}`;
-        await enviarEmbedDiscord("1539310490805735496", {
+        await enviarEmbedDiscord(CANAL_PUBLICACION_ENCUESTAS, {
           color: 0x167d8d,
           title: `La Región RP | Formulario de Ingreso - ${encuesta.fuerzaNombre}`,
           description: `📋 **Postulaciones abiertas**\n\nDesde: <t:${Math.floor(Date.now() / 1000)}:F>\nHasta: <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F>\n\n**Requisitos**\n• No tener @Antecedentes Penales o ser @・Miembro Criminal.\n• Mostrar respeto y compromiso con la ley.\n• Tener disponibilidad y ser activo.\n• Superar el proceso de selección.\n• No pertenecer a otro departamento de ley.`,
