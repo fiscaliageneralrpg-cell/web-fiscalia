@@ -1644,6 +1644,25 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
         `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`,
         { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 },
       );
+      if (resultado.status >= 200 && resultado.status < 300 && resultado.datos?.encuesta) {
+        const encuesta = resultado.datos.encuesta;
+        const paginas = { policia_nacional: "encuesta-policia-nacional.html", copes: "encuesta-copes.html", ejercito: "encuesta-ejercito.html", fiscalia: "encuesta-fiscalia.html" };
+        const base = String(process.env.PUBLIC_WEB_URL || process.env.WEB_ORIGIN || "").replace(/\/$/, "");
+        const enlace = `${base}/${paginas[encuesta.fuerza] || "encuesta.html"}?id=${encodeURIComponent(encuesta.id)}`;
+        await enviarEmbedDiscord("1539310490805735496", {
+          color: 0x167d8d,
+          title: `📢 ${encuesta.titulo}`,
+          description: `🛡️ **${encuesta.fuerzaNombre}**\n\n📝 Hay una nueva encuesta disponible. Participa antes de la fecha de cierre.\n\n⏰ **Cierra:** <t:${Math.floor(new Date(encuesta.fechaCierre).getTime() / 1000)}:F>`,
+          fields: [
+            { name: "✅ Requisito", value: `Mínimo **${encuesta.minimoAprobacion}%** de aprobación`, inline: true },
+            { name: "📋 Preguntas", value: `${encuesta.preguntas?.length || "Ver encuesta"}`, inline: true },
+          ],
+          footer: { text: "Medellín RP · Fuerza Pública" },
+          timestamp: new Date().toISOString(),
+        }, [
+          { type: 1, components: [{ type: 2, style: 5, label: "📝 Ir a la encuesta", url: enlace }, { type: 2, style: 5, label: "↩️ Volver al dashboard", url: `${base}/dashboard-user.html` }] },
+        ]);
+      }
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
