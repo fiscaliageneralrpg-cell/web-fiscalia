@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const path = require("node:path");
-const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1539310490805735496";
+const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
 const { probarConexion, buscarUsuarioPorDiscord } = require("./db");
 
 require("dotenv").config();
