@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
-const path = require("path");
+const path = require("node:path");
+const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
 const { probarConexion, buscarUsuarioPorDiscord } = require("./db");
 
 require("dotenv").config();
@@ -29,6 +30,7 @@ if (faltantes.length > 0) {
 }
 
 const ROL_WHITELIST_APROBADA = "1500316176960716940";
+const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
 const ROL_STAFF_WHITELIST = "1510018366964891829";
 const ROL_FUNDACION = "1508156676350673017";
 const ROL_STAFF = "1510018366964891829";
@@ -69,8 +71,12 @@ app.use(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/iniciar-sesion.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
+});
+
 app.get("/iniciar-seccion.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "iniciar-seccion.html"));
+  res.redirect("/iniciar-sesion.html");
 });
 
 function redirigirDespuesDeLogin(req, res, destino) {
@@ -109,6 +115,27 @@ async function obtenerRolesDelServidor(discordId) {
 
   const miembro = await respuesta.json();
   return Array.isArray(miembro.roles) ? miembro.roles : [];
+}
+
+async function agregarRolDiscord(discordId, rolId, motivo) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}/roles/${rolId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+        "X-Audit-Log-Reason": motivo || "Rol de whitelist",
+      },
+    },
+  );
+
+  if (!respuesta.ok && respuesta.status !== 204) {
+    const detalle = await respuesta.text();
+    throw new Error(
+      `Discord no pudo agregar el rol ${rolId}: ${respuesta.status} ${detalle}`,
+    );
+  }
 }
 
 async function obtenerMiembrosDelServidor() {
@@ -243,6 +270,7 @@ app.get("/auth/discord/callback", async (req, res) => {
     const estaEnServidor = Array.isArray(rolesDiscord);
     const roles = rolesDiscord || [];
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
+
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
     const { pool } = require("./db");
     const [solicitudesWhitelist] = await pool.execute(
@@ -386,6 +414,25 @@ app.post("/api/whitelist", async (req, res) => {
         JSON.stringify(respuestas),
       ],
     );
+
+    try {
+      await agregarRolDiscord(
+        req.session.usuario.id,
+        ROL_WHITELIST_PENDIENTE,
+        "Whitelist enviada desde la web",
+      );
+    } catch (errorRol) {
+      console.error("[WHITELIST] No se pudo agregar el rol pendiente:", errorRol);
+      await pool.execute(
+        `DELETE FROM whitelist_solicitudes
+         WHERE id = ? AND estado = 'pendiente'`,
+        [resultadoWhitelist.insertId],
+      );
+      return res.status(503).json({
+        error:
+          "No se pudo asignar el rol pendiente en Discord. La solicitud no fue creada.",
+      });
+    }
 
     const camposWhitelist = Object.entries(respuestas).map(
       ([pregunta, respuesta]) => ({
@@ -726,11 +773,8 @@ app.get("/api/usuario", async (req, res) => {
        LIMIT 1`,
       [req.session.usuario.id],
     );
-    // El rol pendiente puede conservarse después de una denegación. Por eso
-    // nunca debe utilizarse como prueba de que existe una solicitud activa.
-    // La única fuente válida para este estado es la solicitud pendiente real
-    // guardada en MySQL.
-    const tieneWhitelistPendiente = solicitudes[0]?.estado === "pendiente";
+    const estadoSolicitud = solicitudes[0]?.estado || null;
+    const tieneWhitelistPendiente = estadoSolicitud === "pendiente";
 
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
@@ -1427,6 +1471,260 @@ app.post("/api/nequi/operacion", async (req, res) => {
   }
 });
 
+function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = console } = {}) {
+  if (!app || typeof app.get !== "function") {
+    throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
+  }
+  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") {
+    throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
+  }
+
+  const intentos = new Map();
+
+  function configuracionBot() {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      const error = new Error("El servidor web no tiene configurada la conexión con la API del bot.");
+      error.statusCode = 503;
+      throw error;
+    }
+    return {
+      base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""),
+      clave: process.env.NEQUI_API_KEY,
+    };
+  }
+
+  function exigirOrigenMismoSitio(req, res, next) {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    const origen = req.get("origin");
+    if (!origen) return next();
+    try {
+      if (new URL(origen).host !== req.get("host")) {
+        return res.status(403).json({ error: "Origen de solicitud no permitido." });
+      }
+    } catch {
+      return res.status(403).json({ error: "Origen de solicitud inválido." });
+    }
+    return next();
+  }
+
+  function limitarRespuestas(req, res, next) {
+    const clave = String(req.session?.usuario?.id || req.ip || "desconocido");
+    const ahora = Date.now();
+    const historial = (intentos.get(clave) || []).filter((marca) => ahora - marca < 60_000);
+    if (historial.length >= 10) {
+      return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
+    }
+    historial.push(ahora);
+    intentos.set(clave, historial);
+    if (intentos.size > 5000) {
+      for (const [id, marcas] of intentos) {
+        if (!marcas.some((marca) => ahora - marca < 60_000)) intentos.delete(id);
+      }
+    }
+    return next();
+  }
+
+  async function solicitarBot(ruta, { method = "GET", body, timeout = 10_000 } = {}) {
+    const { base, clave } = configuracionBot();
+    const opciones = {
+      method,
+      headers: {
+        "X-Nequi-Key": clave,
+        "User-Agent": "Medellin-RP-Web/1.0",
+      },
+      signal: AbortSignal.timeout(timeout),
+    };
+    if (body !== undefined) {
+      opciones.headers["Content-Type"] = "application/json";
+      opciones.body = JSON.stringify(body);
+    }
+
+    const respuesta = await fetch(`${base}${ruta}`, opciones);
+    const tipo = respuesta.headers.get("content-type") || "";
+    if (!tipo.includes("application/json")) {
+      const detalle = (await respuesta.text()).slice(0, 300);
+      const error = new Error(`La API del bot devolvió una respuesta inválida (${respuesta.status}): ${detalle}`);
+      error.statusCode = 502;
+      throw error;
+    }
+    return { status: respuesta.status, datos: await respuesta.json() };
+  }
+
+  function manejarError(res, error, contexto) {
+    logger.error(`[${contexto}]`, error.message);
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
+    }
+    return res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas.",
+    });
+  }
+
+  app.use("/api/encuestas", exigirOrigenMismoSitio);
+  app.use("/api/fundacion/encuestas", exigirOrigenMismoSitio);
+
+  app.get("/api/encuestas", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTAS LISTA");
+    }
+  });
+
+  app.get("/api/encuestas/:encuestaId", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`,
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA DETALLE");
+    }
+  });
+
+  app.post("/api/encuestas/:encuestaId/responder", limitarRespuestas, async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`,
+        { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA RESPUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION ENCUESTAS");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas`,
+        {
+          method: "POST",
+          body: {
+            titulo: req.body?.titulo,
+            descripcion: req.body?.descripcion,
+            fuerza: req.body?.fuerza,
+            minimoAprobacion: req.body?.minimoAprobacion,
+            fechaCierre: req.body?.fechaCierre,
+            preguntas: req.body?.preguntas,
+          },
+          timeout: 15_000,
+        },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CREAR ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/publicar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`,
+        { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
+    }
+  });
+
+  app.put("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
+        { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION EDITAR ENCUESTA");
+    }
+  });
+
+  app.delete("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
+        { method: "DELETE", body: {}, timeout: 15_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas/:encuestaId", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION DETALLE ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/calificar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`,
+        {
+          method: "POST",
+          body: {
+            usuarioId: req.body?.usuarioId,
+            preguntaId: req.body?.preguntaId,
+            calificacion: req.body?.calificacion,
+            puntuacion: req.body?.puntuacion,
+            comentario: req.body?.comentario,
+          },
+          timeout: 15_000,
+        },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CALIFICAR ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/cerrar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(
+        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`,
+        { method: "POST", body: {}, timeout: 30_000 },
+      );
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CERRAR ENCUESTA");
+    }
+  });
+
+  return app;
+}
+
+
+montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
@@ -1454,4 +1752,3 @@ app.listen(PORT, "0.0.0.0", () => {
     console.error("[MYSQL] Error de conexión:", error.message);
   });
 });
-
