@@ -943,9 +943,9 @@
           location.href = a.redireccion;
           return;
         }
-        if (!a.fundacionAutorizada) {
+        if (!a.staffAutorizado) {
           document.body.innerHTML =
-            '<main class="wrap"><section class="section"><h1>Acceso denegado</h1><p>No tienes el rol Fundación autorizado.</p><a class="back" href="/dashboard-user.html">Volver</a></section></main>';
+            '<main class="wrap"><section class="section"><h1>Acceso denegado</h1><p>No tienes el rol Staff autorizado para entrar a este panel.</p><a class="back" href="/dashboard-user.html">Volver</a></section></main>';
           return;
         }
         document.querySelector("#fundador-nombre").textContent =
