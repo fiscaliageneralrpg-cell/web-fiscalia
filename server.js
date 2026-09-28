@@ -1346,10 +1346,20 @@ app.get("/api/fundacion/usuarios", async (req, res) => {
 app.get("/api/fundacion/twitter", async (req, res) => {
   if (!(await exigirFundacion(req, res))) return;
   try {
-    const [cuentas] = await pool.execute(
-      `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en
-         FROM twitter_cuentas ORDER BY nombre ASC`,
-    );
+    let cuentas;
+    try {
+      [cuentas] = await pool.execute(
+        `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en
+           FROM twitter_cuentas ORDER BY nombre ASC`,
+      );
+    } catch (error) {
+      if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
+      const [sinVerificacion] = await pool.execute(
+        `SELECT id, discord_id, nombre, avatar_url, creado_en
+           FROM twitter_cuentas ORDER BY nombre ASC`,
+      );
+      cuentas = sinVerificacion.map((cuenta) => ({ ...cuenta, verificado: 0 }));
+    }
     return res.json({ correcto: true, cuentas });
   } catch (error) {
     console.error("[FUNDACION TWITTER]", error.message);
@@ -1363,10 +1373,20 @@ app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
   const verificado = req.body?.verificado === true || req.body?.verificado === 1 || req.body?.verificado === "1";
   if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
   try {
-    const [resultado] = await pool.execute(
-      "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
-      [verificado ? 1 : 0, discordId],
-    );
+    let resultado;
+    try {
+      [resultado] = await pool.execute(
+        "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
+        [verificado ? 1 : 0, discordId],
+      );
+    } catch (error) {
+      if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
+      await pool.execute("ALTER TABLE twitter_cuentas ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_url");
+      [resultado] = await pool.execute(
+        "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
+        [verificado ? 1 : 0, discordId],
+      );
+    }
     if (!resultado.affectedRows) return res.status(404).json({ error: "La cuenta Twitter no existe." });
     return res.json({ correcto: true, discordId, verificado });
   } catch (error) {
@@ -2206,4 +2226,3 @@ app.listen(PORT, "0.0.0.0", () => {
     console.error("[MYSQL] Error de conexión:", error.message);
   });
 });
-
