@@ -1661,10 +1661,59 @@ app.get("/api/twitter/perfil/:discordId", async (req, res) => {
   try {
     const [cuentas] = await pool.execute("SELECT id, discord_id, nombre, avatar_url, creado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [req.params.discordId]);
     if (!cuentas[0]) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
-    return res.json({ cuenta: serializarCuentaTwitter(cuentas[0]), publicaciones: await publicacionesTwitterPara(cuenta.id, null, cuentas[0].id) });
+    const objetivo = cuentas[0];
+    const [[estadisticas]] = await pool.execute(
+      `SELECT
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores,
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo,
+        EXISTS(SELECT 1 FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ?) AS siguiendo_cuenta`,
+      [objetivo.id, objetivo.id, cuenta.id, objetivo.id],
+    );
+    const [seguidoresLista] = await pool.execute(
+      `SELECT c.discord_id, c.nombre, c.avatar_url
+         FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id
+        WHERE s.seguido_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [objetivo.id],
+    );
+    const [siguiendoLista] = await pool.execute(
+      `SELECT c.discord_id, c.nombre, c.avatar_url
+         FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguido_id
+        WHERE s.seguidor_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [objetivo.id],
+    );
+    return res.json({
+      cuenta: { ...serializarCuentaTwitter(objetivo), seguidores: Number(estadisticas.seguidores || 0), siguiendo: Number(estadisticas.siguiendo || 0), siguiendo_cuenta: Boolean(estadisticas.siguiendo_cuenta), seguidores_lista: seguidoresLista, siguiendo_lista: siguiendoLista },
+      publicaciones: await publicacionesTwitterPara(cuenta.id, null, objetivo.id),
+    });
   } catch (error) {
     console.error("[TWITTER PERFIL PUBLICO]", error.message);
     return res.status(500).json({ error: "No se pudo cargar el perfil." });
+  }
+});
+
+app.post("/api/twitter/cuentas/:discordId/seguir", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const objetivo = await obtenerCuentaTwitter(req.params.discordId);
+    if (!objetivo) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
+    if (objetivo.id === cuenta.id) return res.status(400).json({ error: "No puedes seguir tu propia cuenta." });
+    const [existente] = await pool.execute("SELECT 1 FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ? LIMIT 1", [cuenta.id, objetivo.id]);
+    if (existente.length) {
+      await pool.execute("DELETE FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ?", [cuenta.id, objetivo.id]);
+    } else {
+      await pool.execute("INSERT INTO twitter_seguidores (seguidor_id, seguido_id) VALUES (?, ?)", [cuenta.id, objetivo.id]);
+    }
+    const [[conteos]] = await pool.execute(
+      `SELECT
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores,
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo`,
+      [objetivo.id, cuenta.id],
+    );
+    return res.json({ siguiendo_cuenta: !existente.length, seguidores: Number(conteos.seguidores || 0), siguiendo: Number(conteos.siguiendo || 0) });
+  } catch (error) {
+    console.error("[TWITTER SEGUIR]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el seguimiento." });
   }
 });
 
