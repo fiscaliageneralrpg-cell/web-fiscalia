@@ -1343,6 +1343,38 @@ app.get("/api/fundacion/usuarios", async (req, res) => {
   }
 });
 
+app.get("/api/fundacion/twitter", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const [cuentas] = await pool.execute(
+      `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en
+         FROM twitter_cuentas ORDER BY nombre ASC`,
+    );
+    return res.json({ correcto: true, cuentas });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar las cuentas de Twitter." });
+  }
+});
+
+app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  const verificado = req.body?.verificado === true || req.body?.verificado === 1 || req.body?.verificado === "1";
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  try {
+    const [resultado] = await pool.execute(
+      "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
+      [verificado ? 1 : 0, discordId],
+    );
+    if (!resultado.affectedRows) return res.status(404).json({ error: "La cuenta Twitter no existe." });
+    return res.json({ correcto: true, discordId, verificado });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER VERIFICAR]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar la verificación." });
+  }
+});
+
 async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
   const cantidad = Number(monto);
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
@@ -1485,7 +1517,7 @@ function imagenTwitterValida(valor) {
 
 async function obtenerCuentaTwitter(discordId) {
   const [filas] = await pool.execute(
-    `SELECT id, discord_id, nombre, avatar_url, ultimo_cambio_perfil, creado_en, actualizado_en
+    `SELECT id, discord_id, nombre, avatar_url, verificado, ultimo_cambio_perfil, creado_en, actualizado_en
        FROM twitter_cuentas WHERE discord_id = ? LIMIT 1`,
     [discordId],
   );
@@ -1657,7 +1689,7 @@ async function publicacionesTwitterPara(cuentaId, discordId = null, soloCuentaId
   const parametrosConsulta = [cuentaId, cuentaId, ...parametros, 10];
   const [filas] = await pool.execute(
     `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
-            c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+            c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id, c.verificado AS autor_verificado,
             IF(p.cuenta_id = ?, 1, 0) AS propia,
             (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
             IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
@@ -1691,7 +1723,7 @@ app.get("/api/twitter/buscar", async (req, res) => {
     const patron = `%${q}%`;
     const [publicaciones] = await pool.execute(
       `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
-              c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+              c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id, c.verificado AS autor_verificado,
               IF(p.cuenta_id = ?, 1, 0) AS propia,
               (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
               IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
@@ -1713,7 +1745,7 @@ app.get("/api/twitter/perfil/:discordId", async (req, res) => {
   const cuenta = await exigirCuentaTwitter(req, res);
   if (!cuenta) return;
   try {
-    const [cuentas] = await pool.execute("SELECT id, discord_id, nombre, avatar_url, creado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [req.params.discordId]);
+    const [cuentas] = await pool.execute("SELECT id, discord_id, nombre, avatar_url, verificado, creado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [req.params.discordId]);
     if (!cuentas[0]) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
     const objetivo = cuentas[0];
     const [[estadisticas]] = await pool.execute(
