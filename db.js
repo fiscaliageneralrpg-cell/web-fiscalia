@@ -11,6 +11,7 @@ const configuracion = {
   connectionLimit: Number(process.env.MYSQL_CONNECTION_LIMIT || 10),
   queueLimit: 0,
   charset: "utf8mb4",
+  timezone: "-05:00",
 };
 
 const variablesMySQL = [
@@ -29,6 +30,12 @@ for (const variable of variablesMySQL) {
 }
 
 const pool = mysql.createPool(configuracion);
+
+pool.on("connection", (conexion) => {
+  conexion.query("SET time_zone = '-05:00'").catch((error) => {
+    console.warn(`[MYSQL] No se pudo fijar la zona horaria Colombia: ${error.message}`);
+  });
+});
 
 async function probarConexion() {
   const conexion = await pool.getConnection();
