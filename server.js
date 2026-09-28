@@ -2206,3 +2206,4 @@ app.listen(PORT, "0.0.0.0", () => {
     console.error("[MYSQL] Error de conexión:", error.message);
   });
 });
+
