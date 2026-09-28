@@ -1793,7 +1793,7 @@ app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
   if (!cuenta) return;
   try {
     const [comentarios] = await pool.execute(
-      `SELECT co.id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id
+      `SELECT co.id, co.cuenta_id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id
          FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id
         WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
       [Number(req.params.id)],
@@ -1817,6 +1817,24 @@ app.post("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
   } catch (error) {
     console.error("[TWITTER COMENTAR]", error.message);
     return res.status(500).json({ error: "No se pudo publicar el comentario." });
+  }
+});
+
+app.delete("/api/twitter/comentarios/:id", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const comentarioId = Number(req.params.id);
+  if (!Number.isSafeInteger(comentarioId) || comentarioId < 1) return res.status(400).json({ error: "Comentario inválido." });
+  try {
+    const [resultado] = await pool.execute(
+      "DELETE FROM twitter_comentarios WHERE id = ? AND cuenta_id = ?",
+      [comentarioId, cuenta.id],
+    );
+    if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propios comentarios." });
+    return res.json({ correcto: true, eliminado: comentarioId });
+  } catch (error) {
+    console.error("[TWITTER ELIMINAR COMENTARIO]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar el comentario." });
   }
 });
 
