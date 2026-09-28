@@ -1531,21 +1531,36 @@ let twitterSchemaPromise;
 async function asegurarEsquemaTwitter() {
   if (!twitterSchemaPromise) {
     twitterSchemaPromise = (async () => {
-      try {
-        await pool.execute("SELECT verificado FROM twitter_cuentas LIMIT 1");
-      } catch (error) {
-        if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
+      await pool.execute(`
+          CREATE TABLE IF NOT EXISTS twitter_cuentas (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            discord_id VARCHAR(30) NOT NULL,
+            nombre VARCHAR(80) NOT NULL,
+            avatar_url TEXT NULL,
+            verificado TINYINT(1) NOT NULL DEFAULT 0,
+            ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_twitter_discord (discord_id),
+            KEY idx_twitter_nombre (nombre)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
 
-        try {
-          await pool.execute(
-            "ALTER TABLE twitter_cuentas ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_url",
-          );
-          console.log("[TWITTER] Columna verificado creada automáticamente.");
-        } catch (alterError) {
-          // Si dos solicitudes intentan preparar el esquema a la vez,
-          // la segunda puede recibir el error de columna duplicada.
-          if (alterError.code !== "ER_DUP_FIELDNAME") throw alterError;
-        }
+      const [columnas] = await pool.execute("SHOW COLUMNS FROM twitter_cuentas");
+      const existentes = new Set(columnas.map((columna) => columna.Field));
+      const faltantes = [
+          ["avatar_url", "ADD COLUMN avatar_url TEXT NULL"],
+          ["verificado", "ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0"],
+          ["ultimo_cambio_perfil", "ADD COLUMN ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+          ["creado_en", "ADD COLUMN creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+          ["actualizado_en", "ADD COLUMN actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+      ];
+
+      for (const [nombre, definicion] of faltantes) {
+        if (existentes.has(nombre)) continue;
+        await pool.execute(`ALTER TABLE twitter_cuentas ${definicion}`);
+        console.log(`[TWITTER] Columna ${nombre} creada automáticamente.`);
       }
     })().catch((error) => {
       twitterSchemaPromise = undefined;
@@ -1689,7 +1704,9 @@ app.post("/api/twitter/cuenta", async (req, res) => {
     const discordId = req.session.usuario.id;
     const nombre = textoTwitter(req.body?.nombre, 80);
     const avatarRecibido = textoTwitter(req.body?.avatarUrl, 2_500_000);
-    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido) ? TWITTER_AVATAR_DEFECTO : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
+    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido)
+      ? TWITTER_AVATAR_DEFECTO
+      : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
     if (!nombre) return res.status(400).json({ error: "El nombre de Twitter es obligatorio." });
     if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
     if (await obtenerCuentaTwitter(discordId)) return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
@@ -1712,7 +1729,19 @@ app.post("/api/twitter/cuenta", async (req, res) => {
     return res.status(201).json({ correcto: true, cuenta: serializarCuentaTwitter(cuenta) });
   } catch (error) {
     console.error("[TWITTER CUENTA]", error.message);
-    return res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({ error: error.code === "ER_DUP_ENTRY" ? "Ya tienes una cuenta de Twitter." : "No se pudo crear la cuenta de Twitter." });
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
+    }
+    const mensajesTwitter = {
+      ER_NO_SUCH_TABLE: "No existe la tabla de cuentas Twitter. Ejecuta database/twitter.sql en MySQL.",
+      ER_BAD_FIELD_ERROR: "La tabla Twitter está desactualizada. Ejecuta database/twitter.sql y database/twitter-verificacion.sql.",
+      ER_DATA_TOO_LONG: "La imagen es demasiado grande. Usa una imagen de máximo 1.8 MB.",
+      ER_ACCESS_DENIED_ERROR: "El usuario de MySQL no tiene permisos para guardar cuentas Twitter.",
+    };
+    return res.status(500).json({
+      error: mensajesTwitter[error.code] || "No se pudo crear la cuenta de Twitter.",
+      detalle: process.env.NODE_ENV === "production" ? undefined : `${error.code || "ERROR"}: ${error.message}`,
+    });
   }
 });
 
