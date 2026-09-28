@@ -1574,7 +1574,8 @@ app.post("/api/twitter/cuenta", async (req, res) => {
   try {
     const discordId = req.session.usuario.id;
     const nombre = textoTwitter(req.body?.nombre, 80);
-    const avatarUrl = textoTwitter(req.body?.avatarUrl, 2_500_000) || TWITTER_AVATAR_DEFECTO;
+    const avatarRecibido = textoTwitter(req.body?.avatarUrl, 2_500_000);
+    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido) ? TWITTER_AVATAR_DEFECTO : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
     if (!nombre) return res.status(400).json({ error: "El nombre de Twitter es obligatorio." });
     if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
     if (await obtenerCuentaTwitter(discordId)) return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
