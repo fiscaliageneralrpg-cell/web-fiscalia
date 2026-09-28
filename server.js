@@ -1528,6 +1528,21 @@ async function notificarSeguidoresTwitter(autor, publicacion) {
     const ids = seguidores.map((fila) => String(fila.discord_id)).filter(Boolean);
     console.log(`[TWITTER NOTIFICACIONES] Publicación de ${autor.discord_id}: ${ids.length} seguidor(es) encontrado(s).`);
     if (!ids.length) return 0;
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+      const respuestaBot = await fetch(`${baseApi}/api/twitter/${autor.discord_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        body: JSON.stringify({ followerIds: ids, nombre: publicacion.nombre, descripcion: publicacion.descripcion }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (respuestaBot.ok) {
+        const resultadoBot = await respuestaBot.json().catch(() => ({}));
+        console.log(`[TWITTER NOTIFICACIONES] Bot confirmó ${Number(resultadoBot.notificados || ids.length)} notificación(es).`);
+        return Number(resultadoBot.notificados || ids.length);
+      }
+      console.warn(`[TWITTER NOTIFICACIONES] El bot respondió ${respuestaBot.status}; se intentará el respaldo web.`);
+    }
     for (let inicio = 0; inicio < ids.length; inicio += 20) {
       const grupo = ids.slice(inicio, inicio + 20);
       await enviarEmbedDiscord(
