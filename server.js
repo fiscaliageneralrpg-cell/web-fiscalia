@@ -2,7 +2,8 @@ const express = require("express");
 const session = require("express-session");
 const path = require("node:path");
 const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
-const { probarConexion, buscarUsuarioPorDiscord } = require("./db");
+const CANAL_LOG_TWITTER = process.env.CANAL_LOG_TWITTER || "1539432339413799042";
+const { pool, probarConexion, buscarUsuarioPorDiscord } = require("./db");
 
 require("dotenv").config();
 
@@ -1468,6 +1469,248 @@ app.post("/api/nequi/operacion", async (req, res) => {
     return res.status(error.statusCode || 500).json({
       error: error.message || "No se pudo completar la operación.",
     });
+  }
+});
+
+const TWITTER_AVATAR_DEFECTO = "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
+
+function textoTwitter(valor, maximo) {
+  return String(valor ?? "").trim().slice(0, maximo);
+}
+
+function imagenTwitterValida(valor) {
+  if (!valor) return true;
+  return /^(https?:\/\/|data:image\/)/i.test(String(valor)) && String(valor).length <= 2_500_000;
+}
+
+async function obtenerCuentaTwitter(discordId) {
+  const [filas] = await pool.execute(
+    `SELECT id, discord_id, nombre, avatar_url, ultimo_cambio_perfil, creado_en, actualizado_en
+       FROM twitter_cuentas WHERE discord_id = ? LIMIT 1`,
+    [discordId],
+  );
+  return filas[0] || null;
+}
+
+function serializarCuentaTwitter(cuenta) {
+  if (!cuenta) return null;
+  return {
+    ...cuenta,
+    avatar_url: cuenta.avatar_url || TWITTER_AVATAR_DEFECTO,
+  };
+}
+
+async function enviarLogTwitter(titulo, descripcion, campos = [], thumbnail) {
+  try {
+    const thumbnailHttp = /^https?:\/\//i.test(String(thumbnail || "")) ? thumbnail : undefined;
+    await enviarEmbedDiscord(CANAL_LOG_TWITTER, {
+      title: titulo,
+      description,
+      color: 0x22caa0,
+      fields: campos,
+      thumbnail: thumbnailHttp ? { url: thumbnailHttp } : undefined,
+      footer: { text: `${NOMBRE_SERVIDOR} • Twitter ciudadano` },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[TWITTER] No se pudo enviar el log a Discord:", error.message);
+  }
+}
+
+async function exigirCuentaTwitter(req, res) {
+  if (!exigirSesion(req, res)) return null;
+  const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+  if (!cuenta) {
+    res.status(404).json({ error: "Debes crear tu cuenta de Twitter primero.", cuenta: null });
+    return null;
+  }
+  return cuenta;
+}
+
+app.get("/api/twitter/me", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+    return res.json({ cuenta: serializarCuentaTwitter(cuenta), avatarDefecto: TWITTER_AVATAR_DEFECTO });
+  } catch (error) {
+    console.error("[TWITTER ME]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar tu cuenta de Twitter." });
+  }
+});
+
+app.post("/api/twitter/cuenta", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    const nombre = textoTwitter(req.body?.nombre, 80);
+    const avatarUrl = textoTwitter(req.body?.avatarUrl, 2_500_000) || TWITTER_AVATAR_DEFECTO;
+    if (!nombre) return res.status(400).json({ error: "El nombre de Twitter es obligatorio." });
+    if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    if (await obtenerCuentaTwitter(discordId)) return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
+
+    await pool.execute(
+      `INSERT INTO twitter_cuentas (discord_id, nombre, avatar_url, ultimo_cambio_perfil)
+       VALUES (?, ?, ?, NOW())`,
+      [discordId, nombre, avatarUrl],
+    );
+    const cuenta = await obtenerCuentaTwitter(discordId);
+    await enviarLogTwitter(
+      "🐦 Nueva cuenta de Twitter",
+      "Se registró una cuenta ciudadana desde la web de Medellín RP.",
+      [
+        { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
+        { name: "📝 Nombre", value: nombre, inline: true },
+      ],
+      avatarUrl,
+    );
+    return res.status(201).json({ correcto: true, cuenta: serializarCuentaTwitter(cuenta) });
+  } catch (error) {
+    console.error("[TWITTER CUENTA]", error.message);
+    return res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({ error: error.code === "ER_DUP_ENTRY" ? "Ya tienes una cuenta de Twitter." : "No se pudo crear la cuenta de Twitter." });
+  }
+});
+
+app.put("/api/twitter/cuenta", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+    if (!cuenta) return res.status(404).json({ error: "Primero debes crear tu cuenta de Twitter." });
+    const horasDesdeCambio = (Date.now() - new Date(cuenta.ultimo_cambio_perfil).getTime()) / 3_600_000;
+    if (horasDesdeCambio < 240) {
+      const diasRestantes = Math.max(1, Math.ceil((240 - horasDesdeCambio) / 24));
+      return res.status(429).json({ error: `Solo puedes cambiar tu nombre o foto cada 10 días. Faltan aproximadamente ${diasRestantes} día(s).` });
+    }
+    const nombre = textoTwitter(req.body?.nombre, 80) || cuenta.nombre;
+    const avatarUrl = req.body?.avatarUrl === undefined ? cuenta.avatar_url : (textoTwitter(req.body.avatarUrl, 2_500_000) || TWITTER_AVATAR_DEFECTO);
+    if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    await pool.execute(
+      `UPDATE twitter_cuentas SET nombre = ?, avatar_url = ?, ultimo_cambio_perfil = NOW() WHERE id = ?`,
+      [nombre, avatarUrl, cuenta.id],
+    );
+    return res.json({ correcto: true, cuenta: serializarCuentaTwitter(await obtenerCuentaTwitter(req.session.usuario.id)) });
+  } catch (error) {
+    console.error("[TWITTER PERFIL]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el perfil." });
+  }
+});
+
+async function publicacionesTwitterPara(cuentaId, discordId = null, soloCuentaId = null) {
+  const condiciones = [];
+  const parametros = [];
+  if (soloCuentaId) {
+    condiciones.push("p.cuenta_id = ?");
+    parametros.push(soloCuentaId);
+  }
+  const filtro = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  const parametrosConsulta = [cuentaId, ...parametros, 10];
+  const [filas] = await pool.execute(
+    `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
+            c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+            (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
+            IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
+            (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
+       FROM twitter_publicaciones p
+       INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+       ${filtro}
+       ORDER BY p.creado_en DESC, p.id DESC LIMIT ?`,
+    parametrosConsulta,
+  );
+  return filas;
+}
+
+app.get("/api/twitter/feed", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    return res.json({ cuenta: serializarCuentaTwitter(cuenta), publicaciones: await publicacionesTwitterPara(cuenta.id) });
+  } catch (error) {
+    console.error("[TWITTER FEED]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar el inicio de Twitter." });
+  }
+});
+
+app.get("/api/twitter/perfil/:discordId", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const [cuentas] = await pool.execute("SELECT id, discord_id, nombre, avatar_url, creado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [req.params.discordId]);
+    if (!cuentas[0]) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
+    return res.json({ cuenta: serializarCuentaTwitter(cuentas[0]), publicaciones: await publicacionesTwitterPara(cuenta.id, null, cuentas[0].id) });
+  } catch (error) {
+    console.error("[TWITTER PERFIL PUBLICO]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar el perfil." });
+  }
+});
+
+app.post("/api/twitter/publicaciones", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const nombre = textoTwitter(req.body?.nombre, 80);
+    const descripcion = textoTwitter(req.body?.descripcion, 2000);
+    const imagenUrl = textoTwitter(req.body?.imagenUrl, 2_500_000);
+    if (!nombre || !descripcion) return res.status(400).json({ error: "El nombre y la descripción son obligatorios." });
+    if (!imagenTwitterValida(imagenUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    const [resultado] = await pool.execute(
+      `INSERT INTO twitter_publicaciones (cuenta_id, nombre, descripcion, imagen_url) VALUES (?, ?, ?, ?)`,
+      [cuenta.id, nombre, descripcion, imagenUrl || null],
+    );
+    return res.status(201).json({ correcto: true, id: resultado.insertId });
+  } catch (error) {
+    console.error("[TWITTER PUBLICAR]", error.message);
+    return res.status(500).json({ error: "No se pudo publicar el mensaje." });
+  }
+});
+
+app.post("/api/twitter/publicaciones/:id/like", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const publicacionId = Number(req.params.id);
+  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) return res.status(400).json({ error: "Publicación inválida." });
+  try {
+    const [existentes] = await pool.execute("SELECT 1 FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ? LIMIT 1", [publicacionId, cuenta.id]);
+    if (existentes.length) {
+      await pool.execute("DELETE FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ?", [publicacionId, cuenta.id]);
+    } else {
+      await pool.execute("INSERT INTO twitter_likes (publicacion_id, cuenta_id) VALUES (?, ?)", [publicacionId, cuenta.id]);
+    }
+    const [total] = await pool.execute("SELECT COUNT(*) AS total FROM twitter_likes WHERE publicacion_id = ?", [publicacionId]);
+    return res.json({ liked: !existentes.length, likes: Number(total[0].total || 0) });
+  } catch (error) {
+    console.error("[TWITTER LIKE]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el like." });
+  }
+});
+
+app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const [comentarios] = await pool.execute(
+      `SELECT co.id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id
+         FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id
+        WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC LIMIT 100`,
+      [Number(req.params.id)],
+    );
+    return res.json({ comentarios: comentarios.map((x) => ({ ...x, avatar_url: x.avatar_url || TWITTER_AVATAR_DEFECTO })) });
+  } catch (error) {
+    console.error("[TWITTER COMENTARIOS]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar los comentarios." });
+  }
+});
+
+app.post("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const texto = textoTwitter(req.body?.texto, 600);
+  const publicacionId = Number(req.params.id);
+  if (!texto) return res.status(400).json({ error: "Escribe un comentario." });
+  try {
+    await pool.execute("INSERT INTO twitter_comentarios (publicacion_id, cuenta_id, texto) VALUES (?, ?, ?)", [publicacionId, cuenta.id, texto]);
+    return res.status(201).json({ correcto: true });
+  } catch (error) {
+    console.error("[TWITTER COMENTAR]", error.message);
+    return res.status(500).json({ error: "No se pudo publicar el comentario." });
   }
 });
 
