@@ -1395,6 +1395,68 @@ app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
   }
 });
 
+app.delete("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) {
+    return res.status(400).json({ error: "Discord ID inválido." });
+  }
+
+  const conexion = await pool.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const [cuentas] = await conexion.execute(
+      "SELECT id, nombre, avatar_url FROM twitter_cuentas WHERE discord_id = ? LIMIT 1",
+      [discordId],
+    );
+    if (!cuentas.length) {
+      await conexion.rollback();
+      return res.status(404).json({ error: "La cuenta Twitter no existe." });
+    }
+
+    const cuentaId = cuentas[0].id;
+    await conexion.execute(
+      "DELETE FROM twitter_seguidores WHERE seguidor_id = ? OR seguido_id = ?",
+      [cuentaId, cuentaId],
+    );
+    await conexion.execute(
+      `DELETE FROM twitter_likes
+       WHERE cuenta_id = ? OR publicacion_id IN
+         (SELECT id FROM twitter_publicaciones WHERE cuenta_id = ?)`,
+      [cuentaId, cuentaId],
+    );
+    await conexion.execute(
+      `DELETE FROM twitter_comentarios
+       WHERE cuenta_id = ? OR publicacion_id IN
+         (SELECT id FROM twitter_publicaciones WHERE cuenta_id = ?)`,
+      [cuentaId, cuentaId],
+    );
+    await conexion.execute(
+      "DELETE FROM twitter_publicaciones WHERE cuenta_id = ?",
+      [cuentaId],
+    );
+    await conexion.execute("DELETE FROM twitter_cuentas WHERE id = ?", [cuentaId]);
+    await conexion.commit();
+
+    await enviarLogTwitter(
+      "🗑️ Cuenta Twitter eliminada",
+      "Una cuenta Twitter fue eliminada desde el panel Fundación junto con sus datos relacionados.",
+      [
+        { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
+        { name: "📝 Cuenta", value: String(cuentas[0].nombre || "Sin nombre"), inline: true },
+      ],
+      cuentas[0].avatar_url,
+    );
+    return res.json({ correcto: true, discordId });
+  } catch (error) {
+    await conexion.rollback().catch(() => {});
+    console.error("[FUNDACION TWITTER ELIMINAR]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar la cuenta Twitter." });
+  } finally {
+    conexion.release();
+  }
+});
+
 async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
   const cantidad = Number(monto);
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
