@@ -1629,6 +1629,32 @@ app.get("/api/twitter/feed", async (req, res) => {
   }
 });
 
+app.get("/api/twitter/buscar", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const q = textoTwitter(req.query?.q, 120);
+  if (!q) return res.status(400).json({ error: "Escribe algo para buscar." });
+  try {
+    const patron = `%${q}%`;
+    const [publicaciones] = await pool.execute(
+      `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
+              c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+              (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
+              IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
+              (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
+         FROM twitter_publicaciones p
+         INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+        WHERE p.nombre LIKE ? OR p.descripcion LIKE ? OR c.nombre LIKE ?
+        ORDER BY p.creado_en DESC, p.id DESC LIMIT 50`,
+      [cuenta.id, patron, patron, patron],
+    );
+    return res.json({ consulta: q, publicaciones });
+  } catch (error) {
+    console.error("[TWITTER BUSCAR]", error.message);
+    return res.status(500).json({ error: "No se pudieron buscar publicaciones." });
+  }
+});
+
 app.get("/api/twitter/perfil/:discordId", async (req, res) => {
   const cuenta = await exigirCuentaTwitter(req, res);
   if (!cuenta) return;
@@ -1659,6 +1685,37 @@ app.post("/api/twitter/publicaciones", async (req, res) => {
   } catch (error) {
     console.error("[TWITTER PUBLICAR]", error.message);
     return res.status(500).json({ error: "No se pudo publicar el mensaje." });
+  }
+});
+
+app.delete("/api/twitter/publicaciones/:id", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const publicacionId = Number(req.params.id);
+  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) {
+    return res.status(400).json({ error: "Publicación inválida." });
+  }
+  try {
+    const [resultado] = await pool.execute(
+      "DELETE FROM twitter_publicaciones WHERE id = ? AND cuenta_id = ?",
+      [publicacionId, cuenta.id],
+    );
+    if (!resultado.affectedRows) {
+      return res.status(403).json({ error: "Solo puedes eliminar tus propias publicaciones." });
+    }
+    await enviarLogTwitter(
+      "🗑️ Publicación eliminada",
+      "Una publicación fue eliminada desde Twitter ciudadano.",
+      [
+        { name: "👤 Usuario", value: `<@${req.session.usuario.id}>`, inline: true },
+        { name: "🆔 Publicación", value: String(publicacionId), inline: true },
+      ],
+      cuenta.avatar_url,
+    );
+    return res.json({ correcto: true, eliminada: publicacionId });
+  } catch (error) {
+    console.error("[TWITTER ELIMINAR]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar la publicación." });
   }
 });
 
