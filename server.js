@@ -1746,7 +1746,7 @@ app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
     const [comentarios] = await pool.execute(
       `SELECT co.id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id
          FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id
-        WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC LIMIT 100`,
+        WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
       [Number(req.params.id)],
     );
     return res.json({ comentarios: comentarios.map((x) => ({ ...x, avatar_url: x.avatar_url || TWITTER_AVATAR_DEFECTO })) });
