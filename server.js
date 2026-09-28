@@ -1652,10 +1652,11 @@ async function publicacionesTwitterPara(cuentaId, discordId = null, soloCuentaId
     parametros.push(soloCuentaId);
   }
   const filtro = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
-  const parametrosConsulta = [cuentaId, ...parametros, 10];
+  const parametrosConsulta = [cuentaId, cuentaId, ...parametros, 10];
   const [filas] = await pool.execute(
     `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
             c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+            IF(p.cuenta_id = ?, 1, 0) AS propia,
             (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
             IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
             (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
@@ -1689,6 +1690,7 @@ app.get("/api/twitter/buscar", async (req, res) => {
     const [publicaciones] = await pool.execute(
       `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
               c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id,
+              IF(p.cuenta_id = ?, 1, 0) AS propia,
               (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
               IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
               (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
@@ -1696,7 +1698,7 @@ app.get("/api/twitter/buscar", async (req, res) => {
          INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
         WHERE p.nombre LIKE ? OR p.descripcion LIKE ? OR c.nombre LIKE ?
         ORDER BY p.creado_en DESC, p.id DESC LIMIT 50`,
-      [cuenta.id, patron, patron, patron],
+      [cuenta.id, cuenta.id, patron, patron, patron],
     );
     return res.json({ consulta: q, publicaciones });
   } catch (error) {
