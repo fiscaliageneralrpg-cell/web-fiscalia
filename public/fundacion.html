@@ -262,6 +262,10 @@
       .twitter-account { display:flex; align-items:center; gap:12px; flex:1; }
       .twitter-account img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #42d8d066; }
       .verified-icon { width:18px !important; height:18px !important; vertical-align:middle; border:0 !important; }
+      .twitter-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+      .twitter-pagination { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px; }
+      .twitter-pagination button { min-width:105px; }
+      .twitter-page-label { color:var(--muted); font-size:12px; font-weight:800; }
 
       .product p {
         margin: 0;
@@ -995,32 +999,75 @@
         }),
       );
       const VERIFIED_ICON = "https://cdn-icons-png.flaticon.com/512/6711/6711626.png";
+      let twitterPagina = 1;
+      const TWITTER_POR_PAGINA = 10;
+      let twitterCuentas = [];
+      function escaparHtml(valor) {
+        return String(valor ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+      }
+      function pintarCuentasTwitter() {
+        const box = document.querySelector("#twitter-cuentas");
+        document.querySelector(".twitter-pagination")?.remove();
+        const totalPaginas = Math.max(1, Math.ceil(twitterCuentas.length / TWITTER_POR_PAGINA));
+        twitterPagina = Math.min(Math.max(1, twitterPagina), totalPaginas);
+        const inicio = (twitterPagina - 1) * TWITTER_POR_PAGINA;
+        const pagina = twitterCuentas.slice(inicio, inicio + TWITTER_POR_PAGINA);
+        box.innerHTML = pagina.length
+          ? pagina.map((c) => `<article class="product"><div class="twitter-account"><img src="${escaparHtml(c.avatar_url || "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png")}" alt=""><div><h3>${escaparHtml(c.nombre || "Sin nombre")} ${Number(c.verificado) ? `<img class="verified-icon" src="${VERIFIED_ICON}" alt="Verificado">` : ""}</h3><p>@${escaparHtml(c.discord_id)}</p></div></div><div class="twitter-actions"><button class="btn ${Number(c.verificado) ? "red" : "gold"}" data-verify-twitter="${escaparHtml(c.discord_id)}">${Number(c.verificado) ? "Quitar verificado" : "✓ Verificar"}</button><button class="btn red" data-delete-twitter="${escaparHtml(c.discord_id)}">🗑️ Eliminar cuenta</button></div></article>`).join("")
+          : '<div class="empty">No hay cuentas Twitter registradas.</div>';
+        if (twitterCuentas.length > TWITTER_POR_PAGINA) {
+          box.insertAdjacentHTML("afterend", `<div class="twitter-pagination"><button class="btn secondary" id="twitter-anterior" ${twitterPagina <= 1 ? "disabled" : ""}>← Anterior</button><span class="twitter-page-label">Página ${twitterPagina} de ${totalPaginas}</span><button class="btn secondary" id="twitter-siguiente" ${twitterPagina >= totalPaginas ? "disabled" : ""}>Siguiente →</button></div>`);
+          document.querySelector("#twitter-anterior").addEventListener("click", () => { twitterPagina -= 1; pintarCuentasTwitter(); });
+          document.querySelector("#twitter-siguiente").addEventListener("click", () => { twitterPagina += 1; pintarCuentasTwitter(); });
+        }
+        box.querySelectorAll("[data-verify-twitter]").forEach((button) => button.addEventListener("click", () => cambiarVerificacion(button.dataset.verifyTwitter, button)));
+        box.querySelectorAll("[data-delete-twitter]").forEach((button) => button.addEventListener("click", () => eliminarCuentaTwitter(button.dataset.deleteTwitter, button)));
+      }
       async function cargarTwitterFundacion() {
         const box = document.querySelector("#twitter-cuentas");
         if (!box) return;
+        document.querySelector(".twitter-pagination")?.remove();
         box.innerHTML = '<div class="empty">Cargando cuentas Twitter...</div>';
         try {
           const r = await fetch("/api/fundacion/twitter", { cache: "no-store", signal: AbortSignal.timeout(10000) });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || "No se pudieron cargar las cuentas.");
-          const cuentas = d.cuentas || [];
-          box.innerHTML = cuentas.length ? cuentas.map((c) => `<article class="product"><div class="twitter-account"><img src="${c.avatar_url || "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png"}" alt=""><div><h3>${c.nombre || "Sin nombre"} ${Number(c.verificado) ? `<img class="verified-icon" src="${VERIFIED_ICON}" alt="Verificado">` : ""}</h3><p>@${c.discord_id}</p></div></div><button class="btn ${Number(c.verificado) ? "red" : "gold"}" data-verify-twitter="${c.discord_id}">${Number(c.verificado) ? "Quitar verificado" : "✓ Verificar"}</button></article>`).join("") : '<div class="empty">No hay cuentas Twitter registradas.</div>';
-          box.querySelectorAll("[data-verify-twitter]").forEach((button) => button.addEventListener("click", () => cambiarVerificacion(button.dataset.verifyTwitter, button)));
+          twitterCuentas = d.cuentas || [];
+          twitterPagina = 1;
+          pintarCuentasTwitter();
         } catch (error) {
-          box.innerHTML = `<div class="empty error">❌ ${error.name === "TimeoutError" ? "La carga tardó demasiado. Recarga el panel." : error.message}</div>`;
+          box.innerHTML = `<div class="empty error">❌ ${error.name === "TimeoutError" ? "La carga tardó demasiado. Recarga el panel." : escaparHtml(error.message)}</div>`;
         }
       }
       async function cambiarVerificacion(discordId, button) {
         button.disabled = true;
         try {
-          const cuenta = [...document.querySelectorAll("[data-verify-twitter]")].find((x) => x.dataset.verifyTwitter === discordId);
           const activar = button.textContent.includes("Verificar");
           const r = await fetch(`/api/fundacion/twitter/${encodeURIComponent(discordId)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verificado: activar }) });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || "No se pudo actualizar.");
           document.querySelector("#twitter-status").textContent = activar ? "✅ Cuenta verificada." : "✅ Verificación retirada.";
-          cargarTwitterFundacion();
+          const cuenta = twitterCuentas.find((x) => String(x.discord_id) === String(discordId));
+          if (cuenta) cuenta.verificado = activar ? 1 : 0;
+          pintarCuentasTwitter();
         } catch (error) { document.querySelector("#twitter-status").textContent = `❌ ${error.message}`; button.disabled = false; }
+      }
+      async function eliminarCuentaTwitter(discordId, button) {
+        const cuenta = twitterCuentas.find((x) => String(x.discord_id) === String(discordId));
+        const nombre = cuenta?.nombre || discordId;
+        if (!confirm(`¿Eliminar la cuenta Twitter de ${nombre}? También se eliminarán sus publicaciones, comentarios, likes y seguimientos. Esta acción no se puede deshacer.`)) return;
+        button.disabled = true;
+        try {
+          const r = await fetch(`/api/fundacion/twitter/${encodeURIComponent(discordId)}`, { method: "DELETE" });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "No se pudo eliminar la cuenta.");
+          twitterCuentas = twitterCuentas.filter((x) => String(x.discord_id) !== String(discordId));
+          document.querySelector("#twitter-status").textContent = "✅ Cuenta eliminada junto con sus datos Twitter.";
+          pintarCuentasTwitter();
+        } catch (error) {
+          document.querySelector("#twitter-status").textContent = `❌ ${error.message}`;
+          button.disabled = false;
+        }
       }
       document.querySelector('[data-view="twitter"]').addEventListener("click", cargarTwitterFundacion);
       async function iniciar() {
