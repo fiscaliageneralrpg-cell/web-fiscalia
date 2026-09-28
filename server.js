@@ -1543,20 +1543,22 @@ async function notificarSeguidoresTwitter(autor, publicacion) {
       }
       console.warn(`[TWITTER NOTIFICACIONES] El bot respondió ${respuestaBot.status}; se intentará el respaldo web.`);
     }
-    for (let inicio = 0; inicio < ids.length; inicio += 20) {
-      const grupo = ids.slice(inicio, inicio + 20);
+    for (const id of ids) {
       await enviarEmbedDiscord(
         CANAL_LOG_TWITTER,
         {
           title: "🐦 Nueva publicación de una cuenta que sigues",
-          description: `Una cuenta que sigues publicó algo nuevo en Twitter ciudadano.\n\n**${publicacion.nombre}**\n${publicacion.descripcion}`,
+          description: `**<@${autor.discord_id}>** publicó algo nuevo en Twitter ciudadano.\n\n**${publicacion.nombre}**\n${publicacion.descripcion}`,
           color: 0x42d8d0,
-          fields: [{ name: "👤 Publicó", value: `<@${autor.discord_id}>`, inline: true }],
+          fields: [
+            { name: "👤 Cuenta que publicó", value: `<@${autor.discord_id}>`, inline: true },
+            { name: "🔔 Notificado", value: `<@${id}> está siguiendo esta cuenta`, inline: true },
+          ],
           footer: { text: `${NOMBRE_SERVIDOR} • Notificación Twitter` },
           timestamp: new Date().toISOString(),
         },
         [],
-        { content: grupo.map((id) => `<@${id}>`).join(" "), allowed_mentions: { users: grupo } },
+        { content: `<@${id}>`, allowed_mentions: { users: [id] } },
       );
     }
     return ids.length;
