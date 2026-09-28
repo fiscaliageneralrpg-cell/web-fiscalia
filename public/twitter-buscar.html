@@ -22,7 +22,7 @@ async function api(url, options = {}) {
 }
 function card(post) {
   return `<article class="result" data-id="${post.id}">
-    <div class="author"><img class="avatar" src="${escapeHtml(post.autor_avatar || DEFAULT_AVATAR)}" alt=""><div><b>${escapeHtml(post.autor_nombre)}</b><small>@${escapeHtml(post.autor_discord_id)} · ${formatDate(post.creado_en)}</small></div></div>
+    <div class="author"><img class="avatar" data-profile="${escapeHtml(post.autor_discord_id)}" src="${escapeHtml(post.autor_avatar || DEFAULT_AVATAR)}" alt=""><div><b>${escapeHtml(post.autor_nombre)}</b><small>@${escapeHtml(post.autor_discord_id)} · ${formatDate(post.creado_en)}</small></div></div>
     <h2 class="title">${escapeHtml(post.nombre)}</h2><p class="desc">${escapeHtml(post.descripcion)}</p>
     ${post.imagen_url ? `<img class="photo" src="${escapeHtml(post.imagen_url)}" alt="Imagen de la publicación">` : ""}
     <div class="actions">♡ ${Number(post.likes || 0)} likes · ▢ ${Number(post.comentarios || 0)} comentarios</div>
@@ -40,6 +40,8 @@ async function loadResults() {
       ? data.publicaciones.map(card).join("")
       : '<div class="empty">No encontramos publicaciones con ese texto.</div>';
     $("#results").addEventListener("click", (event) => {
+      const profile = event.target.closest("[data-profile]");
+      if (profile) { location.href = `/twitter-perfil.html?id=${encodeURIComponent(profile.dataset.profile)}`; return; }
       const result = event.target.closest("[data-id]");
       if (!result) return;
       const post = data.publicaciones.find((item) => String(item.id) === result.dataset.id);
@@ -49,6 +51,7 @@ async function loadResults() {
     $("#results").innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
 }
+document.addEventListener("click", (event) => { const profile = event.target.closest("[data-profile]"); if (profile) location.href = `/twitter-perfil.html?id=${encodeURIComponent(profile.dataset.profile)}`; });
 $("#close").addEventListener("click", () => { $("#modal").hidden = true; });
 $("#modal").addEventListener("click", (event) => { if (event.target.id === "modal") $("#modal").hidden = true; });
 loadResults();
