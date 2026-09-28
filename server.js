@@ -1526,6 +1526,48 @@ app.post("/api/nequi/operacion", async (req, res) => {
 
 const TWITTER_AVATAR_DEFECTO = "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
 
+let twitterSchemaPromise;
+
+async function asegurarEsquemaTwitter() {
+  if (!twitterSchemaPromise) {
+    twitterSchemaPromise = (async () => {
+      try {
+        await pool.execute("SELECT verificado FROM twitter_cuentas LIMIT 1");
+      } catch (error) {
+        if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
+
+        try {
+          await pool.execute(
+            "ALTER TABLE twitter_cuentas ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_url",
+          );
+          console.log("[TWITTER] Columna verificado creada automáticamente.");
+        } catch (alterError) {
+          // Si dos solicitudes intentan preparar el esquema a la vez,
+          // la segunda puede recibir el error de columna duplicada.
+          if (alterError.code !== "ER_DUP_FIELDNAME") throw alterError;
+        }
+      }
+    })().catch((error) => {
+      twitterSchemaPromise = undefined;
+      throw error;
+    });
+  }
+
+  return twitterSchemaPromise;
+}
+
+app.use("/api/twitter", async (req, res, next) => {
+  try {
+    await asegurarEsquemaTwitter();
+    return next();
+  } catch (error) {
+    console.error("[TWITTER ESQUEMA]", error.message);
+    return res.status(503).json({
+      error: "Twitter no está disponible porque no se pudo preparar la tabla de cuentas.",
+    });
+  }
+});
+
 function textoTwitter(valor, maximo) {
   return String(valor ?? "").trim().slice(0, maximo);
 }
