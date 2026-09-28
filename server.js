@@ -1526,25 +1526,28 @@ async function notificarSeguidoresTwitter(autor, publicacion) {
       [autor.id],
     );
     const ids = seguidores.map((fila) => String(fila.discord_id)).filter(Boolean);
-    if (!ids.length) return;
-    await enviarEmbedDiscord(
-      CANAL_LOG_TWITTER,
-      {
-        title: "🐦 Nueva publicación de una cuenta que sigues",
-        description: `Una cuenta que sigues publicó algo nuevo en Twitter ciudadano.\n\n**${publicacion.nombre}**\n${publicacion.descripcion}`,
-        color: 0x42d8d0,
-        fields: [
-          { name: "👤 Publicó", value: `<@${autor.discord_id}>`, inline: true },
-          { name: "🔔 Notificados", value: `${ids.length} seguidor(es)`, inline: true },
-        ],
-        footer: { text: `${NOMBRE_SERVIDOR} • Notificación Twitter` },
-        timestamp: new Date().toISOString(),
-      },
-      [],
-      { content: ids.map((id) => `<@${id}>`).join(" "), allowed_mentions: { users: ids } },
-    );
+    console.log(`[TWITTER NOTIFICACIONES] Publicación de ${autor.discord_id}: ${ids.length} seguidor(es) encontrado(s).`);
+    if (!ids.length) return 0;
+    for (let inicio = 0; inicio < ids.length; inicio += 20) {
+      const grupo = ids.slice(inicio, inicio + 20);
+      await enviarEmbedDiscord(
+        CANAL_LOG_TWITTER,
+        {
+          title: "🐦 Nueva publicación de una cuenta que sigues",
+          description: `Una cuenta que sigues publicó algo nuevo en Twitter ciudadano.\n\n**${publicacion.nombre}**\n${publicacion.descripcion}`,
+          color: 0x42d8d0,
+          fields: [{ name: "👤 Publicó", value: `<@${autor.discord_id}>`, inline: true }],
+          footer: { text: `${NOMBRE_SERVIDOR} • Notificación Twitter` },
+          timestamp: new Date().toISOString(),
+        },
+        [],
+        { content: grupo.map((id) => `<@${id}>`).join(" "), allowed_mentions: { users: grupo } },
+      );
+    }
+    return ids.length;
   } catch (error) {
     console.error("[TWITTER NOTIFICACIONES]", error.message);
+    return 0;
   }
 }
 
@@ -1762,8 +1765,8 @@ app.post("/api/twitter/publicaciones", async (req, res) => {
       `INSERT INTO twitter_publicaciones (cuenta_id, nombre, descripcion, imagen_url) VALUES (?, ?, ?, ?)`,
       [cuenta.id, nombre, descripcion, imagenUrl || null],
     );
-    await notificarSeguidoresTwitter(cuenta, { nombre, descripcion });
-    return res.status(201).json({ correcto: true, id: resultado.insertId });
+    const notificados = await notificarSeguidoresTwitter(cuenta, { nombre, descripcion });
+    return res.status(201).json({ correcto: true, id: resultado.insertId, notificados });
   } catch (error) {
     console.error("[TWITTER PUBLICAR]", error.message);
     return res.status(500).json({ error: "No se pudo publicar el mensaje." });
