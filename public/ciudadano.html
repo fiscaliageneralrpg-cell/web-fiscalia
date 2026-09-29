@@ -241,6 +241,20 @@
       .record strong {
         color: var(--ink);
       }
+      .record.expediente-clickable { cursor: pointer; transition: transform .16s ease, border-color .16s ease, background .16s ease; }
+      .record.expediente-clickable:hover { transform: translateY(-2px); border-color: #42d8d088; background: #42d8d012; }
+      .record-hint { display: inline-block; margin-top: 7px; color: #42d8d0; font-size: 11px; font-weight: 800; }
+      .detail-modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px; background: #02080dcc; backdrop-filter: blur(7px); }
+      .detail-card { width: min(680px, 100%); max-height: 90vh; overflow: auto; padding: 24px; border: 1px solid #42d8d077; border-radius: 20px; background: #0d2939; box-shadow: 0 25px 90px #000b; }
+      .detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+      .detail-head h2 { margin: 0; }
+      .detail-close { width: 34px; height: 34px; border: 1px solid #ffffff33; border-radius: 50%; color: #fff; background: #172f3d; cursor: pointer; font-size: 20px; }
+      .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .detail-field { padding: 12px; border: 1px solid #ffffff18; border-radius: 10px; background: #061923; }
+      .detail-field.full { grid-column: 1 / -1; }
+      .detail-field small { display: block; margin-bottom: 5px; color: var(--muted); }
+      .detail-field strong { color: var(--ink); white-space: pre-wrap; }
+      .evidence-image { display: block; width: 100%; max-height: 360px; object-fit: contain; margin-top: 12px; border-radius: 10px; background: #06141f; }
       .record.multa-pendiente {
         border: 1px solid #ffd16655;
         border-left: 4px solid var(--yellow);
@@ -353,7 +367,7 @@
       <nav class="tabs">
         <button class="tab active" data-vista="general">▣ Info general</button
         ><button class="tab" data-vista="antecedentes">
-          ⚒ Antecedentes (<b id="arrestos">0</b>)</button
+          ⚒ Antecedentes (<b id="antecedentes-count">0</b>) · Arrestos (<b id="arrestos-count">0</b>)</button
         ><button class="tab" data-vista="multas">
           ▤ Multas (<b id="multas">0</b>)</button
         ><button class="tab" data-vista="tienda">🛒 Tienda</button
@@ -420,6 +434,12 @@
           <button id="pagina-siguiente" type="button">Siguiente →</button>
         </div>
       </section>
+      <div id="expediente-detalle" class="detail-modal" hidden>
+        <div class="detail-card" role="dialog" aria-modal="true" aria-labelledby="detalle-titulo">
+          <div class="detail-head"><h2 id="detalle-titulo">Detalle del expediente</h2><button id="cerrar-expediente-detalle" class="detail-close" type="button">×</button></div>
+          <div id="detalle-contenido"></div>
+        </div>
+      </div>
       <section id="tienda-vista" class="paper" hidden>
         <h2>🛒 Tienda</h2>
         <p class="empty">
@@ -476,18 +496,26 @@
       const registrosPorPagina = 10;
       const productosPorPagina = 5;
 
-      function expandirArrestos(registros) {
-        return registros.flatMap((registro) => {
-          if (!Array.isArray(registro.delitos) || !registro.delitos.length) {
-            return [registro];
-          }
-          return registro.delitos.map((delito) => ({
-            ...registro,
-            ...delito,
-            arrestoOriginal: registro.arrestoId || registro.id || null,
-            fecha: registro.fecha,
-          }));
-        });
+      function escaparHtmlCiudadano(valor) {
+        return String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+        }[caracter]));
+      }
+      function prepararExpediente(arrestos, antecedentes) {
+        return [
+          ...arrestos.map((registro) => ({ ...registro, tipoRegistro: "arresto" })),
+          ...antecedentes.map((registro) => ({ ...registro, tipoRegistro: "antecedente" })),
+        ].sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+      }
+      function mostrarDetalleExpediente(registro) {
+        const esArresto = registro.tipoRegistro === "arresto";
+        const delitos = Array.isArray(registro.delitos)
+          ? registro.delitos.map((delito) => delito.delito || delito.codigo || delito).join("\n")
+          : (registro.delito || registro.motivo || registro.contenido || "Sin descripción");
+        const foto = registro.fotoUrl || registro.foto_url || registro.evidenciaUrl || registro.imagenUrl || "";
+        document.querySelector("#detalle-titulo").textContent = esArresto ? "⚖ Detalle del arresto" : "ⓘ Detalle del antecedente";
+        document.querySelector("#detalle-contenido").innerHTML = `<div class="detail-grid"><div class="detail-field"><small>Tipo de registro</small><strong>${esArresto ? "Arresto policial" : "Antecedente"}</strong></div><div class="detail-field"><small>Fecha</small><strong>${escaparHtmlCiudadano(registro.fecha ? new Date(registro.fecha).toLocaleString("es-CO") : "No registrada")}</strong></div><div class="detail-field"><small>Identificador</small><strong>${escaparHtmlCiudadano(registro.arrestoId || registro.multaId || registro.id || "No registrado")}</strong></div><div class="detail-field"><small>NUIP</small><strong>${escaparHtmlCiudadano(registro.nuip || "No registrado")}</strong></div><div class="detail-field full"><small>${esArresto ? "Delitos registrados" : "Descripción"}</small><strong>${escaparHtmlCiudadano(delitos)}</strong></div>${registro.oficialId || registro.oficial ? `<div class="detail-field full"><small>Oficial responsable</small><strong>${escaparHtmlCiudadano(registro.oficial || registro.oficialId)}</strong></div>` : ""}${foto ? `<div class="detail-field full"><small>Evidencia adjunta</small><img class="evidence-image" src="${escaparHtmlCiudadano(foto)}" alt="Evidencia del registro"></div>` : ""}</div>`;
+        document.querySelector("#expediente-detalle").hidden = false;
       }
 
       function pintarExpediente() {
@@ -527,8 +555,10 @@
                   registro.total ??
                   0,
               ) > 0;
-            elemento.className =
-              esMulta && pendiente ? "record multa-pendiente" : "record";
+            elemento.className = esMulta && pendiente
+              ? "record multa-pendiente"
+              : (!esMulta ? "record expediente-clickable" : "record");
+            if (!esMulta) elemento.dataset.expedienteIndex = String(inicio + actuales.indexOf(registro));
             const descripcion =
               registro.descripcion ||
               registro.delito ||
@@ -549,7 +579,8 @@
                 registro.id || registro.multaId || registro.comparendoId || "";
               elemento.innerHTML = `<strong>▤ Comparendo / multa</strong><br>${descripcion}<br><b>Valor pendiente: ${moneda.format(valor)}</b><br><small>Estado: ${registro.estado || "pendiente"} · ${registro.fecha ? new Date(registro.fecha).toLocaleString("es-CO") : "Fecha no registrada"}</small>${pendiente && identificador ? `<br><button class="pagar-multa" type="button" data-pagar-multa="${identificador}">💰 Pagar multa con Billetera</button>` : ""}`;
             } else {
-              elemento.innerHTML = `<strong>Arresto / antecedente</strong><br>${descripcion}<br>${registro.fecha ? new Date(registro.fecha).toLocaleString("es-CO") : "Fecha no registrada"}`;
+              const tituloRegistro = registro.tipoRegistro === "arresto" ? "⚖ Arresto" : "ⓘ Antecedente";
+              elemento.innerHTML = `<strong>${tituloRegistro}</strong><br>${escaparHtmlCiudadano(descripcion)}<br><small>${registro.fecha ? escaparHtmlCiudadano(new Date(registro.fecha).toLocaleString("es-CO")) : "Fecha no registrada"}</small><span class="record-hint">Ver detalle completo →</span>`;
             }
             contenedor.appendChild(elemento);
           });
@@ -679,11 +710,25 @@
           estadoExpediente.pagina += 1;
           pintarExpediente();
         });
+      document.querySelector("#cerrar-expediente-detalle").addEventListener("click", () => {
+        document.querySelector("#expediente-detalle").hidden = true;
+      });
+      document.querySelector("#expediente-detalle").addEventListener("click", (evento) => {
+        if (evento.target.id === "expediente-detalle") evento.currentTarget.hidden = true;
+      });
+      document.addEventListener("keydown", (evento) => {
+        if (evento.key === "Escape") document.querySelector("#expediente-detalle").hidden = true;
+      });
       document
         .querySelector("#expediente-registros")
         .addEventListener("click", async (evento) => {
           const boton = evento.target.closest("[data-pagar-multa]");
-          if (!boton) return;
+          if (!boton) {
+            const tarjeta = evento.target.closest("[data-expediente-index]");
+            if (!tarjeta) return;
+            mostrarDetalleExpediente(estadoExpediente.antecedentes[Number(tarjeta.dataset.expedienteIndex)]);
+            return;
+          }
           const montoTexto =
             boton.closest(".record")?.querySelector("b")?.textContent ||
             "el valor pendiente";
@@ -817,8 +862,10 @@
               Number(c.arrestos || 0) +
               Number(c.antecedentes || 0) +
               Number(c.multas || 0);
-            document.querySelector("#arrestos").textContent =
-              Number(c.arrestos || 0) + Number(c.antecedentes || 0);
+            document.querySelector("#antecedentes-count").textContent =
+              Number(c.antecedentes || e.antecedentes?.length || 0);
+            document.querySelector("#arrestos-count").textContent =
+              Number(c.arrestos || e.arrestos?.length || 0);
             document.querySelector("#multas").textContent = Number(
               c.multas || 0,
             );
@@ -828,10 +875,10 @@
             document.querySelector("#resumen").textContent = total
               ? `${total} registro(s) asociado(s).`
               : "No hay registros asociados.";
-            estadoExpediente.antecedentes = expandirArrestos([
-              ...(e.arrestos || []),
-              ...(e.antecedentes || []),
-            ]);
+            estadoExpediente.antecedentes = prepararExpediente(
+              e.arrestos || [],
+              e.antecedentes || [],
+            );
             estadoExpediente.multas = e.multas || [];
           }
         }
