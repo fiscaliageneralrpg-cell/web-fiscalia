@@ -1067,8 +1067,42 @@ app.get("/api/expediente", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
   try {
-    const { pool } = require("./db");
     const discordId = req.session.usuario.id;
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      try {
+        const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+        const respuestaBot = await fetch(`${baseApi}/api/expediente/${encodeURIComponent(discordId)}`, {
+          headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (respuestaBot.ok) {
+          const datosBot = await respuestaBot.json();
+          const expedienteBot = datosBot.expediente || {};
+          const arrestosBot = Array.isArray(expedienteBot.arrestos) ? expedienteBot.arrestos : [];
+          const antecedentesBot = Array.isArray(expedienteBot.antecedentes) ? expedienteBot.antecedentes : [];
+          const multasBot = Array.isArray(expedienteBot.multas) ? expedienteBot.multas : [];
+          return res.json({
+            correcto: true,
+            origen: "bot-data-antecedentes",
+            expediente: {
+              arrestos: arrestosBot,
+              antecedentes: antecedentesBot,
+              multas: multasBot,
+              conteos: {
+                arrestos: arrestosBot.length,
+                antecedentes: antecedentesBot.length,
+                multas: multasBot.length,
+                ordenes: 0,
+              },
+            },
+          });
+        }
+      } catch (error) {
+        console.warn("[API EXPEDIENTE] No se pudo leer data/antecedentes.json mediante el bot:", error.message);
+      }
+    }
+
+    const { pool } = require("./db");
     const [arrestos, antecedentes, multas] = await Promise.all([
       pool.execute(
         "SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC",
