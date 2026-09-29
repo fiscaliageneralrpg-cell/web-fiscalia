@@ -387,6 +387,50 @@
         flex-wrap: wrap;
         margin: 16px 0;
       }
+
+      .subnav { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+      .subnav button { border:1px solid #42d8d055; border-radius:10px; padding:12px 16px; color:#cde9e5; background:#0b2737; cursor:pointer; font-weight:900; }
+      .subnav button.active, .subnav button:hover { border-color:var(--gold); color:#211b08; background:var(--gold); }
+      .encuesta-subvista[hidden] { display:none !important; }
+      #encuestas-panel[hidden] { display:none !important; }
+      .force-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+      .force-grid button { min-height:130px; display:grid; place-items:center; gap:8px; border:1px solid #42d8d055; border-radius:18px; color:#f4efe3; background:#0b2737; cursor:pointer; font-size:38px; font-weight:900; }
+      .force-grid button strong { color:#42d8d0; font-size:18px; }
+      .force-grid button:hover { border-color:var(--gold); background:#173f4a; transform:translateY(-2px); }
+      #encuestas .record { animation: show .28s ease-out both; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+      #encuestas .record:hover { transform: translateY(-3px); border-color: #42d8d088; box-shadow: 0 12px 28px #0005; }
+      #encuestas .btn { transition: transform .18s ease, filter .18s ease; }
+      #encuestas .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+      .encuestas-hero { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:22px; margin-bottom:16px; border:1px solid #f3c96955; border-radius:20px; background:linear-gradient(120deg,#3d3215,#123746); box-shadow:0 14px 35px #0004; }
+      .encuestas-hero .mark { display:grid; place-items:center; width:64px; height:64px; border-radius:18px; color:#211b08; background:var(--gold); font-size:32px; box-shadow:0 0 0 8px #f3c96918; }
+      .encuestas-hero h2 { margin:0 0 5px; color:#fff5d2; } .encuestas-hero p { margin:0; color:#d8d0b5; }
+      .result-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:16px 0; }
+      .result-stat { padding:14px; border:1px solid #42d8d044; border-radius:14px; background:#071d2b99; }
+      .result-stat small { display:block; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:800; font-size:10px; }
+      .result-stat strong { display:block; margin-top:5px; color:var(--cyan); font-size:22px; }
+      .result-user { margin-top:12px; padding:16px; border-left:3px solid var(--cyan); border-radius:12px; background:#071d2b99; }
+      .result-user-head { display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+      .answer-line { margin-top:10px; padding:10px 12px; border-radius:9px; color:#dcecff; background:#ffffff08; }
+      .answer-line b { color:#fff; } .result-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+      .result-note { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:12px; font-weight:800; }
+      .result-note.pending { color:#ffe6a3; border:1px solid #f3c96955; background:#f3c96912; }
+      .result-note.closed { color:#ffb5b5; border:1px solid #ef777755; background:#ef777712; }
+      .result-note.done { color:#b9f4cf; border:1px solid #79e2aa55; background:#79e2aa12; }
+      .user-divider { height:1px; margin:16px 0 4px; background:#42d8d022; }
+      .user-picker { display:grid; gap:9px; margin-top:16px; }
+      .user-result-button { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; padding:14px 16px; border:1px solid #42d8d044; border-radius:12px; color:#f4efe3; background:#071d2b; text-align:left; cursor:pointer; transition:transform .18s ease, border-color .18s ease, background .18s ease; }
+      .user-result-button:hover { transform:translateX(4px); border-color:var(--gold); background:#123747; }
+      .user-result-button small { display:block; margin-top:3px; color:var(--muted); }
+      .user-result-button .score { white-space:nowrap; color:var(--cyan); font-weight:900; }
+      .review-modal .modal-card { width:min(820px,100%); }
+      .review-question { margin-top:12px; padding:14px; border:1px solid #42d8d033; border-radius:12px; background:#071d2b; }
+      .review-question.good { border-color:#79e2aa77; } .review-question.bad { border-color:#ef777777; }
+      .review-answer { margin-top:8px; color:#dcecff; line-height:1.5; }
+      .review-label { display:inline-block; margin-left:8px; font-size:11px; font-weight:900; }
+      .review-label.good { color:#79e2aa; } .review-label.bad { color:#ef9999; }
+      @media(max-width:650px){ .encuestas-hero { align-items:flex-start; flex-direction:column; } .result-summary { grid-template-columns:1fr; } }
+      .selected-force-title { margin:12px 0 16px; color:var(--muted); font-weight:800; }
+      .selected-force-title strong { color:var(--cyan); }
       .subnav button {
         border: 1px solid #42d8d044;
         border-radius: 10px;
@@ -455,7 +499,7 @@
         <button class="active" data-view="dinero">💰 Dinero</button
         ><button data-view="tienda">🛍️ Tienda</button
         ><button data-view="comportamiento">📋 Comportamiento</button
-        ><button data-view="trabajos">💼 Trabajos</button><button data-view="twitter">🐦 Twitter</button>
+        ><button data-view="trabajos">💼 Trabajos</button><button data-view="encuestas">🛡️ Fuerza Pública</button><button data-view="twitter">🐦 Twitter</button>
       </nav>
       <section id="dinero" class="view active">
         <div class="section">
@@ -693,6 +737,53 @@
           </div>
         </div>
       </section>
+      <section id="encuestas" class="view">
+        <div id="fuerzas-menu" class="section">
+          <h2>🛡️ Fuerza Pública</h2><p>Selecciona la fuerza que deseas administrar.</p>
+          <div class="force-grid"><button type="button" data-force-select="policia_nacional">🚓<strong>Policía Nacional</strong></button><button type="button" data-force-select="copes">🛡️<strong>COPES</strong></button><button type="button" data-force-select="ejercito">🎖️<strong>Ejército</strong></button><button type="button" data-force-select="fiscalia">⚖️<strong>Fiscalía</strong></button></div>
+        </div>
+        <div id="encuestas-panel" hidden>
+        <button id="volver-fuerzas" class="btn ghost" type="button">← Volver a Fuerza Pública</button>
+        <div class="selected-force-title">Fuerza seleccionada: <strong id="fuerza-seleccionada">Policía Nacional</strong></div>
+        <div class="encuestas-hero"><div><h2>📋 Centro de formularios</h2><p>Configura una encuesta reutilizable por facción, publícala y administra sus resultados.</p></div><div class="mark">✦</div></div>
+        <div class="subnav" id="encuestas-subnav">
+          <button class="active" type="button" data-encuesta-vista="configurar">⚙️ Configurar encuesta</button>
+          <button type="button" data-encuesta-vista="publicar">📢 Publicar</button>
+          <button type="button" data-encuesta-vista="resultados">📊 Resultados</button>
+        </div>
+        <div id="encuestas-configurar" class="encuesta-subvista">
+        <div class="section">
+          <div class="section-heading"><div><h2>🛡️ Formularios Fuerza Pública</h2><p>Configura, publica y revisa las encuestas de cada fuerza desde esta misma página.</p></div></div>
+          <form id="encuesta-form" class="form">
+            <input type="hidden" name="encuestaId" value="">
+            <input type="hidden" name="fuerza" value="policia_nacional">
+            <label>Título<input name="titulo" minlength="4" maxlength="120" required placeholder="Ej. Formulario de ingreso Policía Nacional"></label>
+            <label>Descripción<textarea name="descripcion" maxlength="1500"></textarea></label>
+            <label>Mínimo de aprobación<input name="minimoAprobacion" type="number" min="67" max="100" value="67" required></label>
+            <div class="section-heading"><h3>Preguntas</h3><button id="agregar-pregunta-encuesta" class="btn" type="button">＋ Agregar pregunta</button></div>
+            <div id="preguntas-encuesta"></div>
+            <button class="btn gold" type="submit">Guardar configuración</button><div id="encuesta-status" class="status"></div>
+          </form>
+        </div>
+        </div>
+        <div id="encuestas-publicar" class="encuesta-subvista" hidden>
+          <div class="section"><div class="section-heading"><div><h2>📢 Publicar encuestas</h2><p>Las encuestas creadas desde Configurar se publican y llegan al canal de Discord automáticamente.</p></div><button id="actualizar-publicadas" class="btn" type="button">Actualizar</button></div><div id="encuestas-publicadas" class="records"><div class="empty">Carga las encuestas publicadas.</div></div></div>
+        </div>
+        <div id="encuestas-resultados" class="encuesta-subvista" hidden>
+          <div class="section"><div class="section-heading"><div><h2>📊 Resultados</h2><p>Elige una encuesta para revisar respuestas, calificar abiertas y cerrar.</p></div><button id="actualizar-encuestas" class="btn" type="button">Actualizar</button></div><div id="encuestas-lista" class="records"><div class="empty">Carga las encuestas para ver resultados.</div></div><div id="encuesta-detalle" class="records"></div></div>
+        </div>
+        <div id="revision-usuario-modal" class="modal review-modal" role="dialog" aria-modal="true" aria-labelledby="revision-usuario-titulo" hidden>
+          <div class="modal-card"><div class="modal-head"><h3 id="revision-usuario-titulo">👤 Revisión del usuario</h3><button type="button" class="close-modal" id="cerrar-revision-usuario">×</button></div><div id="revision-usuario-contenido"></div></div>
+        </div>
+        <div id="publicar-encuesta-modal" class="modal" role="dialog" aria-modal="true">
+          <div class="modal-card"><div class="modal-head"><h3>📢 Publicar encuesta</h3><button type="button" class="close-modal" id="cerrar-publicar-encuesta">×</button></div>
+            <p id="publicar-encuesta-nombre" class="status"></p>
+            <form id="publicar-encuesta-form" class="form"><input type="hidden" name="id"><label>Fecha y hora de cierre<input name="fechaCierre" type="datetime-local" required></label><button class="btn gold" type="submit">Publicar ahora</button><div id="publicar-encuesta-status" class="status"></div></form>
+          </div>
+        </div>
+        </div>
+      </section>
+
       <section id="twitter" class="view">
         <div class="section">
           <div class="section-heading"><div><h2>🐦 Verificación de Twitter</h2><p>Verifica o quita la verificación de las cuentas ciudadanas.</p></div></div>
@@ -821,6 +912,7 @@
           document.querySelector("#" + b.dataset.view).classList.add("active");
           if (b.dataset.view === "tienda") cargarCatalogo();
           if (b.dataset.view === "trabajos") cargarTrabajos();
+          if (b.dataset.view === "encuestas") { document.querySelector("#fuerzas-menu").hidden = false; document.querySelector("#encuestas-panel").hidden = true; }
         }),
       );
       document.querySelectorAll("[data-record]").forEach((b) =>
@@ -998,6 +1090,119 @@
           }
         }),
       );
+      function renumerarPreguntasEncuesta() {
+        document.querySelectorAll("#preguntas-encuesta .encuesta-pregunta").forEach((box, indice) => {
+          const numero = indice + 1;
+          box.dataset.numero = numero;
+          const titulo = box.querySelector(".record-line strong");
+          if (titulo) titulo.textContent = `Pregunta ${numero}`;
+          box.querySelectorAll(".correcta-opcion").forEach((radio) => { radio.name = `correcta-${numero}`; });
+        });
+        numeroPreguntaEncuesta = document.querySelectorAll("#preguntas-encuesta .encuesta-pregunta").length;
+      }
+      function agregarPreguntaEncuesta() {
+        numeroPreguntaEncuesta += 1;
+        const n = numeroPreguntaEncuesta;
+        const box = document.createElement("article");
+        box.className = "record encuesta-pregunta";
+        box.dataset.numero = n;
+        box.innerHTML = `<div class="record-line"><div><strong>Pregunta ${n}</strong></div><button type="button" class="btn red btn-small eliminar-pregunta">Eliminar</button></div><label>Pregunta<textarea class="texto-pregunta" maxlength="500" required></textarea></label><label>Tipo<select class="tipo-pregunta"><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option></select></label><div class="opciones-pregunta" hidden><div class="opciones-lista"></div><button type="button" class="btn btn-small agregar-opcion">＋ Agregar respuesta</button></div>`;
+        const opciones = box.querySelector(".opciones-lista");
+        const agregarOpcion = () => { const fila = document.createElement("label"); fila.className = "row"; fila.innerHTML = `<span>Respuesta <input class="texto-opcion" maxlength="200" required></span><span>Correcta <input class="correcta-opcion" type="radio" name="correcta-${n}"></span>`; opciones.append(fila); };
+        box.querySelector(".tipo-pregunta").addEventListener("change", (e) => { box.querySelector(".opciones-pregunta").hidden = e.target.value !== "cerrada"; if (e.target.value === "cerrada" && !opciones.children.length) { agregarOpcion(); agregarOpcion(); } });
+        box.querySelector(".agregar-opcion").addEventListener("click", agregarOpcion);
+        box.querySelector(".eliminar-pregunta").addEventListener("click", () => { box.remove(); renumerarPreguntasEncuesta(); });
+        document.querySelector("#preguntas-encuesta").append(box);
+        renumerarPreguntasEncuesta();
+      }
+      async function cargarEncuestas() {
+        const lista = document.querySelector("#encuestas-lista");
+        lista.innerHTML = '<div class="empty">Cargando encuestas...</div>';
+        const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" });
+        const d = await r.json();
+        if (!r.ok) { lista.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar las encuestas."}</div>`; return; }
+        lista.innerHTML = (d.encuestas || []).length ? d.encuestas.map((x) => `<article class="record result-card"><div class="record-line"><div><strong>📋 ${x.titulo}</strong><small>🛡️ ${x.fuerzaNombre} · ${x.estado} · 📝 ${x.preguntas} pregunta(s)</small></div><span class="pill">👥 ${x.respuestas} respuesta(s)</span></div><div class="result-summary"><div class="result-stat"><small>Estado</small><strong>${x.estado === "activa" ? "🟢 Activa" : x.estado === "cerrada" ? "🔴 Cerrada" : "🟡 Borrador"}</strong></div><div class="result-stat"><small>Porcentaje mínimo</small><strong>${x.minimoAprobacion}%</strong></div><div class="result-stat"><small>Cierre</small><strong>${x.fechaCierre ? new Date(x.fechaCierre).toLocaleDateString("es-CO") : "—"}</strong></div></div><div class="result-actions"><button class="btn btn-small ver-encuesta" data-id="${x.id}">📊 Ver resultados</button></div></article>`).join("") : '<div class="empty">Aún no hay encuestas creadas.</div>';
+        lista.querySelectorAll(".ver-encuesta").forEach((b) => b.addEventListener("click", () => cargarDetalleEncuesta(b.dataset.id)));
+      }
+      async function cargarDetalleEncuesta(id) {
+        const r = await fetch(`/api/fundacion/encuestas/${encodeURIComponent(id)}`, { cache: "no-store" });
+        const d = await r.json();
+        const box = document.querySelector("#encuesta-detalle");
+        if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudo cargar el resultado."}</div>`; return; }
+        const encuesta = d.encuesta;
+        const encuestaAbierta = encuesta.estado === "activa" && (!encuesta.fechaCierre || new Date(encuesta.fechaCierre).getTime() > Date.now());
+        const respuestas = encuesta.respuestas || [];
+        const completas = respuestas.filter((u) => u.resultado?.completo).length;
+        const pendientes = respuestas.length - completas;
+        const estadoTexto = encuestaAbierta ? "🟢 Se puede calificar" : encuesta.estado === "cerrada" ? "🔴 Encuesta cerrada" : "🟡 Borrador";
+        box.innerHTML = `<article class="record"><div class="record-line"><div><strong>📊 ${encuesta.titulo}</strong><small>🛡️ ${encuesta.fuerzaNombre} · ${estadoTexto} · mínimo ${encuesta.minimoAprobacion}%</small></div><span class="pill">👥 ${respuestas.length} usuario(s)</span></div><div class="result-summary"><div class="result-stat"><small>Usuarios</small><strong>${respuestas.length}</strong></div><div class="result-stat"><small>Calificados</small><strong>${completas}</strong></div><div class="result-stat"><small>${encuestaAbierta ? "Pendientes" : "No calificados"}</small><strong>${pendientes}</strong></div></div><div class="user-picker">${respuestas.length ? respuestas.map((u, i) => { const completo = Boolean(u.resultado?.completo); const porcentaje = completo ? `${u.resultado.porcentaje}%` : (encuestaAbierta ? "⏳ Pendiente" : "⚠️ No calificado"); const estado = completo ? (u.resultado.aprobado ? "✅ Aprobó" : "❌ No aprobó") : (encuestaAbierta ? "✎ Revisar" : "⚠️ Esta encuesta no se calificó"); return `<button type="button" class="user-result-button" data-user-index="${i}"><span>👤 <strong>${u.usuarioNombre || "Usuario"}</strong><small>${estado}</small></span><span class="score">${porcentaje} → Ver</span></button>`; }).join("") : '<div class="empty">📭 Todavía no hay usuarios que hayan respondido.</div>'}</div><div class="result-actions"><button class="btn red cerrar-encuesta" data-id="${encuesta.id}" ${!encuestaAbierta ? "disabled" : ""}>📣 Publicar resultados y cerrar</button></div></article>`;
+        const modal = document.querySelector("#revision-usuario-modal");
+        const contenido = document.querySelector("#revision-usuario-contenido");
+        const abrirUsuario = (indice) => {
+          const usuario = respuestas[indice];
+          const completo = Boolean(usuario.resultado?.completo);
+          const puedeCalificar = encuestaAbierta && !completo;
+          document.querySelector("#revision-usuario-titulo").textContent = `👤 ${usuario.usuarioNombre || "Usuario"}`;
+          contenido.innerHTML = `<div class="result-summary"><div class="result-stat"><small>Estado</small><strong>${completo ? (usuario.resultado.aprobado ? "✅ Aprobó" : "❌ No aprobó") : (encuestaAbierta ? "⏳ Pendiente" : "⚠️ No calificado")}</strong></div><div class="result-stat"><small>Porcentaje</small><strong>${completo ? `${usuario.resultado.porcentaje}%` : "—"}</strong></div><div class="result-stat"><small>Respondió</small><strong>${usuario.respondidaEn ? new Date(usuario.respondidaEn).toLocaleDateString("es-CO") : "—"}</strong></div></div>${completo ? '<div class="result-note done">✅ Esta encuesta ya está calificada. Revisa abajo las respuestas buenas y malas.</div>' : puedeCalificar ? '<div class="result-note pending">✎ Elige Buena o Mala en cada respuesta abierta.</div>' : '<div class="result-note closed">⚠️ Esta encuesta no se calificó porque ya cerró.</div>'}${(usuario.respuestas || []).map((a, n) => { const p = encuesta.preguntas.find((q) => q.id === a.preguntaId); const esCerrada = p?.tipo === "cerrada"; const correcta = esCerrada && Number(a.valor) === Number(p.correcta); const respuesta = esCerrada ? (p.opciones?.[a.valor] || "Sin respuesta") : (a.valor || "Sin respuesta"); const clase = esCerrada ? (correcta ? "good" : "bad") : ""; const marca = esCerrada ? `<span class="review-label ${correcta ? "good" : "bad"}">${correcta ? "✅ CORRECTA" : "❌ INCORRECTA"}</span>` : ""; const accion = !esCerrada ? (puedeCalificar ? `<button type="button" class="btn btn-small calificar-modal" data-calificacion="buena" data-user="${usuario.usuarioId}" data-pregunta="${p.id}" data-encuesta="${encuesta.id}">✅ Buena</button> <button type="button" class="btn red btn-small calificar-modal" data-calificacion="mala" data-user="${usuario.usuarioId}" data-pregunta="${p.id}" data-encuesta="${encuesta.id}">❌ Mala</button>` : `<span class="review-label ${completo ? "good" : "bad"}">${completo ? `✅ Calificada: ${a.calificacion === 1 ? "Buena" : "Mala"}` : "⚠️ Sin calificar"}</span>`) : `<small>Respuesta correcta: ${p.opciones?.[p.correcta] || "—"}</small>`; return `<div class="review-question ${clase}"><strong>${n + 1}. ${p?.texto || "Pregunta"}${marca}</strong><div class="review-answer">💬 ${respuesta}</div><div class="review-answer">${accion}</div></div>`; }).join("")}`;
+          modal.hidden = false; modal.classList.add("open");
+          contenido.querySelectorAll(".calificar-modal").forEach((b) => b.addEventListener("click", async () => { const rr = await fetch(`/api/fundacion/encuestas/${b.dataset.encuesta}/calificar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuarioId: b.dataset.user, preguntaId: b.dataset.pregunta, calificacion: b.dataset.calificacion }) }); if (!rr.ok) { contenido.insertAdjacentHTML("afterbegin", `<div class="result-note closed">⚠️ No se pudo guardar la calificación. La encuesta puede haber cerrado o la respuesta ya puede estar calificada.</div>`); return; } cerrarRevisionUsuario(); await cargarDetalleEncuesta(encuesta.id); }));
+        };
+        box.querySelectorAll(".user-result-button").forEach((b) => b.addEventListener("click", () => abrirUsuario(Number(b.dataset.userIndex))));
+        box.querySelector(".cerrar-encuesta")?.addEventListener("click", async () => { if (!confirm("¿Cerrar y publicar los resultados?")) return; await fetch(`/api/fundacion/encuestas/${encuesta.id}/cerrar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); cargarDetalleEncuesta(encuesta.id); cargarEncuestas(); });
+      }
+      function cerrarRevisionUsuario() { const modal = document.querySelector("#revision-usuario-modal"); modal.classList.remove("open"); modal.hidden = true; }
+      document.querySelector("#cerrar-revision-usuario").addEventListener("click", cerrarRevisionUsuario);
+      document.querySelector("#revision-usuario-modal").addEventListener("click", (event) => { if (event.target.id === "revision-usuario-modal") cerrarRevisionUsuario(); });
+      function mostrarVistaEncuesta(vista) {
+        document.querySelectorAll("#encuestas-subnav [data-encuesta-vista]").forEach((b) => b.classList.toggle("active", b.dataset.encuestaVista === vista));
+        document.querySelectorAll("#encuestas .encuesta-subvista").forEach((box) => { box.hidden = box.id !== `encuestas-${vista}`; });
+        if (vista === "resultados") cargarEncuestas();
+        if (vista === "publicar") cargarPublicadas();
+      }
+      async function cargarPublicadas() {
+        const box = document.querySelector("#encuestas-publicadas");
+        box.innerHTML = '<div class="empty">Cargando publicaciones...</div>';
+        const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" }); const d = await r.json();
+        if (!r.ok) { box.innerHTML = `<div class="empty">${d.error || "No se pudieron cargar las publicaciones."}</div>`; return; }
+        const encuestasFuerza = (d.encuestas || []).filter((x) => x.fuerza === fuerzaActiva);
+        box.innerHTML = encuestasFuerza.length ? encuestasFuerza.map((x) => `<article class="record"><div class="record-line"><div><strong>${x.titulo}</strong><small>${x.fuerzaNombre} · ${x.estado}${x.fechaCierre ? ` · cierre ${new Date(x.fechaCierre).toLocaleString("es-CO")}` : " · sin fecha de cierre"}</small></div>${["borrador", "cerrada"].includes(x.estado) ? `<div><button class="btn btn-small publicar-borrador" data-id="${x.id}" data-titulo="${x.titulo}">📢 ${x.estado === "cerrada" ? "Volver a publicar" : "Publicar"}</button><button class="btn red btn-small eliminar-borrador" data-id="${x.id}">🗑️ Eliminar</button></div>` : `<span class="pill">🔒 activa</span>`}</div></article>`).join("") : `<div class="empty">No hay encuestas guardadas para ${nombresFuerza[fuerzaActiva] || fuerzaActiva}.</div>`;
+        box.querySelectorAll(".publicar-borrador").forEach((b) => b.addEventListener("click", () => abrirModalPublicar(b.dataset.id, b.dataset.titulo)));
+        box.querySelectorAll(".eliminar-borrador").forEach((b) => b.addEventListener("click", async () => { if (!confirm("¿Eliminar esta encuesta guardada?")) return; const r = await fetch(`/api/fundacion/encuestas/${encodeURIComponent(b.dataset.id)}`, { method: "DELETE" }); const d = await r.json(); if (!r.ok) return alert(d.error || "No se pudo eliminar."); cargarPublicadas(); }));
+      }
+      function abrirModalPublicar(id, titulo) { const modal = document.querySelector("#publicar-encuesta-modal"); const campoFecha = document.querySelector('#publicar-encuesta-form input[name="fechaCierre"]'); const minimoColombia = new Date(Date.now() + 60 * 1000 - 5 * 60 * 60 * 1000).toISOString().slice(0, 16); campoFecha.min = minimoColombia; document.querySelector('#publicar-encuesta-form input[name="id"]').value = id; document.querySelector("#publicar-encuesta-nombre").textContent = `Encuesta: ${titulo}`; document.querySelector("#publicar-encuesta-status").textContent = "Hora de Colombia (America/Bogota). Elige al menos un minuto después de la hora actual."; modal.classList.add("open"); }
+      async function cargarEncuestaExistente(fuerza) {
+        const r = await fetch("/api/fundacion/encuestas", { cache: "no-store" }); const d = await r.json();
+        if (!r.ok) { document.querySelector("#encuesta-status").textContent = d.error || "No se pudo cargar la encuesta."; return; }
+        const existente = (d.encuestas || []).find((x) => x.fuerza === fuerza);
+        if (existente) return cargarBorradorEnFormulario(existente.id);
+        const form = document.querySelector("#encuesta-form"); form.reset(); form.encuestaId.value = ""; form.fuerza.value = fuerza;
+        document.querySelector("#preguntas-encuesta").innerHTML = ""; numeroPreguntaEncuesta = 0; agregarPreguntaEncuesta();
+        document.querySelector("#encuesta-status").textContent = "Nueva configuración para esta facción. Se guardará una sola encuesta reutilizable.";
+      }
+      async function cargarBorradorEnFormulario(id) {
+        const r = await fetch(`/api/fundacion/encuestas/${encodeURIComponent(id)}`, { cache: "no-store" }); const d = await r.json();
+        if (!r.ok) return alert(d.error || "No se pudo cargar el borrador.");
+        const encuesta = d.encuesta; const form = document.querySelector("#encuesta-form");
+        form.encuestaId.value = encuesta.id; form.titulo.value = encuesta.titulo; form.descripcion.value = encuesta.descripcion || ""; form.fuerza.value = encuesta.fuerza; form.minimoAprobacion.value = encuesta.minimoAprobacion;
+        document.querySelector("#fuerza-seleccionada").textContent = nombresFuerza[encuesta.fuerza] || encuesta.fuerza;
+        document.querySelector("#preguntas-encuesta").innerHTML = ""; numeroPreguntaEncuesta = 0;
+        for (const p of encuesta.preguntas) { agregarPreguntaEncuesta(); const box = document.querySelector("#preguntas-encuesta .encuesta-pregunta:last-child"); box.querySelector(".texto-pregunta").value = p.texto; const tipo = box.querySelector(".tipo-pregunta"); tipo.value = p.tipo; tipo.dispatchEvent(new Event("change")); if (p.tipo === "cerrada") { const filas = [...box.querySelectorAll(".row")]; while (filas.length < p.opciones.length) { box.querySelector(".agregar-opcion").click(); filas.push(box.querySelectorAll(".row")[filas.length]); } [...box.querySelectorAll(".row")].forEach((fila, i) => { fila.querySelector(".texto-opcion").value = p.opciones[i] || ""; fila.querySelector(".correcta-opcion").checked = i === p.correcta; }); } }
+        mostrarVistaEncuesta("configurar"); document.querySelector("#encuesta-form").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      document.querySelector("#agregar-pregunta-encuesta").addEventListener("click", agregarPreguntaEncuesta);
+      document.querySelector("#actualizar-encuestas").addEventListener("click", cargarEncuestas);
+      document.querySelector("#actualizar-publicadas").addEventListener("click", cargarPublicadas);
+      document.querySelectorAll("#encuestas-subnav [data-encuesta-vista]").forEach((b) => b.addEventListener("click", () => mostrarVistaEncuesta(b.dataset.encuestaVista)));
+      const nombresFuerza = { policia_nacional: "Policía Nacional", copes: "COPES", ejercito: "Ejército", fiscalia: "Fiscalía" };
+      let fuerzaActiva = "policia_nacional";
+      function seleccionarFuerza(fuerza) { fuerzaActiva = fuerza; document.querySelector("#fuerzas-menu").hidden = true; document.querySelector("#encuestas-panel").hidden = false; document.querySelector("#fuerza-seleccionada").textContent = nombresFuerza[fuerza] || fuerza; document.querySelector('#encuesta-form input[name="fuerza"]').value = fuerzaActiva; mostrarVistaEncuesta("configurar"); cargarEncuestaExistente(fuerzaActiva); }
+      document.querySelectorAll("[data-force-select]").forEach((b) => b.addEventListener("click", () => seleccionarFuerza(b.dataset.forceSelect)));
+      document.querySelector("#volver-fuerzas").addEventListener("click", () => { document.querySelector("#encuestas-panel").hidden = true; document.querySelector("#fuerzas-menu").hidden = false; });
+      document.querySelector("#encuesta-form").addEventListener("submit", async (event) => { event.preventDefault(); const form = event.currentTarget; const preguntas = [...document.querySelectorAll(".encuesta-pregunta")].map((box) => { const tipo = box.querySelector(".tipo-pregunta").value; const p = { tipo, texto: box.querySelector(".texto-pregunta").value.trim() }; if (tipo === "cerrada") { const filas = [...box.querySelectorAll(".row")]; p.opciones = filas.map((x) => x.querySelector(".texto-opcion").value.trim()); p.correcta = filas.findIndex((x) => x.querySelector(".correcta-opcion").checked); if (p.correcta < 0) throw new Error("Marca una respuesta correcta en cada pregunta cerrada."); } return p; }); if (!preguntas.length) { document.querySelector("#encuesta-status").textContent = "Agrega al menos una pregunta."; return; } form.querySelector('input[name="fuerza"]').value = fuerzaActiva; const body = Object.fromEntries(new FormData(form)); body.fuerza = fuerzaActiva; body.preguntas = preguntas; delete body.fechaCierre; const id = form.encuestaId.value; const r = await fetch(id ? `/api/fundacion/encuestas/${encodeURIComponent(id)}` : "/api/fundacion/encuestas", { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const d = await r.json(); document.querySelector("#encuesta-status").textContent = r.ok ? `✅ Encuesta de ${nombresFuerza[fuerzaActiva]} guardada correctamente.` : `❌ ${d.error || "No se pudo guardar."}`; if (r.ok) { form.encuestaId.value = d.encuesta.id; cargarPublicadas(); } });
+      document.querySelector("#cerrar-publicar-encuesta").addEventListener("click", () => document.querySelector("#publicar-encuesta-modal").classList.remove("open"));
+      document.querySelector("#publicar-encuesta-modal").addEventListener("click", (event) => { if (event.target.id === "publicar-encuesta-modal") event.currentTarget.classList.remove("open"); });
+      document.querySelector("#publicar-encuesta-form").addEventListener("submit", async (event) => { event.preventDefault(); const form = event.currentTarget; const status = document.querySelector("#publicar-encuesta-status"); status.textContent = "Publicando..."; const r = await fetch(`/api/fundacion/encuestas/${encodeURIComponent(form.id.value)}/publicar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fechaCierre: form.fechaCierre.value }) }); const d = await r.json(); if (!r.ok) { status.textContent = `❌ ${d.error || "No se pudo publicar."}`; return; } status.textContent = "✅ Publicada y anunciada en Discord."; setTimeout(() => { document.querySelector("#publicar-encuesta-modal").classList.remove("open"); cargarPublicadas(); }, 500); });
+
       const VERIFIED_ICON = "https://cdn-icons-png.flaticon.com/512/6711/6711626.png";
       let twitterPagina = 1;
       const TWITTER_POR_PAGINA = 10;
