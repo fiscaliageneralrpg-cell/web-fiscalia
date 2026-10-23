@@ -20,14 +20,9 @@ const variablesObligatorias = [
   "DISCORD_BOT_TOKEN",
 ];
 
-const faltantes = variablesObligatorias.filter(
-  (variable) => !process.env[variable],
-);
-
+const faltantes = variablesObligatorias.filter((v) => !process.env[v]);
 if (faltantes.length > 0) {
-  console.error(
-    `[CONFIGURACION] Faltan variables en Render: ${faltantes.join(", ")}`,
-  );
+  console.error(`[CONFIGURACION] Faltan variables en Render: ${faltantes.join(", ")}`);
   process.exit(1);
 }
 
@@ -68,7 +63,7 @@ app.use(
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24,
     },
-  }),
+  })
 );
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -82,9 +77,9 @@ app.get("/iniciar-seccion.html", (req, res) => {
 });
 
 function redirigirDespuesDeLogin(req, res, destino) {
-  req.session.save((error) => {
-    if (error) {
-      console.error("[SESION] No se pudo guardar la sesión:", error);
+  req.session.save((err) => {
+    if (err) {
+      console.error("[SESION] No se pudo guardar la sesión:", err);
       return res.status(500).send("No se pudo guardar la sesión.");
     }
     return res.redirect(destino);
@@ -93,27 +88,19 @@ function redirigirDespuesDeLogin(req, res, destino) {
 
 async function obtenerRolesDelServidor(discordId) {
   const url = new URL(
-    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}`,
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}`
   );
-
   const respuesta = await fetch(url, {
     headers: {
       Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
       "User-Agent": "Medellin-RP-Web/1.0",
     },
   });
-
-  if (respuesta.status === 404) {
-    return null;
-  }
-
+  if (respuesta.status === 404) return null;
   if (!respuesta.ok) {
     const detalle = await respuesta.text();
-    throw new Error(
-      `Discord no devolvió los roles: ${respuesta.status} ${detalle}`,
-    );
+    throw new Error(`Discord no devolvió los roles: ${respuesta.status} ${detalle}`);
   }
-
   const miembro = await respuesta.json();
   return Array.isArray(miembro.roles) ? miembro.roles : [];
 }
@@ -128,14 +115,11 @@ async function agregarRolDiscord(discordId, rolId, motivo) {
         "User-Agent": "Medellin-RP-Web/1.0",
         "X-Audit-Log-Reason": motivo || "Rol de whitelist",
       },
-    },
+    }
   );
-
   if (!respuesta.ok && respuesta.status !== 204) {
     const detalle = await respuesta.text();
-    throw new Error(
-      `Discord no pudo agregar el rol ${rolId}: ${respuesta.status} ${detalle}`,
-    );
+    throw new Error(`Discord no pudo agregar el rol ${rolId}: ${respuesta.status} ${detalle}`);
   }
 }
 
@@ -151,12 +135,14 @@ async function obtenerMiembrosDelServidor() {
     });
     if (!respuesta.ok) throw new Error(`Discord no devolvió los miembros: ${respuesta.status}`);
     const paginaMiembros = await respuesta.json();
-    miembros.push(...paginaMiembros.map((miembro) => ({
-      id: miembro.user.id,
-      username: miembro.user.username,
-      nombre: miembro.nick || miembro.user.global_name || miembro.user.username,
-      avatar: obtenerAvatarUrl(miembro.user),
-    })));
+    miembros.push(
+      ...paginaMiembros.map((miembro) => ({
+        id: miembro.user.id,
+        username: miembro.user.username,
+        nombre: miembro.nick || miembro.user.global_name || miembro.user.username,
+        avatar: obtenerAvatarUrl(miembro.user),
+      }))
+    );
     if (paginaMiembros.length < 1000) break;
     after = paginaMiembros.at(-1)?.user?.id || after;
   }
@@ -164,34 +150,28 @@ async function obtenerMiembrosDelServidor() {
 }
 
 function obtenerAvatarUrl(usuario) {
-  if (!usuario.avatar) {
-    return null;
-  }
+  if (!usuario.avatar) return null;
   const extension = usuario.avatar.startsWith("a_") ? "gif" : "png";
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
 
 async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}) {
-  const respuesta = await fetch(
-    `https://discord.com/api/v10/channels/${canalId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        "Content-Type": "application/json",
-        "User-Agent": "Medellin-RP-Web/1.0",
-      },
-      body: JSON.stringify({ ...opciones, embeds: [embed], components }),
+  const respuesta = await fetch(`https://discord.com/api/v10/channels/${canalId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+      "User-Agent": "Medellin-RP-Web/1.0",
     },
-  );
-
+    body: JSON.stringify({ ...opciones, embeds: [embed], components }),
+  });
   if (!respuesta.ok) {
     const detalle = await respuesta.text();
-    throw new Error(
-      `Discord no pudo enviar el mensaje: ${respuesta.status} ${detalle}`,
-    );
+    throw new Error(`Discord no pudo enviar el mensaje: ${respuesta.status} ${detalle}`);
   }
 }
+
+/* ===================== DISCORD OAUTH2 ===================== */
 
 app.get("/auth/discord", (req, res) => {
   const parametros = new URLSearchParams({
@@ -200,7 +180,6 @@ app.get("/auth/discord", (req, res) => {
     response_type: "code",
     scope: "identify",
   });
-
   res.redirect(`https://discord.com/oauth2/authorize?${parametros.toString()}`);
 });
 
@@ -208,15 +187,10 @@ app.get("/auth/discord/callback", async (req, res) => {
   const { code, error, error_description: descripcion } = req.query;
 
   if (error) {
-    return res
-      .status(400)
-      .send(`Discord canceló el inicio de sesión: ${descripcion || error}`);
+    return res.status(400).send(`Discord canceló el inicio de sesión: ${descripcion || error}`);
   }
-
   if (!code) {
-    return res
-      .status(400)
-      .send("No se recibió el código de autorización de Discord.");
+    return res.status(400).send("No se recibió el código de autorización de Discord.");
   }
 
   try {
@@ -228,39 +202,29 @@ app.get("/auth/discord/callback", async (req, res) => {
       redirect_uri: process.env.DISCORD_REDIRECT_URI,
     });
 
-    const respuestaToken = await fetch(
-      "https://discord.com/api/v10/oauth2/token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "Medellin-RP-Web/1.0",
-        },
-        body: parametrosToken.toString(),
+    const respuestaToken = await fetch("https://discord.com/api/v10/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Medellin-RP-Web/1.0",
       },
-    );
+      body: parametrosToken.toString(),
+    });
 
     const datosToken = await respuestaToken.json();
-
     if (!respuestaToken.ok || !datosToken.access_token) {
       console.error("[DISCORD TOKEN]", datosToken);
-      return res
-        .status(401)
-        .send("Discord no pudo validar el inicio de sesión.");
+      return res.status(401).send("Discord no pudo validar el inicio de sesión.");
     }
 
-    const respuestaUsuario = await fetch(
-      "https://discord.com/api/v10/users/@me",
-      {
-        headers: {
-          Authorization: `${datosToken.token_type} ${datosToken.access_token}`,
-          "User-Agent": "Medellin-RP-Web/1.0",
-        },
+    const respuestaUsuario = await fetch("https://discord.com/api/v10/users/@me", {
+      headers: {
+        Authorization: `${datosToken.token_type} ${datosToken.access_token}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
       },
-    );
+    });
 
     const usuario = await respuestaUsuario.json();
-
     if (!respuestaUsuario.ok || !usuario.id) {
       console.error("[DISCORD USUARIO]", usuario);
       return res.status(401).send("No se pudo obtener tu usuario de Discord.");
@@ -272,13 +236,10 @@ app.get("/auth/discord/callback", async (req, res) => {
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
 
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
+
     const [solicitudesWhitelist] = await pool.execute(
-      `SELECT estado
-       FROM whitelist_solicitudes
-       WHERE discord_id = ?
-       ORDER BY id DESC
-       LIMIT 1`,
-      [usuario.id],
+      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
+      [usuario.id]
     );
     const estadoWhitelist = solicitudesWhitelist[0]?.estado || null;
 
@@ -298,8 +259,7 @@ app.get("/auth/discord/callback", async (req, res) => {
     };
 
     console.log(
-      `[LOGIN] ${usuario.username} (${usuario.id}) | ` +
-        `whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`,
+      `[LOGIN] ${usuario.username} (${usuario.id}) | whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`
     );
 
     if (!estaEnServidor) {
@@ -322,13 +282,17 @@ app.get("/auth/discord/callback", async (req, res) => {
 
     return redirigirDespuesDeLogin(req, res, "/dashboard-user.html");
   } catch (error) {
-    console.error("[DISCORD OAUTH2] Error completo:", error);
-    console.error("[DISCORD OAUTH2] Mensaje:", error.message);
-    return res
-      .status(500)
-      .send("Ocurrió un error interno durante el inicio de sesión.");
+    console.error("=== ERROR LOGIN DISCORD ===");
+    console.error("Nombre:", error.name);
+    console.error("Mensaje:", error.message);
+    console.error("Código:", error.code);
+    console.error("Stack:", error.stack);
+    console.error("==========================");
+    return res.status(500).send("Ocurrió un error interno durante el inicio de sesión: " + error.message);
   }
 });
+
+/* ===================== MIDDLEWARES ===================== */
 
 function exigirSesion(req, res) {
   if (!req.session.usuario) {
@@ -346,7 +310,7 @@ async function exigirFundacion(req, res) {
       res.status(403).json({ redirect: "/no-estas-en-el-servidor.html" });
       return false;
     }
-    if (!roles?.includes(ROL_FUNDACION) && !roles?.includes(ROL_STAFF)) {
+    if (!roles.includes(ROL_FUNDACION) && !roles.includes(ROL_STAFF)) {
       res.status(403).json({ error: "No tienes el rol autorizado para acceder al panel administrativo." });
       return false;
     }
@@ -376,93 +340,57 @@ async function exigirPolicia(req, res) {
   }
 }
 
+/* ===================== API WHITELIST ===================== */
+
 app.post("/api/whitelist", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   const respuestas = req.body?.respuestas;
-
   if (!respuestas || typeof respuestas !== "object") {
     return res.status(400).json({ error: "Las respuestas son obligatorias." });
   }
-
   try {
     const [pendientesExistentes] = await pool.execute(
-      `SELECT id
-       FROM whitelist_solicitudes
-       WHERE discord_id = ? AND estado = 'pendiente'
-       ORDER BY id DESC
-       LIMIT 1`,
-      [req.session.usuario.id],
+      `SELECT id FROM whitelist_solicitudes WHERE discord_id = ? AND estado = 'pendiente' ORDER BY id DESC LIMIT 1`,
+      [req.session.usuario.id]
     );
     if (pendientesExistentes.length) {
       return res.status(409).json({
-        error: "Ya tienes una solicitud de whitelist pendiente. Espera la revisión del equipo.",
+        error: "Ya tienes una solicitud de whitelist pendiente.",
         redirect: "/whitelist-pendiente.html",
       });
     }
 
-    const [resultadoWhitelist] = await pool.execute(
-      `INSERT INTO whitelist_solicitudes
-                (discord_id, discord_username, respuestas, estado)
-             VALUES (?, ?, ?, 'pendiente')`,
-      [
-        req.session.usuario.id,
-        req.session.usuario.username,
-        JSON.stringify(respuestas),
-      ],
+    const [resultado] = await pool.execute(
+      `INSERT INTO whitelist_solicitudes (discord_id, discord_username, respuestas, estado) VALUES (?, ?, ?, 'pendiente')`,
+      [req.session.usuario.id, req.session.usuario.username, JSON.stringify(respuestas)]
     );
 
     try {
-      await agregarRolDiscord(
-        req.session.usuario.id,
-        ROL_WHITELIST_PENDIENTE,
-        "Whitelist enviada desde la web",
-      );
+      await agregarRolDiscord(req.session.usuario.id, ROL_WHITELIST_PENDIENTE, "Whitelist enviada desde la web");
     } catch (errorRol) {
       console.error("[WHITELIST] No se pudo agregar el rol pendiente:", errorRol);
-      await pool.execute(
-        `DELETE FROM whitelist_solicitudes
-         WHERE id = ? AND estado = 'pendiente'`,
-        [resultadoWhitelist.insertId],
-      );
-      return res.status(503).json({
-        error:
-          "No se pudo asignar el rol pendiente en Discord. La solicitud no fue creada.",
-      });
+      await pool.execute(`DELETE FROM whitelist_solicitudes WHERE id = ? AND estado = 'pendiente'`, [resultado.insertId]);
+      return res.status(503).json({ error: "No se pudo asignar el rol pendiente en Discord." });
     }
 
-    const camposWhitelist = Object.entries(respuestas).map(
-      ([pregunta, respuesta]) => ({
-        name: pregunta.replaceAll("_", " ").slice(0, 256),
-        value: String(respuesta || "Sin respuesta").slice(0, 1024),
-        inline: false,
-      }),
-    );
+    const campos = Object.entries(respuestas).map(([pregunta, respuesta]) => ({
+      name: pregunta.replaceAll("_", " ").slice(0, 256),
+      value: String(respuesta || "Sin respuesta").slice(0, 1024),
+      inline: false,
+    }));
 
     try {
       await enviarEmbedDiscord(
         "1539313915001839616",
         {
           title: `${EMOJI_FORMULARIO} NUEVA SOLICITUD DE WHITELIST`,
-          description:
-            `${EMOJI_ESPERA} El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n` +
-            `**Estado:** Pendiente de revisión`,
+          description: `${EMOJI_ESPERA} El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n**Estado:** Pendiente de revisión`,
           color: 0xffd166,
-          thumbnail: req.session.usuario.avatarUrl
-            ? { url: req.session.usuario.avatarUrl }
-            : undefined,
+          thumbnail: req.session.usuario.avatarUrl ? { url: req.session.usuario.avatarUrl } : undefined,
           fields: [
-            {
-              name: `${EMOJI_ADMIN} Usuario`,
-              value: `<@${req.session.usuario.id}>`,
-              inline: true,
-            },
-            {
-              name: `${EMOJI_FORMULARIO_2} Discord ID`,
-              value: req.session.usuario.id,
-              inline: true,
-            },
-            ...camposWhitelist,
+            { name: `${EMOJI_ADMIN} Usuario`, value: `<@${req.session.usuario.id}>`, inline: true },
+            { name: `${EMOJI_FORMULARIO_2} Discord ID`, value: req.session.usuario.id, inline: true },
+            ...campos,
           ].slice(0, 25),
           footer: { text: `${NOMBRE_SERVIDOR} • Gestión de whitelist` },
           timestamp: new Date().toISOString(),
@@ -475,13 +403,13 @@ app.post("/api/whitelist", async (req, res) => {
                 type: 2,
                 style: 3,
                 label: "ACEPTAR",
-                custom_id: `whitelist:aceptar:${resultadoWhitelist.insertId}:${req.session.usuario.id}`,
+                custom_id: `whitelist:aceptar:${resultado.insertId}:${req.session.usuario.id}`,
               },
               {
                 type: 2,
                 style: 4,
                 label: "DENEGAR",
-                custom_id: `whitelist:denegar:${resultadoWhitelist.insertId}:${req.session.usuario.id}`,
+                custom_id: `whitelist:denegar:${resultado.insertId}:${req.session.usuario.id}`,
               },
             ],
           },
@@ -489,57 +417,35 @@ app.post("/api/whitelist", async (req, res) => {
         {
           content: `<@&${ROL_STAFF_WHITELIST}> **Esta whitelist se envió desde la web.**`,
           allowed_mentions: { roles: [ROL_STAFF_WHITELIST] },
-        },
+        }
       );
     } catch (errorDiscord) {
-      console.error(
-        "[WHITELIST] Se guardó en MySQL, pero no llegó a Discord:",
-        errorDiscord.message,
-      );
+      console.error("[WHITELIST] Guardado en MySQL, pero no llegó a Discord:", errorDiscord.message);
     }
 
-    return res.json({
-      correcto: true,
-      redirect: "/whitelist-pendiente.html",
-    });
+    return res.json({ correcto: true, redirect: "/whitelist-pendiente.html" });
   } catch (error) {
     console.error("[WHITELIST] No se pudo guardar:", error.message);
-    return res.status(500).json({
-      error:
-        "No se pudo guardar la whitelist. Verifica que exista la tabla en MySQL.",
-    });
+    return res.status(500).json({ error: "No se pudo guardar la whitelist. Verifica que exista la tabla en MySQL." });
   }
 });
 
 app.get("/api/whitelist/status", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   try {
     const [solicitudes] = await pool.execute(
-      `SELECT estado, motivo_denegacion
-       FROM whitelist_solicitudes
-       WHERE discord_id = ?
-       ORDER BY id DESC
-       LIMIT 1`,
-      [req.session.usuario.id],
+      `SELECT estado, motivo_denegacion FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
+      [req.session.usuario.id]
     );
-
     const estado = solicitudes[0] || null;
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
 
     if (aprobadaPorRol) {
-      return res.json({
-        estado: "aceptada",
-        redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html",
-      });
+      return res.json({ estado: "aceptada", redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html" });
     }
-
-    if (estado?.estado === "pendiente") {
-      return res.json({ estado: "pendiente" });
-    }
-
+    if (estado?.estado === "pendiente") return res.json({ estado: "pendiente" });
     if (estado?.estado === "denegada") {
       return res.json({
         estado: "denegada",
@@ -547,28 +453,18 @@ app.get("/api/whitelist/status", async (req, res) => {
         redirect: "/whitelist-denegada.html",
       });
     }
-
     return res.json({ estado: "sin_solicitud", redirect: "/whitelist.html" });
   } catch (error) {
     console.error("[WHITELIST STATUS]", error.message);
-    return res.status(500).json({
-      error: "No se pudo consultar el estado de la whitelist.",
-    });
+    return res.status(500).json({ error: "No se pudo consultar el estado de la whitelist." });
   }
 });
 
+/* ===================== API CÉDULA ===================== */
+
 app.post("/api/cedula", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
-  const {
-    nombres,
-    apellidos,
-    sexo,
-    nacionalidad,
-    lugar_nac,
-    fecha_nac,
-    roblox,
-  } = req.body || {};
+  const { nombres, apellidos, sexo, nacionalidad, lugar_nac, fecha_nac, roblox } = req.body || {};
   const discordId = req.session.usuario.id;
   const fechaTexto = String(fecha_nac || "").trim();
   const coincidenciaFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(fechaTexto);
@@ -578,58 +474,42 @@ app.post("/api/cedula", async (req, res) => {
   const [, dia, mes, anio] = coincidenciaFecha;
   const fechaISO = `${anio}-${mes}-${dia}`;
   const fechaValida = new Date(`${fechaISO}T00:00:00Z`);
-  if (fechaValida.getUTCFullYear() !== Number(anio) || fechaValida.getUTCMonth() + 1 !== Number(mes) || fechaValida.getUTCDate() !== Number(dia)) {
+  if (
+    fechaValida.getUTCFullYear() !== Number(anio) ||
+    fechaValida.getUTCMonth() + 1 !== Number(mes) ||
+    fechaValida.getUTCDate() !== Number(dia)
+  ) {
     return res.status(400).json({ error: "La fecha de nacimiento no es válida." });
   }
-
   if (!String(nombres || "").trim() || !String(apellidos || "").trim()) {
-    return res
-      .status(400)
-      .json({ error: "Nombres y apellidos son obligatorios." });
+    return res.status(400).json({ error: "Nombres y apellidos son obligatorios." });
   }
-
   if (!["MASCULINO", "FEMENINO"].includes(String(sexo || ""))) {
     return res.status(400).json({ error: "Selecciona un sexo válido." });
   }
-
   if (!["COLOMBIANA", "EXTRANJERA"].includes(String(nacionalidad || ""))) {
-    return res
-      .status(400)
-      .json({ error: "Selecciona una nacionalidad válida." });
+    return res.status(400).json({ error: "Selecciona una nacionalidad válida." });
   }
-
   if (!String(lugar_nac || "").trim() || !String(fecha_nac || "").trim()) {
-    return res
-      .status(400)
-      .json({ error: "Lugar y fecha de nacimiento son obligatorios." });
+    return res.status(400).json({ error: "Lugar y fecha de nacimiento son obligatorios." });
   }
-
   if (!String(roblox || "").trim()) {
-    return res
-      .status(400)
-      .json({ error: "El usuario de Roblox es obligatorio." });
+    return res.status(400).json({ error: "El usuario de Roblox es obligatorio." });
   }
 
   try {
     const roles = await obtenerRolesDelServidor(discordId);
-
     if (!roles.includes(ROL_WHITELIST_APROBADA)) {
-      return res
-        .status(403)
-        .json({ error: "Tu whitelist todavía no está aprobada." });
+      return res.status(403).json({ error: "Tu whitelist todavía no está aprobada." });
     }
 
     const conexion = await pool.getConnection();
-
     try {
       await conexion.beginTransaction();
-
-      const [ultimoResultado] = await conexion.execute(
-        `SELECT COALESCE(MAX(CAST(nuip AS UNSIGNED)), 1000) AS ultimo
-         FROM usuarios FOR UPDATE`,
+      const [ultimo] = await conexion.execute(
+        `SELECT COALESCE(MAX(CAST(nuip AS UNSIGNED)), 1000) AS ultimo FROM usuarios FOR UPDATE`
       );
-
-      const nuip = String(Number(ultimoResultado[0].ultimo) + 1);
+      const nuip = String(Number(ultimo[0].ultimo) + 1);
       const nombreCompleto = `${String(nombres).trim()} ${String(apellidos).trim()}`;
 
       await conexion.execute(
@@ -637,21 +517,8 @@ app.post("/api/cedula", async (req, res) => {
           (discord_id, nuip, nombre, nombres, apellidos, sexo,
            fecha_nacimiento, fecha_nac, nacionalidad, lugar_nac, roblox_name)
          VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?, ?)`,
-        [
-          discordId,
-          nuip,
-          nombreCompleto,
-          String(nombres).trim(),
-          String(apellidos).trim(),
-          String(sexo),
-          fechaISO,
-          fechaTexto,
-          String(nacionalidad),
-          String(lugar_nac).trim(),
-          String(roblox).trim(),
-        ],
+        [discordId, nuip, nombreCompleto, String(nombres).trim(), String(apellidos).trim(), String(sexo), fechaISO, fechaTexto, String(nacionalidad), String(lugar_nac).trim(), String(roblox).trim()]
       );
-
       await conexion.commit();
     } catch (error) {
       await conexion.rollback();
@@ -667,30 +534,15 @@ app.post("/api/cedula", async (req, res) => {
     try {
       await enviarEmbedDiscord("1539426748142325780", {
         title: "🪪 NUEVO REGISTRO CIVIL",
-        description:
-          "Se creó una nueva cédula ciudadana desde la página web de Medellín RP.",
+        description: "Se creó una nueva cédula ciudadana desde la página web de Medellín RP.",
         color: 0x00a876,
-        thumbnail: req.session.usuario.avatarUrl
-          ? { url: req.session.usuario.avatarUrl }
-          : undefined,
+        thumbnail: req.session.usuario.avatarUrl ? { url: req.session.usuario.avatarUrl } : undefined,
         fields: [
-          {
-            name: "👤 Ciudadano",
-            value: `${cedula.nombres || nombres} ${cedula.apellidos || apellidos}`,
-            inline: false,
-          },
+          { name: "👤 Ciudadano", value: `${cedula.nombres || nombres} ${cedula.apellidos || apellidos}`, inline: false },
           { name: "🆔 NUIP", value: `CC ${cedula.nuip}`, inline: true },
           { name: "⚧ Sexo", value: String(sexo), inline: true },
-          {
-            name: "🌎 Nacionalidad",
-            value: String(nacionalidad),
-            inline: true,
-          },
-          {
-            name: "📍 Lugar de nacimiento",
-            value: String(lugar_nac),
-            inline: true,
-          },
+          { name: "🌎 Nacionalidad", value: String(nacionalidad), inline: true },
+          { name: "📍 Lugar de nacimiento", value: String(lugar_nac), inline: true },
           { name: "🎮 Roblox", value: String(roblox), inline: true },
           { name: "💬 Discord", value: `<@${discordId}>`, inline: true },
         ],
@@ -698,74 +550,51 @@ app.post("/api/cedula", async (req, res) => {
         timestamp: new Date().toISOString(),
       });
     } catch (errorDiscord) {
-      console.error(
-        "[CEDULA] Se guardó en MySQL, pero no llegó el log a Discord:",
-        errorDiscord.message,
-      );
+      console.error("[CEDULA] Guardado en MySQL, pero no llegó el log a Discord:", errorDiscord.message);
     }
 
     return req.session.save((error) => {
       if (error) {
         console.error("[CEDULA] No se pudo guardar la sesión:", error);
-        return res.status(500).json({
-          error: "Cédula guardada, pero no se pudo actualizar la sesión.",
-        });
+        return res.status(500).json({ error: "Cédula guardada, pero no se pudo actualizar la sesión." });
       }
-
       return res.json({ correcto: true, redirect: "/dashboard-user.html" });
     });
   } catch (error) {
     console.error("[CEDULA] No se pudo guardar:", error.message);
-
     if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        error: "La cuenta de Discord ya tiene una cédula registrada.",
-      });
+      return res.status(409).json({ error: "La cuenta de Discord ya tiene una cédula registrada." });
     }
-
     return res.status(500).json({ error: "No se pudo guardar la cédula." });
   }
 });
 
+/* ===================== API ESTADO ===================== */
+
 app.get("/api/estado", async (req, res) => {
   try {
     await probarConexion();
-    return res.json({
-      correcto: true,
-      mysql: true,
-      mensaje: "La web está funcionando correctamente.",
-    });
+    return res.json({ correcto: true, mysql: true, mensaje: "La web está funcionando correctamente." });
   } catch (error) {
     console.error("[API ESTADO MYSQL]", error.message);
-    return res.status(503).json({
-      correcto: false,
-      mysql: false,
-      mensaje: "La web funciona, pero no pudo conectar con MySQL.",
-    });
+    return res.status(503).json({ correcto: false, mysql: false, mensaje: "La web funciona, pero no pudo conectar con MySQL." });
   }
 });
+
+/* ===================== API USUARIO ===================== */
 
 app.get("/api/usuario", async (req, res) => {
   if (!req.session.usuario) {
     return res.status(401).json({ autenticado: false });
   }
-
   try {
-    const cedulaActualizada = await buscarUsuarioPorDiscord(
-      req.session.usuario.id,
-    );
-    const rolesDiscord = await obtenerRolesDelServidor(
-      req.session.usuario.id,
-    );
+    const cedulaActualizada = await buscarUsuarioPorDiscord(req.session.usuario.id);
+    const rolesDiscord = await obtenerRolesDelServidor(req.session.usuario.id);
     const estaEnServidor = Array.isArray(rolesDiscord);
     const rolesActualizados = rolesDiscord || [];
     const [solicitudes] = await pool.execute(
-      `SELECT estado
-       FROM whitelist_solicitudes
-       WHERE discord_id = ?
-       ORDER BY id DESC
-       LIMIT 1`,
-      [req.session.usuario.id],
+      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
+      [req.session.usuario.id]
     );
     const estadoSolicitud = solicitudes[0]?.estado || null;
     const tieneWhitelistPendiente = estadoSolicitud === "pendiente";
@@ -787,29 +616,19 @@ app.get("/api/usuario", async (req, res) => {
     });
   } catch (error) {
     console.error("[API USUARIO]", error.message);
-    return res.status(503).json({
-      autenticado: true,
-      error: "No se pudo consultar la cédula en MySQL.",
-    });
+    return res.status(503).json({ autenticado: true, error: "No se pudo consultar la cédula en MySQL." });
   }
 });
 
+/* ===================== API CÉDULA IMAGEN ===================== */
+
 app.get("/api/cedula/imagen", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   try {
-    const [filas] = await pool.execute(
-      `SELECT cedula_imagen
-       FROM usuarios
-       WHERE discord_id = ?
-       LIMIT 1`,
-      [req.session.usuario.id],
-    );
-
+    const [filas] = await pool.execute(`SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1`, [req.session.usuario.id]);
     if (!filas[0]?.cedula_imagen) {
       return res.status(404).send("La imagen de la cédula todavía no existe.");
     }
-
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "no-store");
     return res.send(filas[0].cedula_imagen);
@@ -819,6 +638,8 @@ app.get("/api/cedula/imagen", async (req, res) => {
   }
 });
 
+/* ===================== API POLICIAL (PDA) ===================== */
+
 app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   const discordId = String(req.params.discordId || "").trim();
@@ -827,7 +648,7 @@ app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
     const cedula = await buscarUsuarioPorDiscord(discordId);
     const leer = async (tabla) => {
       const [filas] = await pool.execute(`SELECT payload FROM ${tabla} WHERE discord_id = ? ORDER BY fecha DESC`, [discordId]);
-      return filas.map((fila) => typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload);
+      return filas.map((fila) => (typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload));
     };
     const [arrestos, antecedentes, multas] = await Promise.all([
       leer("expediente_arrestos"),
@@ -847,21 +668,24 @@ app.get("/api/policial/cedula/:nuip", async (req, res) => {
   if (!nuip) return res.status(400).json({ error: "Debes escribir el número de cédula." });
   try {
     const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [nuip]);
-    if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada o no está vinculada al sistema civil. Indícale al ciudadano que utilice /mostrar-cedula en Discord." });
+    if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada." });
     const ciudadano = filas[0];
     const discordId = String(ciudadano.discord_id || "");
-    if (!discordId) return res.status(404).json({ error: "La cédula existe, pero no está vinculada a un Discord." });
+    if (!discordId) return res.status(404).json({ error: "La cédula no está vinculada a un Discord." });
     let expediente = { arrestos: [], antecedentes: [], multas: [] };
     if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
       try {
         const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
-        const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+        const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, {
+          headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+          signal: AbortSignal.timeout(8000),
+        });
         if (respuestaBot.ok) {
           const datosBot = await respuestaBot.json();
           expediente = datosBot.expediente || expediente;
         }
-      } catch (error) {
-        console.warn("[API PDA NUIP] No se pudo leer el expediente del bot:", error.message);
+      } catch (e) {
+        console.warn("[API PDA NUIP] No se pudo leer expediente del bot:", e.message);
       }
     }
     return res.json({ correcto: true, discordId, ciudadano, expediente });
@@ -877,7 +701,7 @@ app.get("/api/policial/cedula-imagen/:discordId", async (req, res) => {
   if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
   try {
     const [filas] = await pool.execute("SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
-    if (!filas[0]?.cedula_imagen) return res.status(404).send("La cédula no tiene imagen. El ciudadano debe ejecutar /mostrar-cedula en Discord.");
+    if (!filas[0]?.cedula_imagen) return res.status(404).send("La cédula no tiene imagen.");
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "no-store");
     return res.send(filas[0].cedula_imagen);
@@ -898,12 +722,17 @@ app.post("/api/policial/arresto", async (req, res) => {
   try {
     if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
     const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
-    const respuesta = await fetch(`${baseApi}/api/arrestos/${req.session.usuario.id}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY }, body: JSON.stringify({ discordId, delitos, imagenBase64, oficialId: req.session.usuario.id, oficial: req.session.usuario.nombre || req.session.usuario.username }), signal: AbortSignal.timeout(30000) });
+    const respuesta = await fetch(`${baseApi}/api/arrestos/${req.session.usuario.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ discordId, delitos, imagenBase64, oficialId: req.session.usuario.id, oficial: req.session.usuario.nombre || req.session.usuario.username }),
+      signal: AbortSignal.timeout(30000),
+    });
     const datos = await respuesta.json();
     return res.status(respuesta.status).json(datos);
   } catch (error) {
     console.error("[API PDA ARRESTO]", error.message);
-    return res.status(500).json({ error: "No se pudo registrar el arresto. Verifica las tablas del expediente." });
+    return res.status(500).json({ error: "No se pudo registrar el arresto." });
   }
 });
 
@@ -912,7 +741,10 @@ app.get("/api/policial/alertas", async (req, res) => {
   try {
     if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
     const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
-    const respuesta = await fetch(`${baseApi}/api/alertas/${req.session.usuario.id}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+    const respuesta = await fetch(`${baseApi}/api/alertas/${req.session.usuario.id}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
     const datos = await respuesta.json();
     return res.status(respuesta.status).json(datos);
   } catch (error) {
@@ -928,7 +760,10 @@ app.get("/api/policial/vehiculo/:placa", async (req, res) => {
   try {
     if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
     const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
-    const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}?placa=${encodeURIComponent(placa)}`, { headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) });
+    const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}?placa=${encodeURIComponent(placa)}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
     const datos = await respuesta.json();
     return res.status(respuesta.status).json(datos);
   } catch (error) {
@@ -963,70 +798,43 @@ app.get("/api/policial/imagen/:discordId", async (req, res) => {
   }
 });
 
+/* ===================== NEQUI / SALDOS ===================== */
+
 app.get("/api/nequi", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   try {
     if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
-      return res.status(503).json({
-        codigo: "NEQUI_API_NO_CONFIGURADA",
-        error: "Render no tiene configurada NEQUI_API_URL o NEQUI_API_KEY.",
-      });
+      return res.status(503).json({ codigo: "NEQUI_API_NO_CONFIGURADA", error: "Render no tiene configurada NEQUI_API_URL o NEQUI_API_KEY." });
     }
-
-    const respuestaBot = await fetch(
-      `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}`,
-      {
-        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
-        signal: AbortSignal.timeout(8000),
-      },
-    );
+    const respuestaBot = await fetch(`${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
     const datosBot = await respuestaBot.json();
     return res.status(respuestaBot.status).json(datosBot);
   } catch (error) {
     console.error("[API NEQUI]", error.message);
-    return res.status(500).json({
-      codigo: "NEQUI_API_INACCESIBLE",
-      error:
-        "Render no puede comunicarse con la API del bot. Revisa la URL pública y el puerto.",
-    });
+    return res.status(500).json({ codigo: "NEQUI_API_INACCESIBLE", error: "Render no puede comunicarse con la API del bot." });
   }
 });
 
 app.get("/api/nequi/usuarios", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   try {
-    const respuesta = await fetch(
-      `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members?limit=1000`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-          "User-Agent": "Medellin-RP-Web/1.0",
-        },
-      },
-    );
-
-    if (!respuesta.ok)
-      throw new Error(`Discord respondió ${respuesta.status}.`);
+    const respuesta = await fetch(`https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members?limit=1000`, {
+      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, "User-Agent": "Medellin-RP-Web/1.0" },
+    });
+    if (!respuesta.ok) throw new Error(`Discord respondió ${respuesta.status}.`);
     const miembros = await respuesta.json();
-
     return res.json({
       usuarios: miembros
-        .filter((miembro) => miembro.user?.id !== req.session.usuario.id)
-        .map((miembro) => ({
-          id: miembro.user.id,
-          nombre:
-            miembro.nick || miembro.user.global_name || miembro.user.username,
-          username: miembro.user.username,
-        }))
+        .filter((m) => m.user?.id !== req.session.usuario.id)
+        .map((m) => ({ id: m.user.id, nombre: m.nick || m.user.global_name || m.user.username, username: m.user.username }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     });
   } catch (error) {
     console.error("[API NEQUI USUARIOS]", error.message);
-    return res
-      .status(500)
-      .json({ error: "No se pudieron cargar los usuarios del servidor." });
+    return res.status(500).json({ error: "No se pudieron cargar los usuarios del servidor." });
   }
 });
 
@@ -1053,7 +861,6 @@ app.post("/api/multas/:multaId/pagar", async (req, res) => {
 
 app.get("/api/expediente", async (req, res) => {
   if (!exigirSesion(req, res)) return;
-
   try {
     const discordId = req.session.usuario.id;
     if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
@@ -1066,70 +873,32 @@ app.get("/api/expediente", async (req, res) => {
         if (respuestaBot.ok) {
           const datosBot = await respuestaBot.json();
           const expedienteBot = datosBot.expediente || {};
-          const arrestosBot = Array.isArray(expedienteBot.arrestos) ? expedienteBot.arrestos : [];
-          const antecedentesBot = Array.isArray(expedienteBot.antecedentes) ? expedienteBot.antecedentes : [];
-          const multasBot = Array.isArray(expedienteBot.multas) ? expedienteBot.multas : [];
           return res.json({
             correcto: true,
             origen: "bot-data-antecedentes",
             expediente: {
-              arrestos: arrestosBot,
-              antecedentes: antecedentesBot,
-              multas: multasBot,
-              conteos: {
-                arrestos: arrestosBot.length,
-                antecedentes: antecedentesBot.length,
-                multas: multasBot.length,
-                ordenes: 0,
-              },
+              arrestos: Array.isArray(expedienteBot.arrestos) ? expedienteBot.arrestos : [],
+              antecedentes: Array.isArray(expedienteBot.antecedentes) ? expedienteBot.antecedentes : [],
+              multas: Array.isArray(expedienteBot.multas) ? expedienteBot.multas : [],
+              conteos: { arrestos: 0, antecedentes: 0, multas: 0, ordenes: 0 },
             },
           });
         }
-      } catch (error) {
-        console.warn("[API EXPEDIENTE] No se pudo leer data/antecedentes.json mediante el bot:", error.message);
+      } catch (e) {
+        console.warn("[API EXPEDIENTE] No se pudo leer data/antecedentes.json mediante el bot:", e.message);
       }
     }
-
     const [arrestos, antecedentes, multas] = await Promise.all([
-      pool.execute(
-        "SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC",
-        [discordId],
-      ),
-      pool.execute(
-        "SELECT payload FROM expediente_antecedentes WHERE discord_id = ? ORDER BY fecha DESC",
-        [discordId],
-      ),
-      pool.execute(
-        "SELECT payload FROM expediente_multas WHERE discord_id = ? ORDER BY fecha DESC",
-        [discordId],
-      ),
+      pool.execute("SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
+      pool.execute("SELECT payload FROM expediente_antecedentes WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
+      pool.execute("SELECT payload FROM expediente_multas WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
     ]);
-    const convertir = ([filas]) =>
-      filas.map((fila) =>
-        typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload,
-      );
-    const datos = {
-      arrestos: convertir(arrestos),
-      antecedentes: convertir(antecedentes),
-      multas: convertir(multas),
-    };
-    return res.json({
-      correcto: true,
-      expediente: {
-        ...datos,
-        conteos: {
-          arrestos: datos.arrestos.length,
-          antecedentes: datos.antecedentes.length,
-          multas: datos.multas.length,
-          ordenes: 0,
-        },
-      },
-    });
+    const convertir = ([filas]) => filas.map((f) => (typeof f.payload === "string" ? JSON.parse(f.payload) : f.payload));
+    const datos = { arrestos: convertir(arrestos), antecedentes: convertir(antecedentes), multas: convertir(multas) };
+    return res.json({ correcto: true, expediente: { ...datos, conteos: { arrestos: datos.arrestos.length, antecedentes: datos.antecedentes.length, multas: datos.multas.length, ordenes: 0 } } });
   } catch (error) {
     console.error("[API EXPEDIENTE]", error.message);
-    return res.status(500).json({
-      error: "No se pudo consultar el expediente sincronizado en MySQL.",
-    });
+    return res.status(500).json({ error: "No se pudo consultar el expediente sincronizado en MySQL." });
   }
 });
 
@@ -1139,22 +908,13 @@ async function solicitarApiVehiculos(req, metodo = "GET", cuerpo = null, sufijo 
     error.statusCode = 503;
     throw error;
   }
-  const opciones = {
-    method: metodo,
-    headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
-    signal: AbortSignal.timeout(8000),
-  };
+  const opciones = { method: metodo, headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) };
   if (cuerpo !== null) {
     opciones.headers["Content-Type"] = "application/json";
     opciones.body = JSON.stringify(cuerpo);
   }
-  const baseApi = process.env.NEQUI_API_URL
-    .replace(/\/$/, "")
-    .replace(/\/api\/nequi$/, "");
-  const respuesta = await fetch(
-    `${baseApi}/api/vehiculos/${req.session.usuario.id}${sufijo}`,
-    opciones,
-  );
+  const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+  const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}${sufijo}`, opciones);
   const datos = await respuesta.json();
   return { estado: respuesta.status, datos };
 }
@@ -1184,12 +944,7 @@ app.post("/api/vehiculos", async (req, res) => {
 app.delete("/api/vehiculos/:id", async (req, res) => {
   if (!exigirSesion(req, res)) return;
   try {
-    const resultado = await solicitarApiVehiculos(
-      req,
-      "DELETE",
-      null,
-      `/${encodeURIComponent(req.params.id)}`,
-    );
+    const resultado = await solicitarApiVehiculos(req, "DELETE", null, `/${encodeURIComponent(req.params.id)}`);
     return res.status(resultado.estado).json(resultado.datos);
   } catch (error) {
     console.error("[API VEHICULOS DELETE]", error.message);
@@ -1252,6 +1007,8 @@ app.get("/api/comportamiento", async (req, res) => {
   }
 });
 
+/* ===================== FUNDACIÓN ===================== */
+
 app.post("/api/fundacion", async (req, res) => {
   if (!(await exigirFundacion(req, res))) return;
   if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
@@ -1289,10 +1046,14 @@ app.delete("/api/fundacion/catalogo/:productoId", async (req, res) => {
   try {
     const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
     const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/${encodeURIComponent(req.params.productoId)}`, {
-      method: "DELETE", headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000),
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
     });
     return res.status(respuesta.status).json(await respuesta.json());
-  } catch (error) { return res.status(500).json({ error: "No se pudo eliminar el objeto." }); }
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo eliminar el objeto." });
+  }
 });
 
 app.get("/api/fundacion/comportamiento/:discordId", async (req, res) => {
@@ -1300,10 +1061,13 @@ app.get("/api/fundacion/comportamiento/:discordId", async (req, res) => {
   try {
     const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
     const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}?vista=comportamiento&discordId=${encodeURIComponent(req.params.discordId)}`, {
-      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000),
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
     });
     return res.status(respuesta.status).json(await respuesta.json());
-  } catch (error) { return res.status(500).json({ error: "No se pudo cargar el comportamiento." }); }
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo cargar el comportamiento." });
+  }
 });
 
 app.delete("/api/fundacion/comportamiento/:discordId/:tipo/:indice", async (req, res) => {
@@ -1364,282 +1128,38 @@ app.get("/api/fundacion/usuarios", async (req, res) => {
   }
 });
 
-app.get("/api/fundacion/twitter", async (req, res) => {
-  if (!(await exigirFundacion(req, res))) return;
-  try {
-    let cuentas;
-    try {
-      [cuentas] = await pool.execute(
-        `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en
-           FROM twitter_cuentas ORDER BY nombre ASC`,
-      );
-    } catch (error) {
-      if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
-      const [sinVerificacion] = await pool.execute(
-        `SELECT id, discord_id, nombre, avatar_url, creado_en
-           FROM twitter_cuentas ORDER BY nombre ASC`,
-      );
-      cuentas = sinVerificacion.map((cuenta) => ({ ...cuenta, verificado: 0 }));
-    }
-    return res.json({ correcto: true, cuentas });
-  } catch (error) {
-    console.error("[FUNDACION TWITTER]", error.message);
-    return res.status(500).json({ error: "No se pudieron cargar las cuentas de Twitter." });
-  }
-});
-
-app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
-  if (!(await exigirFundacion(req, res))) return;
-  const discordId = String(req.params.discordId || "").trim();
-  const verificado = req.body?.verificado === true || req.body?.verificado === 1 || req.body?.verificado === "1";
-  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
-  try {
-    let resultado;
-    try {
-      [resultado] = await pool.execute(
-        "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
-        [verificado ? 1 : 0, discordId],
-      );
-    } catch (error) {
-      if (error.code !== "ER_BAD_FIELD_ERROR") throw error;
-      await pool.execute("ALTER TABLE twitter_cuentas ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_url");
-      [resultado] = await pool.execute(
-        "UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?",
-        [verificado ? 1 : 0, discordId],
-      );
-    }
-    if (!resultado.affectedRows) return res.status(404).json({ error: "La cuenta Twitter no existe." });
-    return res.json({ correcto: true, discordId, verificado });
-  } catch (error) {
-    console.error("[FUNDACION TWITTER VERIFICAR]", error.message);
-    return res.status(500).json({ error: "No se pudo actualizar la verificación." });
-  }
-});
-
-app.delete("/api/fundacion/twitter/:discordId", async (req, res) => {
-  if (!(await exigirFundacion(req, res))) return;
-  const discordId = String(req.params.discordId || "").trim();
-  if (!/^\d{10,25}$/.test(discordId)) {
-    return res.status(400).json({ error: "Discord ID inválido." });
-  }
-
-  const conexion = await pool.getConnection();
-  try {
-    await conexion.beginTransaction();
-    const [cuentas] = await conexion.execute(
-      "SELECT id, nombre, avatar_url FROM twitter_cuentas WHERE discord_id = ? LIMIT 1",
-      [discordId],
-    );
-    if (!cuentas.length) {
-      await conexion.rollback();
-      return res.status(404).json({ error: "La cuenta Twitter no existe." });
-    }
-
-    const cuentaId = cuentas[0].id;
-    await conexion.execute(
-      "DELETE FROM twitter_seguidores WHERE seguidor_id = ? OR seguido_id = ?",
-      [cuentaId, cuentaId],
-    );
-    await conexion.execute(
-      `DELETE FROM twitter_likes
-       WHERE cuenta_id = ? OR publicacion_id IN
-         (SELECT id FROM twitter_publicaciones WHERE cuenta_id = ?)`,
-      [cuentaId, cuentaId],
-    );
-    await conexion.execute(
-      `DELETE FROM twitter_comentarios
-       WHERE cuenta_id = ? OR publicacion_id IN
-         (SELECT id FROM twitter_publicaciones WHERE cuenta_id = ?)`,
-      [cuentaId, cuentaId],
-    );
-    await conexion.execute(
-      "DELETE FROM twitter_publicaciones WHERE cuenta_id = ?",
-      [cuentaId],
-    );
-    await conexion.execute("DELETE FROM twitter_cuentas WHERE id = ?", [cuentaId]);
-    await conexion.commit();
-
-    await enviarLogTwitter(
-      "🗑️ Cuenta Twitter eliminada",
-      "Una cuenta Twitter fue eliminada desde el panel Fundación junto con sus datos relacionados.",
-      [
-        { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
-        { name: "📝 Cuenta", value: String(cuentas[0].nombre || "Sin nombre"), inline: true },
-      ],
-      cuentas[0].avatar_url,
-    );
-    return res.json({ correcto: true, discordId });
-  } catch (error) {
-    await conexion.rollback().catch(() => {});
-    console.error("[FUNDACION TWITTER ELIMINAR]", error.message);
-    return res.status(500).json({ error: "No se pudo eliminar la cuenta Twitter." });
-  } finally {
-    conexion.release();
-  }
-});
-
-async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
-  const cantidad = Number(monto);
-  if (!Number.isInteger(cantidad) || cantidad <= 0) {
-    const error = new Error(
-      "El monto debe ser un número entero mayor que cero.",
-    );
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const conexion = await pool.getConnection();
-  try {
-    await conexion.beginTransaction();
-    const [filas] = await conexion.execute(
-      `SELECT discord_id, billetera, banco
-       FROM saldos
-       WHERE discord_id IN (?, ?)
-       FOR UPDATE`,
-      destinoId ? [discordId, destinoId] : [discordId, discordId],
-    );
-    const actual = filas.find((fila) => fila.discord_id === discordId);
-
-    if (!actual) {
-      const error = new Error("No existe una cuenta Nequi activa.");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (tipo === "depositar") {
-      if (Number(actual.billetera) < cantidad) {
-        const error = new Error(
-          "No tienes suficiente dinero en Mano para depositar.",
-        );
-        error.statusCode = 400;
-        throw error;
-      }
-      await conexion.execute(
-        `UPDATE saldos SET billetera = billetera - ?, banco = banco + ? WHERE discord_id = ?`,
-        [cantidad, cantidad, discordId],
-      );
-    } else if (tipo === "retirar") {
-      if (Number(actual.banco) < cantidad) {
-        const error = new Error(
-          "No tienes suficiente dinero en Nequi para retirar.",
-        );
-        error.statusCode = 400;
-        throw error;
-      }
-      await conexion.execute(
-        `UPDATE saldos SET banco = banco - ?, billetera = billetera + ? WHERE discord_id = ?`,
-        [cantidad, cantidad, discordId],
-      );
-    } else if (tipo === "transferir") {
-      const destino = filas.find((fila) => fila.discord_id === destinoId);
-      if (!destino) {
-        const error = new Error(
-          "El usuario destinatario no tiene una cuenta Nequi activa.",
-        );
-        error.statusCode = 404;
-        throw error;
-      }
-      if (destinoId === discordId) {
-        const error = new Error("No puedes transferirte dinero a ti mismo.");
-        error.statusCode = 400;
-        throw error;
-      }
-      if (Number(actual.banco) < cantidad) {
-        const error = new Error(
-          "No tienes suficiente dinero en Nequi para transferir.",
-        );
-        error.statusCode = 400;
-        throw error;
-      }
-      await conexion.execute(
-        `UPDATE saldos SET banco = banco - ? WHERE discord_id = ?`,
-        [cantidad, discordId],
-      );
-      await conexion.execute(
-        `UPDATE saldos SET banco = banco + ? WHERE discord_id = ?`,
-        [cantidad, destinoId],
-      );
-    } else {
-      const error = new Error("Operación no válida.");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    await conexion.commit();
-  } catch (error) {
-    await conexion.rollback();
-    throw error;
-  } finally {
-    conexion.release();
-  }
-}
-
-app.post("/api/nequi/operacion", async (req, res) => {
-  if (!exigirSesion(req, res)) return;
-
-  const { tipo, monto, destinoId } = req.body || {};
-  try {
-    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
-      return res.status(503).json({
-        error: "Render no tiene configurada la conexión con la API del bot.",
-      });
-    }
-
-    const respuestaBot = await fetch(
-      `${process.env.NEQUI_API_URL.replace(/\/$/, "")}/${req.session.usuario.id}/operacion`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Nequi-Key": process.env.NEQUI_API_KEY,
-        },
-        body: JSON.stringify({ tipo, monto, destinoId }),
-        signal: AbortSignal.timeout(8000),
-      },
-    );
-    const datosBot = await respuestaBot.json();
-    return res.status(respuestaBot.status).json(datosBot);
-  } catch (error) {
-    console.error("[API NEQUI OPERACION]", error.message);
-    return res.status(error.statusCode || 500).json({
-      error: error.message || "No se pudo completar la operación.",
-    });
-  }
-});
+/* ===================== TWITTER CIUDADANO ===================== */
 
 const TWITTER_AVATAR_DEFECTO = "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
-
 let twitterSchemaPromise;
 
 async function asegurarEsquemaTwitter() {
   if (!twitterSchemaPromise) {
     twitterSchemaPromise = (async () => {
       await pool.execute(`
-          CREATE TABLE IF NOT EXISTS twitter_cuentas (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            discord_id VARCHAR(30) NOT NULL,
-            nombre VARCHAR(80) NOT NULL,
-            avatar_url TEXT NULL,
-            verificado TINYINT(1) NOT NULL DEFAULT 0,
-            ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY uq_twitter_discord (discord_id),
-            KEY idx_twitter_nombre (nombre)
-          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        CREATE TABLE IF NOT EXISTS twitter_cuentas (
+          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          discord_id VARCHAR(30) NOT NULL,
+          nombre VARCHAR(80) NOT NULL,
+          avatar_url TEXT NULL,
+          verificado TINYINT(1) NOT NULL DEFAULT 0,
+          ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          UNIQUE KEY uq_twitter_discord (discord_id),
+          KEY idx_twitter_nombre (nombre)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-
       const [columnas] = await pool.execute("SHOW COLUMNS FROM twitter_cuentas");
-      const existentes = new Set(columnas.map((columna) => columna.Field));
+      const existentes = new Set(columnas.map((c) => c.Field));
       const faltantes = [
-          ["avatar_url", "ADD COLUMN avatar_url TEXT NULL"],
-          ["verificado", "ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0"],
-          ["ultimo_cambio_perfil", "ADD COLUMN ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
-          ["creado_en", "ADD COLUMN creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
-          ["actualizado_en", "ADD COLUMN actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+        ["avatar_url", "ADD COLUMN avatar_url TEXT NULL"],
+        ["verificado", "ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0"],
+        ["ultimo_cambio_perfil", "ADD COLUMN ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+        ["creado_en", "ADD COLUMN creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+        ["actualizado_en", "ADD COLUMN actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
       ];
-
       for (const [nombre, definicion] of faltantes) {
         if (existentes.has(nombre)) continue;
         await pool.execute(`ALTER TABLE twitter_cuentas ${definicion}`);
@@ -1650,7 +1170,6 @@ async function asegurarEsquemaTwitter() {
       throw error;
     });
   }
-
   return twitterSchemaPromise;
 }
 
@@ -1660,9 +1179,7 @@ app.use("/api/twitter", async (req, res, next) => {
     return next();
   } catch (error) {
     console.error("[TWITTER ESQUEMA]", error.message);
-    return res.status(503).json({
-      error: "Twitter no está disponible porque no se pudo preparar la tabla de cuentas.",
-    });
+    return res.status(503).json({ error: "Twitter no está disponible porque no se pudo preparar la tabla de cuentas." });
   }
 });
 
@@ -1676,20 +1193,13 @@ function imagenTwitterValida(valor) {
 }
 
 async function obtenerCuentaTwitter(discordId) {
-  const [filas] = await pool.execute(
-    `SELECT id, discord_id, nombre, avatar_url, verificado, ultimo_cambio_perfil, creado_en, actualizado_en
-       FROM twitter_cuentas WHERE discord_id = ? LIMIT 1`,
-    [discordId],
-  );
+  const [filas] = await pool.execute(`SELECT id, discord_id, nombre, avatar_url, verificado, ultimo_cambio_perfil, creado_en, actualizado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1`, [discordId]);
   return filas[0] || null;
 }
 
 function serializarCuentaTwitter(cuenta) {
   if (!cuenta) return null;
-  return {
-    ...cuenta,
-    avatar_url: cuenta.avatar_url || TWITTER_AVATAR_DEFECTO,
-  };
+  return { ...cuenta, avatar_url: cuenta.avatar_url || TWITTER_AVATAR_DEFECTO };
 }
 
 async function enviarLogTwitter(titulo, descripcion, campos = [], thumbnail) {
@@ -1712,13 +1222,10 @@ async function enviarLogTwitter(titulo, descripcion, campos = [], thumbnail) {
 async function notificarSeguidoresTwitter(autor, publicacion) {
   try {
     const [seguidores] = await pool.execute(
-      `SELECT c.discord_id
-         FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id
-        WHERE s.seguido_id = ?`,
-      [autor.id],
+      `SELECT c.discord_id FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id WHERE s.seguido_id = ?`,
+      [autor.id]
     );
     const ids = seguidores.map((fila) => String(fila.discord_id)).filter(Boolean);
-    console.log(`[TWITTER NOTIFICACIONES] Publicación de ${autor.discord_id}: ${ids.length} seguidor(es) encontrado(s).`);
     if (!ids.length) return 0;
     if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
       const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
@@ -1730,10 +1237,8 @@ async function notificarSeguidoresTwitter(autor, publicacion) {
       });
       if (respuestaBot.ok) {
         const resultadoBot = await respuestaBot.json().catch(() => ({}));
-        console.log(`[TWITTER NOTIFICACIONES] Bot confirmó ${Number(resultadoBot.notificados || ids.length)} notificación(es).`);
         return Number(resultadoBot.notificados || ids.length);
       }
-      console.warn(`[TWITTER NOTIFICACIONES] El bot respondió ${respuestaBot.status}; se intentará el respaldo web.`);
     }
     for (const id of ids) {
       await enviarEmbedDiscord(
@@ -1750,7 +1255,7 @@ async function notificarSeguidoresTwitter(autor, publicacion) {
           timestamp: new Date().toISOString(),
         },
         [],
-        { content: `<@${id}>`, allowed_mentions: { users: [id] } },
+        { content: `<@${id}>`, allowed_mentions: { users: [id] } }
       );
     }
     return ids.length;
@@ -1787,44 +1292,28 @@ app.post("/api/twitter/cuenta", async (req, res) => {
     const discordId = req.session.usuario.id;
     const nombre = textoTwitter(req.body?.nombre, 80);
     const avatarRecibido = textoTwitter(req.body?.avatarUrl, 2_500_000);
-    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido)
-      ? TWITTER_AVATAR_DEFECTO
-      : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
+    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido) ? TWITTER_AVATAR_DEFECTO : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
     if (!nombre) return res.status(400).json({ error: "El nombre de Twitter es obligatorio." });
     if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
     if (await obtenerCuentaTwitter(discordId)) return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
 
-    await pool.execute(
-      `INSERT INTO twitter_cuentas (discord_id, nombre, avatar_url, ultimo_cambio_perfil)
-       VALUES (?, ?, ?, NOW())`,
-      [discordId, nombre, avatarUrl],
-    );
+    await pool.execute(`INSERT INTO twitter_cuentas (discord_id, nombre, avatar_url, ultimo_cambio_perfil) VALUES (?, ?, ?, NOW())`, [discordId, nombre, avatarUrl]);
     const cuenta = await obtenerCuentaTwitter(discordId);
-    await enviarLogTwitter(
-      "🐦 Nueva cuenta de Twitter",
-      "Se registró una cuenta ciudadana desde la web de Medellín RP.",
-      [
-        { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
-        { name: "📝 Nombre", value: nombre, inline: true },
-      ],
-      avatarUrl,
-    );
+    await enviarLogTwitter("🐦 Nueva cuenta de Twitter", "Se registró una cuenta ciudadana desde la web de Medellín RP.", [
+      { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
+      { name: "📝 Nombre", value: nombre, inline: true },
+    ], avatarUrl);
     return res.status(201).json({ correcto: true, cuenta: serializarCuentaTwitter(cuenta) });
   } catch (error) {
     console.error("[TWITTER CUENTA]", error.message);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
-    }
+    if (error.code === "ER_DUP_ENTRY") return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
     const mensajesTwitter = {
       ER_NO_SUCH_TABLE: "No existe la tabla de cuentas Twitter. Ejecuta database/twitter.sql en MySQL.",
       ER_BAD_FIELD_ERROR: "La tabla Twitter está desactualizada. Ejecuta database/twitter.sql y database/twitter-verificacion.sql.",
       ER_DATA_TOO_LONG: "La imagen es demasiado grande. Usa una imagen de máximo 1.8 MB.",
       ER_ACCESS_DENIED_ERROR: "El usuario de MySQL no tiene permisos para guardar cuentas Twitter.",
     };
-    return res.status(500).json({
-      error: mensajesTwitter[error.code] || "No se pudo crear la cuenta de Twitter.",
-      detalle: process.env.NODE_ENV === "production" ? undefined : `${error.code || "ERROR"}: ${error.message}`,
-    });
+    return res.status(500).json({ error: mensajesTwitter[error.code] || "No se pudo crear la cuenta de Twitter.", detalle: process.env.NODE_ENV === "production" ? undefined : `${error.code || "ERROR"}: ${error.message}` });
   }
 });
 
@@ -1841,10 +1330,7 @@ app.put("/api/twitter/cuenta", async (req, res) => {
     const nombre = textoTwitter(req.body?.nombre, 80) || cuenta.nombre;
     const avatarUrl = req.body?.avatarUrl === undefined ? cuenta.avatar_url : (textoTwitter(req.body.avatarUrl, 2_500_000) || TWITTER_AVATAR_DEFECTO);
     if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
-    await pool.execute(
-      `UPDATE twitter_cuentas SET nombre = ?, avatar_url = ?, ultimo_cambio_perfil = NOW() WHERE id = ?`,
-      [nombre, avatarUrl, cuenta.id],
-    );
+    await pool.execute(`UPDATE twitter_cuentas SET nombre = ?, avatar_url = ?, ultimo_cambio_perfil = NOW() WHERE id = ?`, [nombre, avatarUrl, cuenta.id]);
     return res.json({ correcto: true, cuenta: serializarCuentaTwitter(await obtenerCuentaTwitter(req.session.usuario.id)) });
   } catch (error) {
     console.error("[TWITTER PERFIL]", error.message);
@@ -1852,7 +1338,7 @@ app.put("/api/twitter/cuenta", async (req, res) => {
   }
 });
 
-async function publicacionesTwitterPara(cuentaId, discordId = null, soloCuentaId = null) {
+async function publicacionesTwitterPara(cuentaId, soloCuentaId = null) {
   const condiciones = [];
   const parametros = [];
   if (soloCuentaId) {
@@ -1872,7 +1358,7 @@ async function publicacionesTwitterPara(cuentaId, discordId = null, soloCuentaId
        INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
        ${filtro}
        ORDER BY p.creado_en DESC, p.id DESC LIMIT ?`,
-    parametrosConsulta,
+    parametrosConsulta
   );
   return filas;
 }
@@ -1906,7 +1392,7 @@ app.get("/api/twitter/buscar", async (req, res) => {
          INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
         WHERE p.nombre LIKE ? OR p.descripcion LIKE ? OR c.nombre LIKE ?
         ORDER BY p.creado_en DESC, p.id DESC LIMIT 50`,
-      [cuenta.id, cuenta.id, patron, patron, patron],
+      [cuenta.id, cuenta.id, patron, patron, patron]
     );
     return res.json({ consulta: q, publicaciones });
   } catch (error) {
@@ -1927,23 +1413,19 @@ app.get("/api/twitter/perfil/:discordId", async (req, res) => {
         (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores,
         (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo,
         EXISTS(SELECT 1 FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ?) AS siguiendo_cuenta`,
-      [objetivo.id, objetivo.id, cuenta.id, objetivo.id],
+      [objetivo.id, objetivo.id, cuenta.id, objetivo.id]
     );
     const [seguidoresLista] = await pool.execute(
-      `SELECT c.discord_id, c.nombre, c.avatar_url
-         FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id
-        WHERE s.seguido_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
-      [objetivo.id],
+      `SELECT c.discord_id, c.nombre, c.avatar_url FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id WHERE s.seguido_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [objetivo.id]
     );
     const [siguiendoLista] = await pool.execute(
-      `SELECT c.discord_id, c.nombre, c.avatar_url
-         FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguido_id
-        WHERE s.seguidor_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
-      [cuenta.id],
+      `SELECT c.discord_id, c.nombre, c.avatar_url FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguido_id WHERE s.seguidor_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [cuenta.id]
     );
     return res.json({
       cuenta: { ...serializarCuentaTwitter(objetivo), seguidores: Number(estadisticas.seguidores || 0), siguiendo: Number(estadisticas.siguiendo || 0), siguiendo_cuenta: Boolean(estadisticas.siguiendo_cuenta), seguidores_lista: seguidoresLista, siguiendo_lista: siguiendoLista },
-      publicaciones: await publicacionesTwitterPara(cuenta.id, null, objetivo.id),
+      publicaciones: await publicacionesTwitterPara(cuenta.id, objetivo.id),
     });
   } catch (error) {
     console.error("[TWITTER PERFIL PUBLICO]", error.message);
@@ -1965,10 +1447,8 @@ app.post("/api/twitter/cuentas/:discordId/seguir", async (req, res) => {
       await pool.execute("INSERT INTO twitter_seguidores (seguidor_id, seguido_id) VALUES (?, ?)", [cuenta.id, objetivo.id]);
     }
     const [[conteos]] = await pool.execute(
-      `SELECT
-        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores,
-        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo`,
-      [objetivo.id, cuenta.id],
+      `SELECT (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores, (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo`,
+      [objetivo.id, cuenta.id]
     );
     return res.json({ siguiendo_cuenta: !existente.length, seguidores: Number(conteos.seguidores || 0), siguiendo: Number(conteos.siguiendo || 0) });
   } catch (error) {
@@ -1986,10 +1466,7 @@ app.post("/api/twitter/publicaciones", async (req, res) => {
     const imagenUrl = textoTwitter(req.body?.imagenUrl, 2_500_000);
     if (!nombre || !descripcion) return res.status(400).json({ error: "El nombre y la descripción son obligatorios." });
     if (!imagenTwitterValida(imagenUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
-    const [resultado] = await pool.execute(
-      `INSERT INTO twitter_publicaciones (cuenta_id, nombre, descripcion, imagen_url) VALUES (?, ?, ?, ?)`,
-      [cuenta.id, nombre, descripcion, imagenUrl || null],
-    );
+    const [resultado] = await pool.execute(`INSERT INTO twitter_publicaciones (cuenta_id, nombre, descripcion, imagen_url) VALUES (?, ?, ?, ?)`, [cuenta.id, nombre, descripcion, imagenUrl || null]);
     const notificados = await notificarSeguidoresTwitter(cuenta, { nombre, descripcion });
     return res.status(201).json({ correcto: true, id: resultado.insertId, notificados });
   } catch (error) {
@@ -2002,26 +1479,14 @@ app.delete("/api/twitter/publicaciones/:id", async (req, res) => {
   const cuenta = await exigirCuentaTwitter(req, res);
   if (!cuenta) return;
   const publicacionId = Number(req.params.id);
-  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) {
-    return res.status(400).json({ error: "Publicación inválida." });
-  }
+  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) return res.status(400).json({ error: "Publicación inválida." });
   try {
-    const [resultado] = await pool.execute(
-      "DELETE FROM twitter_publicaciones WHERE id = ? AND cuenta_id = ?",
-      [publicacionId, cuenta.id],
-    );
-    if (!resultado.affectedRows) {
-      return res.status(403).json({ error: "Solo puedes eliminar tus propias publicaciones." });
-    }
-    await enviarLogTwitter(
-      "🗑️ Publicación eliminada",
-      "Una publicación fue eliminada desde Twitter ciudadano.",
-      [
-        { name: "👤 Usuario", value: `<@${req.session.usuario.id}>`, inline: true },
-        { name: "🆔 Publicación", value: String(publicacionId), inline: true },
-      ],
-      cuenta.avatar_url,
-    );
+    const [resultado] = await pool.execute("DELETE FROM twitter_publicaciones WHERE id = ? AND cuenta_id = ?", [publicacionId, cuenta.id]);
+    if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propias publicaciones." });
+    await enviarLogTwitter("🗑️ Publicación eliminada", "Una publicación fue eliminada desde Twitter ciudadano.", [
+      { name: "👤 Usuario", value: `<@${req.session.usuario.id}>`, inline: true },
+      { name: "🆔 Publicación", value: String(publicacionId), inline: true },
+    ], cuenta.avatar_url);
     return res.json({ correcto: true, eliminada: publicacionId });
   } catch (error) {
     console.error("[TWITTER ELIMINAR]", error.message);
@@ -2054,10 +1519,8 @@ app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
   if (!cuenta) return;
   try {
     const [comentarios] = await pool.execute(
-      `SELECT co.id, co.cuenta_id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id
-         FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id
-        WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
-      [Number(req.params.id)],
+      `SELECT co.id, co.cuenta_id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
+      [Number(req.params.id)]
     );
     return res.json({ comentarios: comentarios.map((x) => ({ ...x, avatar_url: x.avatar_url || TWITTER_AVATAR_DEFECTO })) });
   } catch (error) {
@@ -2087,10 +1550,7 @@ app.delete("/api/twitter/comentarios/:id", async (req, res) => {
   const comentarioId = Number(req.params.id);
   if (!Number.isSafeInteger(comentarioId) || comentarioId < 1) return res.status(400).json({ error: "Comentario inválido." });
   try {
-    const [resultado] = await pool.execute(
-      "DELETE FROM twitter_comentarios WHERE id = ? AND cuenta_id = ?",
-      [comentarioId, cuenta.id],
-    );
+    const [resultado] = await pool.execute("DELETE FROM twitter_comentarios WHERE id = ? AND cuenta_id = ?", [comentarioId, cuenta.id]);
     if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propios comentarios." });
     return res.json({ correcto: true, eliminado: comentarioId });
   } catch (error) {
@@ -2099,13 +1559,11 @@ app.delete("/api/twitter/comentarios/:id", async (req, res) => {
   }
 });
 
+/* ===================== ENCUESTAS ===================== */
+
 function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = console } = {}) {
-  if (!app || typeof app.get !== "function") {
-    throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
-  }
-  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") {
-    throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
-  }
+  if (!app || typeof app.get !== "function") throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
+  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
 
   const intentos = new Map();
 
@@ -2115,10 +1573,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
       error.statusCode = 503;
       throw error;
     }
-    return {
-      base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""),
-      clave: process.env.NEQUI_API_KEY,
-    };
+    return { base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""), clave: process.env.NEQUI_API_KEY };
   }
 
   function exigirOrigenMismoSitio(req, res, next) {
@@ -2126,9 +1581,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
     const origen = req.get("origin");
     if (!origen) return next();
     try {
-      if (new URL(origen).host !== req.get("host")) {
-        return res.status(403).json({ error: "Origen de solicitud no permitido." });
-      }
+      if (new URL(origen).host !== req.get("host")) return res.status(403).json({ error: "Origen de solicitud no permitido." });
     } catch {
       return res.status(403).json({ error: "Origen de solicitud inválido." });
     }
@@ -2139,9 +1592,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
     const clave = String(req.session?.usuario?.id || req.ip || "desconocido");
     const ahora = Date.now();
     const historial = (intentos.get(clave) || []).filter((marca) => ahora - marca < 60_000);
-    if (historial.length >= 10) {
-      return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
-    }
+    if (historial.length >= 10) return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
     historial.push(ahora);
     intentos.set(clave, historial);
     if (intentos.size > 5000) {
@@ -2154,19 +1605,11 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
 
   async function solicitarBot(ruta, { method = "GET", body, timeout = 10_000 } = {}) {
     const { base, clave } = configuracionBot();
-    const opciones = {
-      method,
-      headers: {
-        "X-Nequi-Key": clave,
-        "User-Agent": "Medellin-RP-Web/1.0",
-      },
-      signal: AbortSignal.timeout(timeout),
-    };
+    const opciones = { method, headers: { "X-Nequi-Key": clave, "User-Agent": "Medellin-RP-Web/1.0" }, signal: AbortSignal.timeout(timeout) };
     if (body !== undefined) {
       opciones.headers["Content-Type"] = "application/json";
       opciones.body = JSON.stringify(body);
     }
-
     const respuesta = await fetch(`${base}${ruta}`, opciones);
     const tipo = respuesta.headers.get("content-type") || "";
     if (!tipo.includes("application/json")) {
@@ -2180,12 +1623,8 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
 
   function manejarError(res, error, contexto) {
     logger.error(`[${contexto}]`, error.message);
-    if (error.name === "TimeoutError" || error.name === "AbortError") {
-      return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
-    }
-    return res.status(error.statusCode || 500).json({
-      error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas.",
-    });
+    if (error.name === "TimeoutError" || error.name === "AbortError") return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
+    return res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas." });
   }
 
   app.use("/api/encuestas", exigirOrigenMismoSitio);
@@ -2204,9 +1643,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.get("/api/encuestas/:encuestaId", async (req, res) => {
     if (!exigirSesion(req, res)) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`,
-      );
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`);
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "ENCUESTA DETALLE");
@@ -2216,10 +1653,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.post("/api/encuestas/:encuestaId/responder", limitarRespuestas, async (req, res) => {
     if (!exigirSesion(req, res)) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`,
-        { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 },
-      );
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`, { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "ENCUESTA RESPUESTA");
@@ -2239,21 +1673,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.post("/api/fundacion/encuestas", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas`,
-        {
-          method: "POST",
-          body: {
-            titulo: req.body?.titulo,
-            descripcion: req.body?.descripcion,
-            fuerza: req.body?.fuerza,
-            minimoAprobacion: req.body?.minimoAprobacion,
-            fechaCierre: req.body?.fechaCierre,
-            preguntas: req.body?.preguntas,
-          },
-          timeout: 15_000,
-        },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`, { method: "POST", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, fechaCierre: req.body?.fechaCierre, preguntas: req.body?.preguntas }, timeout: 15_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION CREAR ENCUESTA");
@@ -2263,10 +1683,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.post("/api/fundacion/encuestas/:encuestaId/publicar", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`,
-        { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`, { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
@@ -2276,10 +1693,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.put("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
-        { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION EDITAR ENCUESTA");
@@ -2289,10 +1703,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.delete("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
-        { method: "DELETE", body: {}, timeout: 15_000 },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "DELETE", body: {}, timeout: 15_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
@@ -2302,9 +1713,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.get("/api/fundacion/encuestas/:encuestaId", async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`,
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`);
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION DETALLE ENCUESTA");
@@ -2314,20 +1723,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.post("/api/fundacion/encuestas/:encuestaId/calificar", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`,
-        {
-          method: "POST",
-          body: {
-            usuarioId: req.body?.usuarioId,
-            preguntaId: req.body?.preguntaId,
-            calificacion: req.body?.calificacion,
-            puntuacion: req.body?.puntuacion,
-            comentario: req.body?.comentario,
-          },
-          timeout: 15_000,
-        },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`, { method: "POST", body: { usuarioId: req.body?.usuarioId, preguntaId: req.body?.preguntaId, calificacion: req.body?.calificacion, puntuacion: req.body?.puntuacion, comentario: req.body?.comentario }, timeout: 15_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION CALIFICAR ENCUESTA");
@@ -2337,10 +1733,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
   app.post("/api/fundacion/encuestas/:encuestaId/cerrar", limitarRespuestas, async (req, res) => {
     if (!(await exigirFundacion(req, res))) return;
     try {
-      const resultado = await solicitarBot(
-        `/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`,
-        { method: "POST", body: {}, timeout: 30_000 },
-      );
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`, { method: "POST", body: {}, timeout: 30_000 });
       return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION CERRAR ENCUESTA");
@@ -2352,30 +1745,23 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
 
 montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
 
+/* ===================== SESION / 404 ===================== */
+
 app.get("/cerrar-sesion", (req, res) => {
   req.session.destroy((error) => {
-    if (error) {
-      console.error("[SESION]", error);
-    }
-
+    if (error) console.error("[SESION]", error);
     res.clearCookie("connect.sid");
     return res.redirect(req.query.automatico === "1" ? "/se-cerro-seccion.html" : "/index.html");
   });
 });
 
 app.use((req, res) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ error: "Ruta API no encontrada." });
-  }
-  if (req.method === "GET") {
-    return res.redirect("/index.html");
-  }
+  if (req.path.startsWith("/api/")) return res.status(404).json({ error: "Ruta API no encontrada." });
+  if (req.method === "GET") return res.redirect("/index.html");
   return res.status(404).send("Página no encontrada.");
 });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[WEB] Servidor iniciado en el puerto ${PORT}.`);
-  probarConexion().catch((error) => {
-    console.error("[MYSQL] Error de conexión:", error.message);
-  });
+  probarConexion().catch((error) => console.error("[MYSQL] Error de conexión:", error.message));
 });
