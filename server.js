@@ -1,11 +1,12 @@
 const express = require("express");
 const session = require("express-session");
 const path = require("node:path");
-const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
-const CANAL_LOG_TWITTER = process.env.CANAL_LOG_TWITTER || "1539432339413799042";
+require("dotenv").config();
+
 const { pool, probarConexion, buscarUsuarioPorDiscord } = require("./db");
 
-require("dotenv").config();
+const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
+const CANAL_LOG_TWITTER = process.env.CANAL_LOG_TWITTER || "1539432339413799042";
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -86,7 +87,6 @@ function redirigirDespuesDeLogin(req, res, destino) {
       console.error("[SESION] No se pudo guardar la sesión:", error);
       return res.status(500).send("No se pudo guardar la sesión.");
     }
-
     return res.redirect(destino);
   });
 }
@@ -167,7 +167,6 @@ function obtenerAvatarUrl(usuario) {
   if (!usuario.avatar) {
     return null;
   }
-
   const extension = usuario.avatar.startsWith("a_") ? "gif" : "png";
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
@@ -273,7 +272,6 @@ app.get("/auth/discord/callback", async (req, res) => {
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
 
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
-    const { pool } = require("./db");
     const [solicitudesWhitelist] = await pool.execute(
       `SELECT estado
        FROM whitelist_solicitudes
@@ -324,7 +322,8 @@ app.get("/auth/discord/callback", async (req, res) => {
 
     return redirigirDespuesDeLogin(req, res, "/dashboard-user.html");
   } catch (error) {
-    console.error("[DISCORD OAUTH2]", error);
+    console.error("[DISCORD OAUTH2] Error completo:", error);
+    console.error("[DISCORD OAUTH2] Mensaje:", error.message);
     return res
       .status(500)
       .send("Ocurrió un error interno durante el inicio de sesión.");
@@ -336,7 +335,6 @@ function exigirSesion(req, res) {
     res.status(401).json({ error: "Debes iniciar sesión con Discord." });
     return false;
   }
-
   return true;
 }
 
@@ -388,8 +386,6 @@ app.post("/api/whitelist", async (req, res) => {
   }
 
   try {
-    const { pool } = require("./db");
-
     const [pendientesExistentes] = await pool.execute(
       `SELECT id
        FROM whitelist_solicitudes
@@ -519,7 +515,6 @@ app.get("/api/whitelist/status", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
   try {
-    const { pool } = require("./db");
     const [solicitudes] = await pool.execute(
       `SELECT estado, motivo_denegacion
        FROM whitelist_solicitudes
@@ -616,7 +611,6 @@ app.post("/api/cedula", async (req, res) => {
   }
 
   try {
-    const { pool } = require("./db");
     const roles = await obtenerRolesDelServidor(discordId);
 
     if (!roles.includes(ROL_WHITELIST_APROBADA)) {
@@ -765,7 +759,6 @@ app.get("/api/usuario", async (req, res) => {
     );
     const estaEnServidor = Array.isArray(rolesDiscord);
     const rolesActualizados = rolesDiscord || [];
-    const { pool } = require("./db");
     const [solicitudes] = await pool.execute(
       `SELECT estado
        FROM whitelist_solicitudes
@@ -805,7 +798,6 @@ app.get("/api/cedula/imagen", async (req, res) => {
   if (!exigirSesion(req, res)) return;
 
   try {
-    const { pool } = require("./db");
     const [filas] = await pool.execute(
       `SELECT cedula_imagen
        FROM usuarios
@@ -832,7 +824,6 @@ app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
   const discordId = String(req.params.discordId || "").trim();
   if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
   try {
-    const { pool } = require("./db");
     const cedula = await buscarUsuarioPorDiscord(discordId);
     const leer = async (tabla) => {
       const [filas] = await pool.execute(`SELECT payload FROM ${tabla} WHERE discord_id = ? ORDER BY fecha DESC`, [discordId]);
@@ -855,7 +846,6 @@ app.get("/api/policial/cedula/:nuip", async (req, res) => {
   const nuip = String(req.params.nuip || "").trim();
   if (!nuip) return res.status(400).json({ error: "Debes escribir el número de cédula." });
   try {
-    const { pool } = require("./db");
     const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [nuip]);
     if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada o no está vinculada al sistema civil. Indícale al ciudadano que utilice /mostrar-cedula en Discord." });
     const ciudadano = filas[0];
@@ -886,7 +876,6 @@ app.get("/api/policial/cedula-imagen/:discordId", async (req, res) => {
   const discordId = String(req.params.discordId || "").trim();
   if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
   try {
-    const { pool } = require("./db");
     const [filas] = await pool.execute("SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
     if (!filas[0]?.cedula_imagen) return res.status(404).send("La cédula no tiene imagen. El ciudadano debe ejecutar /mostrar-cedula en Discord.");
     res.setHeader("Content-Type", "image/png");
@@ -963,7 +952,6 @@ app.get("/api/policial/imagen/:discordId", async (req, res) => {
   const discordId = String(req.params.discordId || "").trim();
   if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
   try {
-    const { pool } = require("./db");
     const [filas] = await pool.execute("SELECT imagen_png FROM pda_fuerza_publica WHERE discord_id = ? LIMIT 1", [discordId]);
     if (!filas[0]?.imagen_png) return res.status(404).send("El ciudadano todavía no ha generado su PDA.");
     res.setHeader("Content-Type", "image/png");
@@ -1102,7 +1090,6 @@ app.get("/api/expediente", async (req, res) => {
       }
     }
 
-    const { pool } = require("./db");
     const [arrestos, antecedentes, multas] = await Promise.all([
       pool.execute(
         "SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC",
@@ -1501,7 +1488,7 @@ async function moverSaldoNequi(discordId, tipo, monto, destinoId = null) {
     throw error;
   }
 
-  const conexion = await require("./db").pool.getConnection();
+  const conexion = await pool.getConnection();
   try {
     await conexion.beginTransaction();
     const [filas] = await conexion.execute(
@@ -1952,7 +1939,7 @@ app.get("/api/twitter/perfil/:discordId", async (req, res) => {
       `SELECT c.discord_id, c.nombre, c.avatar_url
          FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguido_id
         WHERE s.seguidor_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
-      [objetivo.id],
+      [cuenta.id],
     );
     return res.json({
       cuenta: { ...serializarCuentaTwitter(objetivo), seguidores: Number(estadisticas.seguidores || 0), siguiendo: Number(estadisticas.siguiendo || 0), siguiendo_cuenta: Boolean(estadisticas.siguiendo_cuenta), seguidores_lista: seguidoresLista, siguiendo_lista: siguiendoLista },
@@ -2362,7 +2349,6 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
 
   return app;
 }
-
 
 montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
 
