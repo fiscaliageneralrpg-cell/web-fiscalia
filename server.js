@@ -263,7 +263,7 @@ app.get("/auth/discord/callback", async (req, res) => {
     );
 
     if (!estaEnServidor) {
-      console.log(`[LOGIN] ${usuario.id} no pertenece al servidor; acceso rechazado.`);
+      console.log(`[LOGIN] ${usuario.id} no pertenece al servidor ${process.env.DISCORD_GUILD_ID}; acceso rechazado.`);
       return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
     }
 
@@ -1704,7 +1704,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
     if (!(await exigirFundacion(req, res))) return;
     try {
       const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "DELETE", body: {}, timeout: 15_000 });
-      return res.status(resultado.status).json(resultado.datos);
+      return res.status(resultado.estado).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
     }
