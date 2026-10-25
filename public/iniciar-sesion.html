@@ -10,37 +10,33 @@
     <title>Iniciar sesión | Medellín RP</title>
     <style>
       :root {
-        --bg: #07101d;
-        --panel: rgba(14, 27, 44, 0.88);
-        --line: rgba(255, 255, 255, 0.12);
-        --text: #f4f7fb;
-        --muted: #aebbd0;
-        --yellow: #ffd166;
-        --discord: #5865f2;
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 20, 0.72);
+        --line: rgba(255, 255, 255, 0.10);
+        --text: #ffffff;
+        --muted: #a1a1a1;
+        --accent: #d4d4d4;
+        --discord: #ffffff;
+        --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
       }
+
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         min-height: 100vh;
         margin: 0;
-        display: grid;
-        place-items: center;
         color: var(--text);
-        background:
-          radial-gradient(
-            circle at 20% 10%,
-            rgba(76, 164, 255, 0.18),
-            transparent 32%
-          ),
-          radial-gradient(
-            circle at 90% 90%,
-            rgba(255, 209, 102, 0.11),
-            transparent 30%
-          ),
-          var(--bg);
+        background: var(--bg);
         font-family:
-          Inter,
+          "Inter",
           ui-sans-serif,
           system-ui,
           -apple-system,
@@ -48,200 +44,316 @@
           "Segoe UI",
           sans-serif;
         overflow-x: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      @keyframes aparecer { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-      @keyframes pulso { 0%, 100% { box-shadow: 0 10px 30px rgba(255, 209, 102, .2); } 50% { box-shadow: 0 10px 42px rgba(116, 230, 255, .34); } }
-      @keyframes brilloFondo { 0%, 100% { background-position: 0 0, 100% 100%; } 50% { background-position: 10% 18%, 90% 82%; } }
-      body { animation: brilloFondo 12s ease-in-out infinite; background-size: 140% 140%, 140% 140%, auto; }
-      .shell { animation: aparecer .8s ease both; border-color: rgba(116, 230, 255, .24); }
-      .visual-content, .form-content { animation: aparecer .75s .15s ease both; }
-      .logo { animation: pulso 4s ease-in-out infinite; }
-      .discord-button { box-shadow: 0 14px 32px rgba(88, 101, 242, .25); }
-      .notice { transition: transform .25s ease, border-color .25s ease, background .25s ease; }
-      .notice:hover { transform: translateY(-3px); border-color: rgba(116, 230, 255, .34); background: rgba(116, 230, 255, .06); }
-      .server-warning { animation: aparecer .5s ease both; }
-      @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+
+      /* Fondo animado sutil en blanco y negro */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 40%);
+        background-size: 200% 200%;
+        animation: fondoMover 20s ease infinite;
       }
+
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+      }
+
+      @keyframes aparecer {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes flotar {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+
+      @keyframes brilloTexto {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
       .shell {
-        width: min(1060px, calc(100% - 32px));
-        display: grid;
-        grid-template-columns: 1.05fr 0.95fr;
-        min-height: 610px;
+        width: min(1000px, 92%);
+        max-height: 90vh;
         overflow: hidden;
         border: 1px solid var(--line);
-        border-radius: 28px;
+        border-radius: 24px;
         background: var(--panel);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.42);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        animation: aparecer 1s ease both;
       }
+
       .visual {
         position: relative;
-        min-height: 610px;
         display: flex;
-        align-items: end;
-        padding: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
         overflow: hidden;
         background:
-          linear-gradient(0deg, rgba(4, 10, 18, 0.94), rgba(4, 10, 18, 0.12)),
-          url("https://media.discordapp.net/attachments/1539294229212168192/1540673714390302791/Captura_de_pantalla_2026-08-04_142602.png?ex=6ab25cb5&is=6ab10b35&hm=2f004d8cba77c53243d30e9b7b04dad8fc3406447740881f37695c7e31162e93&")
-            center/cover;
+          linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.45)),
+          url("https://media.discordapp.net/attachments/1537889409494556763/1563371441217478748/IMG_3701.jpg?ex=6adf5cdd&is=6ade0b5d&hm=2fc80630a3880fc47aa860c8473431c95f51b83d4ca93659618160dc741b89dc&")
+            center/cover no-repeat;
       }
-      .visual::before {
+
+      .visual::after {
         content: "";
         position: absolute;
         inset: 0;
-        opacity: 0.22;
-        background-image:
-          linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-        background-size: 46px 46px;
+        background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(10,10,10,0.4) 100%);
       }
+
       .visual-content {
         position: relative;
-        z-index: 1;
+        z-index: 2;
+        color: #fff;
+        text-align: center;
+        max-width: 380px;
+        animation: flotar 5s ease-in-out infinite;
       }
-      .eyebrow {
-        color: var(--yellow);
+
+      .visual .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #d4d4d4;
         font-size: 11px;
         font-weight: 800;
-        letter-spacing: 0.17em;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
+        margin-bottom: 14px;
       }
+
+      .visual .eyebrow::before {
+        content: "";
+        width: 30px;
+        height: 1px;
+        background: #d4d4d4;
+      }
+
       .visual h1 {
-        max-width: 450px;
-        margin: 12px 0;
-        font-size: clamp(38px, 5vw, 65px);
-        line-height: 0.98;
-        letter-spacing: -0.06em;
+        font-size: clamp(32px, 6vw, 56px);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        margin-bottom: 14px;
+        font-weight: 900;
       }
+
       .visual p {
-        max-width: 450px;
-        margin: 0;
-        color: #c5d1e1;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #b3b3b3;
       }
+
       .form-side {
         display: flex;
         align-items: center;
-        padding: 44px;
+        justify-content: center;
+        padding: 44px 36px;
       }
+
       .form-content {
         width: 100%;
-        max-width: 390px;
-        margin: auto;
+        max-width: 360px;
+        text-align: center;
+        animation: aparecer 0.9s 0.2s ease both;
       }
+
       .logo {
-        width: 62px;
-        height: 62px;
-        margin-bottom: 26px;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 24px;
+        border-radius: 16px;
         overflow: hidden;
-        border-radius: 19px;
-        box-shadow: 0 10px 30px rgba(255, 209, 102, 0.2);
+        border: 1px solid var(--line);
+        background: #111;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        animation: brilloTexto 3s ease-in-out infinite;
       }
+
       .logo img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        filter: grayscale(100%) contrast(1.1);
       }
+
       h2 {
-        margin: 0 0 10px;
-        font-size: 32px;
-        letter-spacing: -0.05em;
+        font-size: 30px;
+        margin-bottom: 10px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
       }
+
       .intro {
-        margin: 0 0 28px;
         color: var(--muted);
+        font-size: 15px;
+        margin-bottom: 30px;
+        line-height: 1.6;
       }
+
       .discord-button {
         width: 100%;
-        min-height: 54px;
+        min-height: 52px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 11px;
-        border: 0;
-        border-radius: 13px;
-        color: white;
-        background: var(--discord);
+        gap: 10px;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 14px;
+        color: #fff;
+        background: rgba(255,255,255,0.05);
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 700;
         cursor: pointer;
-        transition:
-          transform 0.2s,
-          filter 0.2s;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin-bottom: 24px;
       }
+
       .discord-button:hover {
-        filter: brightness(1.1);
+        border-color: rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.12);
         transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255,255,255,0.1);
       }
+
       .discord-icon {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         fill: currentColor;
+        filter: grayscale(100%);
       }
+
       .notice {
         display: flex;
-        gap: 11px;
-        margin-top: 22px;
-        padding: 15px;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 28px;
+        padding: 16px;
         border: 1px solid var(--line);
         border-radius: 14px;
         color: var(--muted);
         font-size: 13px;
+        line-height: 1.5;
+        background: rgba(0,0,0,0.2);
       }
+
       .notice strong {
         display: block;
-        margin-bottom: 3px;
+        margin-bottom: 4px;
         color: var(--text);
+        font-size: 13px;
       }
-      .back {
-        display: inline-block;
-        margin-top: 28px;
+
+      .invitacion {
+        margin-bottom: 28px;
+      }
+
+      .invitacion p {
+        font-size: 13px;
         color: var(--muted);
-        font-size: 13px;
+        margin-bottom: 10px;
       }
+
+      .invitacion a {
+        display: inline-block;
+        font-size: 13px;
+        color: #d4d4d4;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition: color 0.2s;
+      }
+
+      .invitacion a:hover {
+        color: #fff;
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
       .back:hover {
-        color: var(--text);
+        color: #fff;
       }
-      .server-warning {
-        display: none;
-        margin: 18px 0 0;
-        padding: 16px;
-        border: 1px solid #42d8d077;
-        border-radius: 14px;
-        color: #c5e2e1;
-        background: #42d8d012;
-        line-height: 1.5;
-        font-size: 13px;
+
+      .back svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
       }
-      .server-warning strong { display: block; margin-bottom: 5px; color: #42d8d0; }
-      .server-warning a { color: #42d8d0; font-weight: 800; }
-      @media (max-width: 780px) {
+
+      /* Responsive */
+      @media (max-width: 760px) {
         .shell {
           grid-template-columns: 1fr;
+          max-height: none;
         }
+
         .visual {
-          min-height: 300px;
-          padding: 30px;
+          min-height: 260px;
+          padding: 28px;
         }
+
         .form-side {
-          padding: 34px 26px 42px;
+          padding: 32px 24px;
+        }
+
+        .visual-content {
+          max-width: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
         }
       }
     </style>
   </head>
   <body>
     <main class="shell">
+      <!-- Lado visual -->
       <section class="visual" aria-label="Presentación de Medellín RP">
         <div class="visual-content">
-          <div class="eyebrow">「ME:RP」Medellín RP︱ER:LC</div>
-          <h1>Tu historia comienza con una conexión.</h1>
+          <div class="eyebrow">「ME:RP」Medellín RP ︱ ER:LC</div>
+          <h1>Inicia sesión.<br />Escribe tu historia.</h1>
           <p>
-            Accede con tu cuenta de Discord para consultar tu estado, completar
-            la whitelist y entrar a tu dashboard de Medellín RP.
+            Accede con tu cuenta de Discord para entrar a la comunidad
+            de roleplay inspirada en Colombia.
           </p>
         </div>
       </section>
 
+      <!-- Lado formulario -->
       <section class="form-side">
         <div class="form-content">
           <div class="logo">
@@ -250,17 +362,12 @@
               alt="Logo de Medellín RP"
             />
           </div>
+
           <h2>Iniciar sesión</h2>
           <p class="intro">
             Usa Discord para verificar tu identidad dentro de la comunidad.
           </p>
-          <div id="server-warning" class="server-warning" role="alert">
-            <strong>🚫 No estás en el servidor de Medellín RP</strong>
-            Debes unirte al servidor para poder iniciar sesión en la página.
-            <br /><a href="https://discord.gg/BcHQFm4Pc" target="_blank" rel="noopener">Unirte al servidor de Discord →</a>
-          </div>
 
-          <!-- Esta ruta será implementada en server.js mediante Discord OAuth2. -->
           <a
             class="discord-button"
             href="/auth/discord"
@@ -277,19 +384,24 @@
           <div class="notice">
             <span aria-hidden="true">🔒</span>
             <div>
-              <strong>Inicio seguro</strong>No guardamos tu contraseña de
-              Discord. La autenticación se realiza directamente con Discord.
+              <strong>Inicio seguro</strong>
+              No guardamos tu contraseña de Discord. La autenticación se realiza directamente con Discord.
             </div>
           </div>
-          <a class="back" href="index.html">← Volver a la página principal</a>
+
+          <div class="invitacion">
+            <p>¿Todavía no estás en el servidor?</p>
+            <a href="https://discord.gg/eavYZrsGnF" target="_blank" rel="noopener">
+              Unirme al servidor de Discord →
+            </a>
+          </div>
+
+          <a class="back" href="index.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Volver a la página principal
+          </a>
         </div>
       </section>
     </main>
-    <script>
-      const parametros = new URLSearchParams(window.location.search);
-      if (parametros.get("error") === "no-server") {
-        document.querySelector("#server-warning").style.display = "block";
-      }
-    </script>
   </body>
 </html>
