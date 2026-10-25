@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cargando | Medellín RP</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: rgba(20, 20, 20, 0.85);
+    --line: rgba(255, 255, 255, 0.10);
+    --text: #ffffff;
+    --muted: #a1a1a1;
+    --shadow: 0 30px 100px rgba(0, 0, 0, 0.7);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Pasos ocultos por defecto */
+  .paso {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.9s ease, transform 0.9s ease;
+    padding: 24px;
+    z-index: 1;
+  }
+
+  .paso.activo {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    z-index: 10;
+  }
+
+  /* Paso bienvenida */
+  h1 {
+    font-size: clamp(28px, 8vw, 52px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, #ffffff, #a1a1a1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 17px;
+    font-weight: 400;
+  }
+
+  /* Galería */
+  .galeria-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 60vh;
+    max-height: 650px;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    background: #050505;
+  }
+
+  .fondo-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 1.2s ease, transform 1.2s ease;
+    transform: scale(1.05);
+  }
+
+  .fondo-img.activa {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .titulo-superpuesto {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(40px, 15vw, 140px);
+    font-weight: 950;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: -0.06em;
+    mix-blend-mode: screen;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.4));
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Paso verificar */
+  .mensaje-verificar {
+    color: #d4d4d4;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+  }
+
+  .btn-continuar {
+    padding: 14px 36px;
+    background: #ffffff;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 24px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(255,255,255,0.15);
+  }
+
+  .btn-continuar:hover {
+    background: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(255,255,255,0.25);
+  }
+
+  /* Paso verificado */
+  .loader-dash {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .oculto { display: none !important; }
+
+  @media (max-width: 760px) {
+    .galeria-wrap { height: 45vh; max-height: 400px; }
+    .titulo-superpuesto { font-size: clamp(30px, 12vw, 80px); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- PASO 1: Bienvenida -->
+  <div id="paso-bienvenida" class="paso activo">
+    <h1 id="txt-bienvenida">Bienvenido, <span id="nombre"></span></h1>
+    <p class="sub" id="sub-bienvenida">Medellín RP</p>
+  </div>
+
+  <!-- PASO 2: Galería de fondo con superposición -->
+  <div id="paso-galeria" class="paso">
+    <div class="galeria-wrap" id="wrap-galeria"></div>
+    <div class="titulo-superpuesto">MEDELLÍN RP</div>
+  </div>
+
+  <!-- PASO 3: Verificar (solo usuarios nuevos) -->
+  <div id="paso-verificar" class="paso">
+    <p class="mensaje-verificar">Primero que todo debes verificarte.</p>
+    <a href="/crear-cedula.html" class="btn-continuar">Continuar</a>
+  </div>
+
+  <!-- PASO FINAL: Ya verificado -->
+  <div id="paso-verificado" class="paso">
+    <h1>Bienvenido de nuevo, <span id="nombre-vuelta"></span></h1>
+    <p class="sub" id="txt-dashboard">Llevando a la dashboard...</p>
+    <div class="loader-dash"></div>
+  </div>
+
+</div>
+
+<script>
+  const NOMBRE = "{{NOMBRE_USUARIO}}";
+  const YA_VERIFICADO = "{{VERIFICADO}}" === "true";
+
+  const IMAGENES = [
+    "https://cdn.discordapp.com/attachments/1537889409494556763/1563948321746452660/Captura_de_pantalla_2026-09-26_192109.png?ex=6adf7be0&is=6ade2a60&hm=1d6abd3716159d7b86593a6fc6fb9f08d720e4b1e909e9276af668fa52306301",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948332492005547/Captura_de_pantalla_2026-09-27_134241.png?ex=6adf7be3&is=6ade2a63&hm=86f03df222e897f73bf210915bac445b2ce13d06944e916e8e5ba7ee58c8d701&=&format=webp&quality=lossless&width=1280&height=694",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948332932661368/Captura_de_pantalla_2026-09-27_134951.png?ex=6adf7be3&is=6ade2a63&hm=70425938729e54b24faa3255f910db9f2414be91244cf7ca78c013cf75a1b3e4&=&format=webp&quality=lossless&width=1280&height=776",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948333662208032/Captura_de_pantalla_2026-09-27_140310.png?ex=6adf7be3&is=6ade2a63&hm=aa7173318306baf5211acac1cbee1145b6c34139b97ad1269b90480c93026766&=&format=webp&quality=lossless&width=1280&height=649",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948335050657972/Captura_de_pantalla_2026-09-27_161803.png?ex=6adf7be3&is=6ade2a63&hm=1491aeee918021307f7fad63e6d434185fb35346a141ef867cfb9a42a89a8070&=&format=webp&quality=lossless&width=1536&height=775",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948335994507364/Captura_de_pantalla_2026-09-27_162738.png?ex=6adf7be4&is=6ade2a64&hm=9a8c43bfc7f804fce841b4dff95506b13f35d6d03e1d884375678eb4930dc549&=&format=webp&quality=lossless&width=1280&height=723",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948336954867894/Captura_de_pantalla_2026-10-03_145344.png?ex=6adf7be4&is=6ade2a64&hm=5df9f576aedc2be96e947ab9b5775e3392b5bb6229b0aea63d722b7a974ed2e4&=&format=webp&quality=lossless&width=1536&height=742",
+    "https://media.discordapp.net/attachments/1537889409494556763/1563948337801990245/Captura_de_pantalla_2026-10-19_163128.png?ex=6adf7be4&is=6ade2a64&hm=f80f627a166d1bc2274b4207550b0f12cef764180d5623de9f58527dd893736a&=&format=webp&quality=lossless&width=1280&height=776"
+  ];
+
+  const nombreEl = document.getElementById("nombre");
+  const nombreVueltaEl = document.getElementById("nombre-vuelta");
+  const wrapGaleria = document.getElementById("wrap-galeria");
+
+  // Si ya tiene cédula: bienvenido de nuevo → dashboard
+  if (YA_VERIFICADO) {
+    document.getElementById("paso-bienvenida").classList.remove("activo");
+    document.getElementById("paso-verificado").classList.add("activo");
+    nombreVueltaEl.textContent = NOMBRE;
+    setTimeout(() => {
+      window.location.href = "/dashboard-user.html";
+    }, 3000);
+  } else {
+    // Máquina de escribir el nombre
+    let i = 0;
+    const escribirInterval = setInterval(() => {
+      nombreEl.textContent += NOMBRE.charAt(i);
+      i++;
+      if (i >= NOMBRE.length) clearInterval(escribirInterval);
+    }, 70);
+
+    // Transición a galería
+    setTimeout(() => {
+      document.getElementById("paso-bienvenida").classList.remove("activo");
+      document.getElementById("paso-galeria").classList.add("activo");
+
+      // Inyectar imágenes
+      IMAGENES.forEach((url, idx) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = `Escena ${idx + 1}`;
+        img.className = "fondo-img";
+        if (idx === 0) img.classList.add("activa");
+        wrapGaleria.appendChild(img);
+      });
+
+      let actual = 0;
+      const total = IMAGENES.length;
+
+      function cambiarImagen() {
+        const imgs = wrapGaleria.querySelectorAll(".fondo-img");
+        imgs[actual].classList.remove("activa");
+        actual = (actual + 1) % total;
+        imgs[actual].classList.add("activa");
+      }
+
+      const timer = setInterval(cambiarImagen, 2200);
+
+      // Al finalizar la galería, mostrar paso de verificación
+      setTimeout(() => {
+        clearInterval(timer);
+        document.getElementById("paso-galeria").classList.remove("activo");
+        document.getElementById("paso-verificar").classList.add("activo");
+        localStorage.setItem("merp_cargando_visto", "1");
+      }, total * 2200 + 800);
+
+    }, 2200);
+  }
+</script>
+</body>
+</html>
