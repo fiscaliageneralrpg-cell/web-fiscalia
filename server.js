@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const path = require("node:path");
+const fs = require("node:fs");
 require("dotenv").config();
 
 const { pool, probarConexion, buscarUsuarioPorDiscord } = require("./db");
@@ -75,6 +76,16 @@ app.get("/iniciar-sesion.html", (req, res) => {
 app.get("/iniciar-seccion.html", (req, res) => {
   res.redirect("/iniciar-sesion.html");
 });
+
+function escapeHtml(texto) {
+  return String(texto || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
 
 function redirigirDespuesDeLogin(req, res, destino) {
   req.session.save((err) => {
@@ -170,6 +181,56 @@ async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}
     throw new Error(`Discord no pudo enviar el mensaje: ${respuesta.status} ${detalle}`);
   }
 }
+
+/* ===================== RUTA CARGANDO ===================== */
+
+app.get("/cargando", (req, res) => {
+  if (!req.session.usuario) {
+    return res.redirect("/iniciar-sesion.html");
+  }
+
+  const nombre = req.session.usuario.nombre || req.session.usuario.username;
+  const verificado = Boolean(req.session.usuario.cedulaRegistrada);
+
+  if (verificado) {
+    // Usuario ya tiene cédula: bienvenido de nuevo -> dashboard
+    const html = `
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bienvenido de nuevo | Medellín RP</title>
+<style>
+  body { margin:0; background:#0a0a0a; color:#f4f7fb; font-family:Inter,sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; }
+  .card { text-align:center; background:rgba(20,20,20,.9); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:40px; max-width:420px; }
+  h1 { font-size:28px; margin-bottom:10px; background:linear-gradient(90deg,#ffffff,#a1a1a1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  p { color:#a1a1a1; margin-bottom:24px; }
+  .loader { width:44px; height:44px; border:3px solid rgba(255,255,255,.15); border-top-color:#ffffff; border-radius:50%; animation: spin 1s linear infinite; margin:0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Bienvenido de nuevo, ${escapeHtml(nombre)}</h1>
+  <p id="estado">Llevando a la dashboard...</p>
+  <div class="loader"></div>
+</div>
+<script>
+  setTimeout(() => { window.location.href = '/dashboard-user.html'; }, 3000);
+</script>
+</body>
+</html>
+    `;
+    return res.send(html);
+  }
+
+  // Usuario nuevo: servir animación de carga con nombre inyectado
+  let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
+  html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
+  html = html.replace("{{VERIFICADO}}", "false");
+  res.send(html);
+});
 
 /* ===================== DISCORD OAUTH2 ===================== */
 
@@ -276,11 +337,8 @@ app.get("/auth/discord/callback", async (req, res) => {
       return redirigirDespuesDeLogin(req, res, "/whitelist.html");
     }
 
-    if (!usuarioRegistrado) {
-      return redirigirDespuesDeLogin(req, res, "/crear-cedula.html");
-    }
-
-    return redirigirDespuesDeLogin(req, res, "/dashboard-user.html");
+    // Siempre pasar por la pantalla de carga antes de continuar
+    return redirigirDespuesDeLogin(req, res, "/cargando");
   } catch (error) {
     console.error("=== ERROR LOGIN DISCORD ===");
     console.error("Nombre:", error.name);
@@ -1500,268 +1558,4 @@ app.post("/api/twitter/publicaciones/:id/like", async (req, res) => {
   const publicacionId = Number(req.params.id);
   if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) return res.status(400).json({ error: "Publicación inválida." });
   try {
-    const [existentes] = await pool.execute("SELECT 1 FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ? LIMIT 1", [publicacionId, cuenta.id]);
-    if (existentes.length) {
-      await pool.execute("DELETE FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ?", [publicacionId, cuenta.id]);
-    } else {
-      await pool.execute("INSERT INTO twitter_likes (publicacion_id, cuenta_id) VALUES (?, ?)", [publicacionId, cuenta.id]);
-    }
-    const [total] = await pool.execute("SELECT COUNT(*) AS total FROM twitter_likes WHERE publicacion_id = ?", [publicacionId]);
-    return res.json({ liked: !existentes.length, likes: Number(total[0].total || 0) });
-  } catch (error) {
-    console.error("[TWITTER LIKE]", error.message);
-    return res.status(500).json({ error: "No se pudo actualizar el like." });
-  }
-});
-
-app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
-  const cuenta = await exigirCuentaTwitter(req, res);
-  if (!cuenta) return;
-  try {
-    const [comentarios] = await pool.execute(
-      `SELECT co.id, co.cuenta_id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
-      [Number(req.params.id)]
-    );
-    return res.json({ comentarios: comentarios.map((x) => ({ ...x, avatar_url: x.avatar_url || TWITTER_AVATAR_DEFECTO })) });
-  } catch (error) {
-    console.error("[TWITTER COMENTARIOS]", error.message);
-    return res.status(500).json({ error: "No se pudieron cargar los comentarios." });
-  }
-});
-
-app.post("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
-  const cuenta = await exigirCuentaTwitter(req, res);
-  if (!cuenta) return;
-  const texto = textoTwitter(req.body?.texto, 600);
-  const publicacionId = Number(req.params.id);
-  if (!texto) return res.status(400).json({ error: "Escribe un comentario." });
-  try {
-    await pool.execute("INSERT INTO twitter_comentarios (publicacion_id, cuenta_id, texto) VALUES (?, ?, ?)", [publicacionId, cuenta.id, texto]);
-    return res.status(201).json({ correcto: true });
-  } catch (error) {
-    console.error("[TWITTER COMENTAR]", error.message);
-    return res.status(500).json({ error: "No se pudo publicar el comentario." });
-  }
-});
-
-app.delete("/api/twitter/comentarios/:id", async (req, res) => {
-  const cuenta = await exigirCuentaTwitter(req, res);
-  if (!cuenta) return;
-  const comentarioId = Number(req.params.id);
-  if (!Number.isSafeInteger(comentarioId) || comentarioId < 1) return res.status(400).json({ error: "Comentario inválido." });
-  try {
-    const [resultado] = await pool.execute("DELETE FROM twitter_comentarios WHERE id = ? AND cuenta_id = ?", [comentarioId, cuenta.id]);
-    if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propios comentarios." });
-    return res.json({ correcto: true, eliminado: comentarioId });
-  } catch (error) {
-    console.error("[TWITTER ELIMINAR COMENTARIO]", error.message);
-    return res.status(500).json({ error: "No se pudo eliminar el comentario." });
-  }
-});
-
-/* ===================== ENCUESTAS ===================== */
-
-function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = console } = {}) {
-  if (!app || typeof app.get !== "function") throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
-  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
-
-  const intentos = new Map();
-
-  function configuracionBot() {
-    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
-      const error = new Error("El servidor web no tiene configurada la conexión con la API del bot.");
-      error.statusCode = 503;
-      throw error;
-    }
-    return { base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""), clave: process.env.NEQUI_API_KEY };
-  }
-
-  function exigirOrigenMismoSitio(req, res, next) {
-    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
-    const origen = req.get("origin");
-    if (!origen) return next();
-    try {
-      if (new URL(origen).host !== req.get("host")) return res.status(403).json({ error: "Origen de solicitud no permitido." });
-    } catch {
-      return res.status(403).json({ error: "Origen de solicitud inválido." });
-    }
-    return next();
-  }
-
-  function limitarRespuestas(req, res, next) {
-    const clave = String(req.session?.usuario?.id || req.ip || "desconocido");
-    const ahora = Date.now();
-    const historial = (intentos.get(clave) || []).filter((marca) => ahora - marca < 60_000);
-    if (historial.length >= 10) return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
-    historial.push(ahora);
-    intentos.set(clave, historial);
-    if (intentos.size > 5000) {
-      for (const [id, marcas] of intentos) {
-        if (!marcas.some((marca) => ahora - marca < 60_000)) intentos.delete(id);
-      }
-    }
-    return next();
-  }
-
-  async function solicitarBot(ruta, { method = "GET", body, timeout = 10_000 } = {}) {
-    const { base, clave } = configuracionBot();
-    const opciones = { method, headers: { "X-Nequi-Key": clave, "User-Agent": "Medellin-RP-Web/1.0" }, signal: AbortSignal.timeout(timeout) };
-    if (body !== undefined) {
-      opciones.headers["Content-Type"] = "application/json";
-      opciones.body = JSON.stringify(body);
-    }
-    const respuesta = await fetch(`${base}${ruta}`, opciones);
-    const tipo = respuesta.headers.get("content-type") || "";
-    if (!tipo.includes("application/json")) {
-      const detalle = (await respuesta.text()).slice(0, 300);
-      const error = new Error(`La API del bot devolvió una respuesta inválida (${respuesta.status}): ${detalle}`);
-      error.statusCode = 502;
-      throw error;
-    }
-    return { status: respuesta.status, datos: await respuesta.json() };
-  }
-
-  function manejarError(res, error, contexto) {
-    logger.error(`[${contexto}]`, error.message);
-    if (error.name === "TimeoutError" || error.name === "AbortError") return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
-    return res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas." });
-  }
-
-  app.use("/api/encuestas", exigirOrigenMismoSitio);
-  app.use("/api/fundacion/encuestas", exigirOrigenMismoSitio);
-
-  app.get("/api/encuestas", async (req, res) => {
-    if (!exigirSesion(req, res)) return;
-    try {
-      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}`);
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "ENCUESTAS LISTA");
-    }
-  });
-
-  app.get("/api/encuestas/:encuestaId", async (req, res) => {
-    if (!exigirSesion(req, res)) return;
-    try {
-      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`);
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "ENCUESTA DETALLE");
-    }
-  });
-
-  app.post("/api/encuestas/:encuestaId/responder", limitarRespuestas, async (req, res) => {
-    if (!exigirSesion(req, res)) return;
-    try {
-      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`, { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "ENCUESTA RESPUESTA");
-    }
-  });
-
-  app.get("/api/fundacion/encuestas", async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`);
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION ENCUESTAS");
-    }
-  });
-
-  app.post("/api/fundacion/encuestas", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`, { method: "POST", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, fechaCierre: req.body?.fechaCierre, preguntas: req.body?.preguntas }, timeout: 15_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION CREAR ENCUESTA");
-    }
-  });
-
-  app.post("/api/fundacion/encuestas/:encuestaId/publicar", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`, { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
-    }
-  });
-
-  app.put("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION EDITAR ENCUESTA");
-    }
-  });
-
-  app.delete("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "DELETE", body: {}, timeout: 15_000 });
-      return res.status(resultado.estado).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
-    }
-  });
-
-  app.get("/api/fundacion/encuestas/:encuestaId", async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`);
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION DETALLE ENCUESTA");
-    }
-  });
-
-  app.post("/api/fundacion/encuestas/:encuestaId/calificar", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`, { method: "POST", body: { usuarioId: req.body?.usuarioId, preguntaId: req.body?.preguntaId, calificacion: req.body?.calificacion, puntuacion: req.body?.puntuacion, comentario: req.body?.comentario }, timeout: 15_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION CALIFICAR ENCUESTA");
-    }
-  });
-
-  app.post("/api/fundacion/encuestas/:encuestaId/cerrar", limitarRespuestas, async (req, res) => {
-    if (!(await exigirFundacion(req, res))) return;
-    try {
-      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`, { method: "POST", body: {}, timeout: 30_000 });
-      return res.status(resultado.status).json(resultado.datos);
-    } catch (error) {
-      return manejarError(res, error, "FUNDACION CERRAR ENCUESTA");
-    }
-  });
-
-  return app;
-}
-
-montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
-
-/* ===================== SESION / 404 ===================== */
-
-app.get("/cerrar-sesion", (req, res) => {
-  req.session.destroy((error) => {
-    if (error) console.error("[SESION]", error);
-    res.clearCookie("connect.sid");
-    return res.redirect(req.query.automatico === "1" ? "/se-cerro-seccion.html" : "/index.html");
-  });
-});
-
-app.use((req, res) => {
-  if (req.path.startsWith("/api/")) return res.status(404).json({ error: "Ruta API no encontrada." });
-  if (req.method === "GET") return res.redirect("/index.html");
-  return res.status(404).send("Página no encontrada.");
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[WEB] Servidor iniciado en el puerto ${PORT}.`);
-  probarConexion().catch((error) => console.error("[MYSQL] Error de conexión:", error.message));
-});
+    const [
