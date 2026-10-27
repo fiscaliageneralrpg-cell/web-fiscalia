@@ -232,12 +232,8 @@ app.get("/cargando", (req, res) => {
     return res.redirect("/whitelist-pendiente.html");
   }
 
-  // Whitelist no aprobada: ir a whitelist
-  if (!whitelistAprobada) {
-    return res.redirect("/whitelist.html");
-  }
-
   // Usuario nuevo con whitelist aprobada pero sin cédula: animación de carga
+  // (ya no redirige a whitelist.html porque la vas a quitar temporalmente)
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
   html = html.replace("{{VERIFICADO}}", "false");
@@ -340,7 +336,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
     }
 
-    // SIEMPRE pasar por cargando si está en el servidor
+    // SIEMPRE pasar por /cargando (ya no redirige a whitelist.html)
     return redirigirDespuesDeLogin(req, res, "/cargando");
   } catch (error) {
     console.error("=== ERROR LOGIN DISCORD ===");
@@ -514,7 +510,7 @@ app.get("/api/whitelist/status", async (req, res) => {
         redirect: "/whitelist-denegada.html",
       });
     }
-    return res.json({ estado: "sin_solicitud", redirect: "/whitelist.html" });
+    return res.json({ estado: "sin_solicitud", redirect: "/cargando" });
   } catch (error) {
     console.error("[WHITELIST STATUS]", error.message);
     return res.status(500).json({ error: "No se pudo consultar el estado de la whitelist." });
