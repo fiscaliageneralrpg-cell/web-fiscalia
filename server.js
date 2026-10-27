@@ -191,7 +191,10 @@ app.get("/cargando", (req, res) => {
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
   const verificado = Boolean(req.session.usuario.cedulaRegistrada);
+  const whitelistPendiente = Boolean(req.session.usuario.whitelistPendiente);
+  const whitelistAprobada = Boolean(req.session.usuario.whitelistAprobada);
 
+  // Usuario ya verificado: bienvenido de nuevo -> dashboard
   if (verificado) {
     const html = `
 <!doctype html>
@@ -224,6 +227,17 @@ app.get("/cargando", (req, res) => {
     return res.send(html);
   }
 
+  // Whitelist pendiente: ir a esa página
+  if (whitelistPendiente) {
+    return res.redirect("/whitelist-pendiente.html");
+  }
+
+  // Whitelist no aprobada: ir a whitelist
+  if (!whitelistAprobada) {
+    return res.redirect("/whitelist.html");
+  }
+
+  // Usuario nuevo con whitelist aprobada pero sin cédula: animación de carga
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
   html = html.replace("{{VERIFICADO}}", "false");
@@ -326,15 +340,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
     }
 
-    if (estadoWhitelist === "pendiente") {
-      console.log(`[LOGIN] ${usuario.id} tiene whitelist pendiente.`);
-      return redirigirDespuesDeLogin(req, res, "/whitelist-pendiente.html");
-    }
-
-    if (!whitelistAprobada) {
-      return redirigirDespuesDeLogin(req, res, "/whitelist.html");
-    }
-
+    // SIEMPRE pasar por cargando si está en el servidor
     return redirigirDespuesDeLogin(req, res, "/cargando");
   } catch (error) {
     console.error("=== ERROR LOGIN DISCORD ===");
