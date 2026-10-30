@@ -29,6 +29,9 @@ if (faltantes.length > 0) {
 
 const ROL_WHITELIST_APROBADA = "1500316176960716940";
 const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
+const ROL_VERIFICADO = "1561032118962880570";
+const ROL_NO_VERIFICADO = "1561032118962880569";
+const CANAL_WHITELIST = "1565815040077205674";
 const ROL_STAFF_WHITELIST = "1510018366964891829";
 const ROL_FUNDACION = "1508156676350673017";
 const ROL_STAFF = "1510018366964891829";
@@ -134,6 +137,41 @@ async function agregarRolDiscord(discordId, rolId, motivo) {
   }
 }
 
+async function quitarRolDiscord(discordId, rolId, motivo) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}/roles/${rolId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+        "X-Audit-Log-Reason": motivo || "Rol de whitelist",
+      },
+    }
+  );
+  if (!respuesta.ok && respuesta.status !== 204) {
+    const detalle = await respuesta.text();
+    throw new Error(`Discord no pudo quitar el rol ${rolId}: ${respuesta.status} ${detalle}`);
+  }
+}
+
+// Asigna el rol de verificado o no verificado segun si el usuario ya tiene cedula.
+// Los dos roles se excluyen entre si: solo puede tener uno de los dos.
+async function actualizarRolVerificacion(discordId, verificado) {
+  const rolCorrespondiente = verificado ? ROL_VERIFICADO : ROL_NO_VERIFICADO;
+  const rolContrario = verificado ? ROL_NO_VERIFICADO : ROL_VERIFICADO;
+  await agregarRolDiscord(
+    discordId,
+    rolCorrespondiente,
+    verificado ? "Cedula verificada en la web" : "Usuario sin cedula en la web"
+  );
+  await quitarRolDiscord(
+    discordId,
+    rolContrario,
+    verificado ? "Ahora tiene cedula; se quita rol de no verificado" : "Sigue sin cedula; se quita rol de verificado"
+  );
+}
+
 async function obtenerMiembrosDelServidor() {
   const miembros = [];
   let after = "0";
@@ -184,13 +222,20 @@ async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}
 
 /* ===================== RUTA CARGANDO ===================== */
 
-app.get("/cargando", (req, res) => {
+app.get("/cargando", async (req, res) => {
   if (!req.session.usuario) {
     return res.redirect("/iniciar-sesion.html");
   }
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
   const verificado = Boolean(req.session.usuario.cedulaRegistrada);
+
+  // Rol de verificado / no verificado en Discord (solo puede tener uno de los dos).
+  try {
+    await actualizarRolVerificacion(req.session.usuario.id, verificado);
+  } catch (error) {
+    console.error("[CARGANDO ROLES]", error.message);
+  }
 
   // Todos los usuarios pasan por la misma pagina de cargando decorada.
   // VERIFICADO=true  -> al terminar la galeria: "Bienvenido de nuevo" y va a /dashboard-user.html
@@ -399,7 +444,7 @@ app.post("/api/whitelist", async (req, res) => {
 
     try {
       await enviarEmbedDiscord(
-        "1539313915001839616",
+        CANAL_WHITELIST,
         {
           title: `${EMOJI_FORMULARIO} NUEVA SOLICITUD DE WHITELIST`,
           description: `${EMOJI_ESPERA} El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n**Estado:** Pendiente de revisión`,
@@ -548,6 +593,12 @@ app.post("/api/cedula", async (req, res) => {
     const cedula = await buscarUsuarioPorDiscord(discordId);
     req.session.usuario.cedulaRegistrada = true;
     req.session.usuario.cedula = cedula;
+
+    try {
+      await actualizarRolVerificacion(discordId, true);
+    } catch (errorRol) {
+      console.error("[CEDULA ROLES] No se pudo asignar el rol verificado:", errorRol.message);
+    }
 
     try {
       await enviarEmbedDiscord("1539426748142325780", {
