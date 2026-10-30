@@ -307,24 +307,13 @@
         z-index: 3;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         padding: clamp(14px, 2vw, 26px) clamp(16px, 2.4vw, 32px);
         font-size: 11px;
         letter-spacing: 0.3em;
         text-transform: uppercase;
         color: var(--accent);
         text-shadow: var(--glow-sm);
-      }
-
-      .gallery-top .live { display: flex; align-items: center; gap: 9px; }
-
-      .gallery-top .live i {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #fff;
-        box-shadow: 0 0 10px #fff, 0 0 22px rgba(255, 255, 255, 0.7);
-        animation: brilloTexto 1.2s ease-in-out infinite;
       }
 
       .gallery-title {
@@ -553,7 +542,6 @@
       <div class="gallery-frame">
         <div id="slides"></div>
         <div class="gallery-top">
-          <div class="live"><i></i> En vivo</div>
           <div id="counter">01 / 07</div>
         </div>
         <div class="gallery-title">
