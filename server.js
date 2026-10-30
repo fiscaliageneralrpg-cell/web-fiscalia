@@ -431,9 +431,9 @@ app.post("/api/whitelist", async (req, res) => {
     try {
       await agregarRolDiscord(req.session.usuario.id, ROL_WHITELIST_PENDIENTE, "Whitelist enviada desde la web");
     } catch (errorRol) {
-      console.error("[WHITELIST] No se pudo agregar el rol pendiente:", errorRol);
-      await pool.execute(`DELETE FROM whitelist_solicitudes WHERE id = ? AND estado = 'pendiente'`, [resultado.insertId]);
-      return res.status(503).json({ error: "No se pudo asignar el rol pendiente en Discord." });
+      // No fatal: la solicitud ya quedó guardada y aun sin rol se envia el embed
+      // al equipo. Borrarla aqui provocaba que la pagina la redirigiera a /cargando.
+      console.error("[WHITELIST] No se pudo agregar el rol pendiente (la solicitud se mantiene):", errorRol.message);
     }
 
     const campos = Object.entries(respuestas).map(([pregunta, respuesta]) => ({
@@ -516,7 +516,9 @@ app.get("/api/whitelist/status", async (req, res) => {
         redirect: "/whitelist-denegada.html",
       });
     }
-    return res.json({ estado: "sin_solicitud", redirect: "/cargando" });
+    // Sin solicitud: mejor volver al formulario para que pueda enviarla de nuevo.
+    // (Antes mandaba a /cargando, y eso creaba el bucle de redirecciones).
+    return res.json({ estado: "sin_solicitud", redirect: "/whitelist.html" });
   } catch (error) {
     console.error("[WHITELIST STATUS]", error.message);
     return res.status(500).json({ error: "No se pudo consultar el estado de la whitelist." });

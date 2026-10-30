@@ -497,7 +497,12 @@
         avisoDenegada = document.querySelector("#denied-notice"),
         motivoDenegada = document.querySelector("#denied-reason");
 
+      // Mientras la solicitud se esta enviando no se revisa el estado,
+      // para que el chequeo no saque al usuario de la pagina a mitad del envio.
+      let enviandoEnCurso = false;
+
       async function revisarEstadoAnterior() {
+        if (enviandoEnCurso) return;
         try {
           const respuesta = await fetch("/api/whitelist/status", {
             cache: "no-store",
@@ -537,6 +542,7 @@
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        enviandoEnCurso = true;
         estado.className = "status";
         estado.textContent = "Enviando solicitud...";
         form.classList.add("loading");
@@ -555,6 +561,7 @@
           if (!r.ok) throw new Error(d.error || "No se pudo enviar");
           location.href = d.redirect || "/whitelist-pendiente.html";
         } catch (err) {
+          enviandoEnCurso = false;
           estado.className = "status error";
           estado.textContent = err.message;
           form.classList.remove("loading");
