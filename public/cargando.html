@@ -141,10 +141,12 @@
         animation: brilloTexto 3s ease-in-out infinite;
       }
 
-      .logo img {
+      .logo img,
+      .logo svg {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
         filter: grayscale(100%) contrast(1.1);
       }
 
@@ -523,11 +525,14 @@
     <!-- Escena 1: carga / bienvenida -->
     <section class="scene active" id="scene-load">
       <div class="shell">
-        <div class="logo">
-          <img
-            src="https://images-ext-1.discordapp.net/external/qJk_1yjcJFmAOc-2vevd1tODrWfNJ33iJQEv_N1Z3-Q/%3Fsize%3D512/https/cdn.discordapp.com/icons/1500206705055760406/9c275220f290867d374af759909de15a.png?format=webp&quality=lossless"
-            alt="Logo de Medellín RP"
-          />
+        <div class="logo" aria-label="Logo de Medellín RP">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" fill="#111"/>
+            <g fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M32 12l16 7v11c0 10-7 17-16 20-9-3-16-10-16-20V19l16-7z"/>
+              <path d="M25 31.5l5 5 9-9"/>
+            </g>
+          </svg>
         </div>
         <div class="eyebrow">「ME:RP」Medellín RP ︱ ER:LC</div>
         <div class="ring"><span></span><span></span><span></span><div class="core"></div></div>
@@ -591,8 +596,8 @@
     <button class="skip" id="skip">Saltar →</button>
 
     <script>
-
-/* ====== IMÁGENES DE LA GALERÍA (7 fotos) ====== */
+      
+/* ====== IMÁGENES DE LA GALERÍA (10 en total) ====== */
 const IMAGES = [
   "photos/foto1.png",
   "photos/foto2.png",
@@ -608,6 +613,21 @@ const NOMBRE = "{{NOMBRE_USUARIO}}";
 const VERIFICADO = "{{VERIFICADO}}";
 
 const esVerificado = ["1","true","si","sí","yes"].includes(String(VERIFICADO).toLowerCase().trim());
+
+/* ====== Partículas de fondo ====== */
+(function particles(){
+  const n = window.innerWidth < 600 ? 12 : 24;
+  for(let i=0;i<n;i++){
+    const p=document.createElement("div");
+    p.className="particle";
+    const s=Math.random()*3+1.5;
+    p.style.width=s+"px";p.style.height=s+"px";
+    p.style.left=(Math.random()*100)+"vw";
+    p.style.animationDuration=(9+Math.random()*14)+"s";
+    p.style.animationDelay=(-Math.random()*18)+"s";
+    document.body.appendChild(p);
+  }
+})();
 
 /* ====== Escenas ====== */
 const scenes = {
