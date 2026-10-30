@@ -1,198 +1,220 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Solicitud de whitelist de Medellín RP."
+    />
     <title>Whitelist | Medellín RP</title>
     <style>
       :root {
-        --bg: #06141f;
-        --panel: #102b42;
-        --line: #42d8d044;
-        --text: #f4efe3;
-        --muted: #a9bac6;
-        --yellow: #42d8d0;
-        --blue: #0c7890;
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 20, 0.72);
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #ffffff;
+        --muted: #a1a1a1;
+        --accent: #d4d4d4;
+        --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
       }
+
       * {
         box-sizing: border-box;
-      }
-      body {
         margin: 0;
-        background: linear-gradient(135deg, #06141f, #0a3140);
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-height: 100vh;
         color: var(--text);
-        font-family: Inter, system-ui, sans-serif;
+        background: var(--bg);
+        font-family:
+          "Inter",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        overflow-x: hidden;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 0;
       }
-      .wrap {
-        width: min(850px, calc(100% - 30px));
-        margin: 45px auto;
+
+      /* Fondo animado sutil en blanco y negro (igual que el login) */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 40%);
+        background-size: 200% 200%;
+        animation: fondoMover 20s ease infinite;
       }
+
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+      }
+
+      @keyframes aparecer {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes brilloTexto {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      .shell {
+        width: min(680px, 92%);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+        animation: aparecer 1s ease both;
+      }
+
       .top {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 15px;
-        margin-bottom: 28px;
+        padding: 22px clamp(22px, 4vw, 40px);
+        border-bottom: 1px solid var(--line);
       }
+
       .brand {
         font-weight: 850;
+        font-size: 15px;
+        letter-spacing: -0.02em;
       }
+
       .brand small {
         display: block;
+        margin-top: 4px;
         color: var(--muted);
         font-size: 11px;
+        font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
       }
-      .card {
-        padding: 30px;
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        background: linear-gradient(145deg, #102b42f5, #071b2bf5);
-        box-shadow:
-          0 25px 70px #0008,
-          inset 0 1px #ffffff12;
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        white-space: nowrap;
       }
+
+      .back:hover {
+        color: #fff;
+      }
+
+      .content {
+        padding: clamp(24px, 4vw, 40px);
+      }
+
       .hero {
         display: flex;
         align-items: center;
         gap: 16px;
-        margin-bottom: 26px;
+        margin-bottom: 24px;
         padding: 18px;
-        border: 1px solid #42d8d055;
+        border: 1px solid var(--line);
         border-radius: 17px;
-        background: linear-gradient(110deg, #0c789044, #42d8d014);
+        background: rgba(0, 0, 0, 0.25);
       }
+
       .hero-icon {
         display: grid;
         width: 52px;
         height: 52px;
         flex: 0 0 52px;
         place-items: center;
-        border-radius: 15px;
-        background: #42d8d0;
-        color: #07101d;
-        font-size: 25px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: #111;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 22px rgba(255, 255, 255, 0.18);
+        animation: brilloTexto 3s ease-in-out infinite;
       }
+
+      .hero-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke: #fff;
+        stroke-width: 2.2;
+        fill: none;
+        filter: grayscale(100%) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+      }
+
       .hero strong {
         display: block;
         font-size: 16px;
       }
+
       .hero span {
         display: block;
         margin-top: 4px;
         color: var(--muted);
         font-size: 13px;
       }
+
       .steps {
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
-        margin: 0 0 25px;
+        margin-bottom: 25px;
       }
+
       .step {
-        padding: 7px 10px;
+        padding: 7px 12px;
         border: 1px solid var(--line);
         border-radius: 999px;
         color: var(--muted);
         font-size: 11px;
         font-weight: 800;
+        letter-spacing: 0.06em;
       }
+
       .step.active {
-        border-color: #42d8d077;
-        color: var(--yellow);
-        background: #42d8d012;
+        border-color: rgba(255, 255, 255, 0.35);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
       }
-      h1 {
-        margin: 0 0 8px;
-        font-size: clamp(32px, 5vw, 52px);
-        letter-spacing: -0.06em;
-      }
-      h2 {
-        margin: 30px 0 16px;
-        color: var(--yellow);
-        font-size: 18px;
-      }
-      .intro {
-        color: var(--muted);
-        margin: 0 0 24px;
-      }
-      .question {
-        display: block;
-        margin: 18px 0;
-      }
-      .question span {
-        display: block;
-        margin-bottom: 7px;
-        font-weight: 700;
-        font-size: 14px;
-      }
-      .question input,
-      .question textarea {
-        width: 100%;
-        padding: 13px 14px;
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        outline: 0;
-        background: #07101d;
-        color: var(--text);
-        font: inherit;
-      }
-      .question textarea {
-        min-height: 88px;
-        resize: vertical;
-      }
-      form h2 {
-        padding: 11px 14px;
-        border-left: 3px solid var(--yellow);
-        border-radius: 8px;
-        background: #ffd1660d;
-      }
-      .question input:focus,
-      .question textarea:focus {
-        border-color: var(--yellow);
-      }
-      .actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-top: 28px;
-      }
-      .button {
-        border: 0;
-        border-radius: 11px;
-        padding: 14px 20px;
-        font-weight: 800;
-        cursor: pointer;
-      }
-      .primary {
-        background: var(--yellow);
-        color: #07101d;
-      }
-      .back {
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 13px;
-      }
-      .status {
-        display: none;
-        margin-top: 16px;
-        padding: 12px;
-        border-radius: 10px;
-      }
+
       .denied-notice {
         display: none;
         position: relative;
         margin-bottom: 22px;
         padding: 16px 48px 16px 16px;
         border: 1px solid rgba(248, 113, 113, 0.45);
-        border-radius: 13px;
+        border-radius: 14px;
         color: #fee2e2;
         background: rgba(127, 29, 29, 0.35);
       }
+
       .denied-notice strong {
         display: block;
         margin-bottom: 4px;
       }
+
       .close-notice {
         position: absolute;
         top: 8px;
@@ -203,42 +225,189 @@
         font-size: 20px;
         cursor: pointer;
       }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(30px, 5vw, 44px);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+      }
+
+      .intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+
+      form h2 {
+        margin: 30px 0 16px;
+        padding: 11px 14px;
+        border-left: 3px solid #fff;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      form h2:first-of-type {
+        margin-top: 0;
+      }
+
+      .question {
+        display: block;
+        margin: 18px 0;
+      }
+
+      .question span {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .question input,
+      .question textarea {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        outline: 0;
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text);
+        font: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .question textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+
+      .question input::placeholder,
+      .question textarea::placeholder {
+        color: #6f6f6f;
+      }
+
+      .question input:focus,
+      .question textarea:focus {
+        border-color: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+      }
+
+      .actions {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-top: 28px;
+      }
+
+      /* Mismo botón del login */
+      .button {
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        padding: 0 26px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .button:hover,
+      .button:focus {
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 255, 255, 0.1);
+      }
+
+      .status {
+        display: none;
+        margin-top: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--muted);
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.25);
+      }
+
       .error {
         display: block;
-        background: #7f1d1d;
+        border-color: rgba(248, 113, 113, 0.45);
+        background: rgba(127, 29, 29, 0.35);
         color: #fecaca;
       }
+
       .loading {
         opacity: 0.65;
         pointer-events: none;
       }
+
       @media (max-width: 600px) {
-        .card {
-          padding: 22px;
+        body {
+          padding: 16px 0;
         }
+
         .top {
           align-items: flex-start;
           flex-direction: column;
+        }
+
+        .actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .back {
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
         }
       }
     </style>
   </head>
   <body>
-    <main class="wrap">
+    <main class="shell">
       <div class="top">
         <div class="brand">
-          「ME:RP」Medellín RP︱ER:LC<small>Solicitud de whitelist</small>
+          「ME:RP」Medellín RP︱ER:LC
+          <small>Solicitud de whitelist</small>
         </div>
         <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
       </div>
-      <section class="card">
+      <div class="content">
         <div class="hero">
-          <div class="hero-icon">📋</div>
+          <div class="hero-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="8" y="2" width="8" height="4" rx="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <path d="M9 12h6M9 16h6" />
+            </svg>
+          </div>
           <div>
             <strong>Solicitud oficial de 「ME:RP」</strong>
-            <span
-              >Completa el formulario con respuestas propias y sinceras.</span
-            >
+            <span>Completa el formulario con respuestas propias y sinceras.</span>
           </div>
         </div>
         <div class="steps">
@@ -256,9 +425,7 @@
             ×
           </button>
           <strong>⚠️ Tu whitelist fue denegada</strong>
-          <span id="denied-reason"
-            >Vuelve a realizarla para poder continuar.</span
-          >
+          <span id="denied-reason">Vuelve a realizarla para poder continuar.</span>
         </div>
         <h1>Whitelist</h1>
         <p class="intro">
@@ -275,12 +442,7 @@
               placeholder="Usuario o ID de Discord" /></label
           ><label class="question"
             ><span>¿Qué edad tienes?</span
-            ><input
-              name="edad"
-              type="number"
-              min="13"
-              max="99"
-              required /></label
+            ><input name="edad" type="number" min="13" max="99" required /></label
           ><label class="question"
             ><span>¿Cuánto tiempo llevas jugando ER:LC?</span
             ><textarea name="tiempo" required></textarea></label
@@ -322,13 +484,12 @@
             ><textarea name="accidente" required></textarea>
           </label>
           <div class="actions">
-            <button class="button primary" type="submit">
-              Enviar whitelist</button
+            <button class="button" type="submit">Enviar whitelist</button
             ><a class="back" href="/index.html">Volver</a>
           </div>
           <div id="estado" class="status"></div>
         </form>
-      </section>
+      </div>
     </main>
     <script>
       const form = document.querySelector("#formulario"),
