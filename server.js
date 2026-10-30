@@ -191,52 +191,13 @@ app.get("/cargando", (req, res) => {
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
   const verificado = Boolean(req.session.usuario.cedulaRegistrada);
-  const whitelistPendiente = Boolean(req.session.usuario.whitelistPendiente);
-  const whitelistAprobada = Boolean(req.session.usuario.whitelistAprobada);
 
-  // Usuario ya verificado: bienvenido de nuevo -> dashboard
-  if (verificado) {
-    const html = `
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bienvenido de nuevo | Medellín RP</title>
-<style>
-  body { margin:0; background:#0a0a0a; color:#f4f7fb; font-family:Inter,sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; }
-  .card { text-align:center; background:rgba(20,20,20,.9); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:40px; max-width:420px; }
-  h1 { font-size:28px; margin-bottom:10px; background:linear-gradient(90deg,#ffffff,#a1a1a1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-  p { color:#a1a1a1; margin-bottom:24px; }
-  .loader { width:44px; height:44px; border:3px solid rgba(255,255,255,.15); border-top-color:#ffffff; border-radius:50%; animation: spin 1s linear infinite; margin:0 auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-</head>
-<body>
-<div class="card">
-  <h1>Bienvenido de nuevo, ${escapeHtml(nombre)}</h1>
-  <p id="estado">Llevando a la dashboard...</p>
-  <div class="loader"></div>
-</div>
-<script>
-  setTimeout(() => { window.location.href = '/dashboard-user.html'; }, 3000);
-</script>
-</body>
-</html>
-    `;
-    return res.send(html);
-  }
-
-  // Whitelist pendiente: ir a esa página
-  if (whitelistPendiente) {
-    return res.redirect("/whitelist-pendiente.html");
-  }
-
-  // Usuario nuevo con whitelist aprobada pero sin cédula: animación de carga
-  // (ya no redirige a whitelist.html porque la vas a quitar temporalmente)
+  // Todos los usuarios pasan por la misma pagina de cargando decorada.
+  // VERIFICADO=true  -> al terminar la galeria: "Bienvenido de nuevo" y va a /dashboard-user.html
+  // VERIFICADO=false -> al terminar la galeria: "Primero que todo debes verificarte" y va a /crear-cedula.html
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
-  html = html.replace("{{VERIFICADO}}", "false");
+  html = html.replace("{{VERIFICADO}}", verificado ? "true" : "false");
   res.send(html);
 });
 
