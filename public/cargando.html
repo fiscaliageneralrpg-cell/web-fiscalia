@@ -591,8 +591,8 @@
     <button class="skip" id="skip">Saltar →</button>
 
     <script>
-      
-/* ====== IMÁGENES DE LA GALERÍA (10 en total) ====== */
+
+/* ====== IMÁGENES DE LA GALERÍA (7 fotos) ====== */
 const IMAGES = [
   "photos/foto1.png",
   "photos/foto2.png",
@@ -608,21 +608,6 @@ const NOMBRE = "{{NOMBRE_USUARIO}}";
 const VERIFICADO = "{{VERIFICADO}}";
 
 const esVerificado = ["1","true","si","sí","yes"].includes(String(VERIFICADO).toLowerCase().trim());
-
-/* ====== Partículas de fondo ====== */
-(function particles(){
-  const n = window.innerWidth < 600 ? 12 : 24;
-  for(let i=0;i<n;i++){
-    const p=document.createElement("div");
-    p.className="particle";
-    const s=Math.random()*3+1.5;
-    p.style.width=s+"px";p.style.height=s+"px";
-    p.style.left=(Math.random()*100)+"vw";
-    p.style.animationDuration=(9+Math.random()*14)+"s";
-    p.style.animationDelay=(-Math.random()*18)+"s";
-    document.body.appendChild(p);
-  }
-})();
 
 /* ====== Escenas ====== */
 const scenes = {
