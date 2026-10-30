@@ -1,284 +1,735 @@
 <!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cargando | Medellín RP</title>
-<style>
-  :root {
-    --bg: #0a0a0a;
-    --panel: rgba(20, 20, 20, 0.85);
-    --line: rgba(255, 255, 255, 0.10);
-    --text: #ffffff;
-    --muted: #a1a1a1;
-    --shadow: 0 30px 100px rgba(0, 0, 0, 0.7);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  #app {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  /* Pasos ocultos por defecto */
-  .paso {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.9s ease, transform 0.9s ease;
-    padding: 24px;
-    z-index: 1;
-  }
-
-  .paso.activo {
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-    z-index: 10;
-  }
-
-  /* Paso bienvenida */
-  h1 {
-    font-size: clamp(28px, 8vw, 52px);
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    margin-bottom: 12px;
-    background: linear-gradient(90deg, #ffffff, #a1a1a1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .sub {
-    color: var(--muted);
-    font-size: 17px;
-    font-weight: 400;
-  }
-
-  /* Galería */
-  .galeria-wrap {
-    position: relative;
-    width: 100%;
-    max-width: 900px;
-    height: 60vh;
-    max-height: 650px;
-    border-radius: 24px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow);
-    background: #050505;
-  }
-
-  .fondo-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 1.2s ease, transform 1.2s ease;
-    transform: scale(1.05);
-  }
-
-  .fondo-img.activa {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .titulo-superpuesto {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(40px, 15vw, 140px);
-    font-weight: 950;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: -0.06em;
-    mix-blend-mode: screen;
-    filter: drop-shadow(0 0 30px rgba(255,255,255,0.4));
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  /* Paso verificar */
-  .mensaje-verificar {
-    color: #d4d4d4;
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    letter-spacing: -0.02em;
-  }
-
-  .btn-continuar {
-    padding: 14px 36px;
-    background: #ffffff;
-    color: #0a0a0a;
-    border: none;
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 16px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    margin-top: 24px;
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 30px rgba(255,255,255,0.15);
-  }
-
-  .btn-continuar:hover {
-    background: #f0f0f0;
-    transform: translateY(-2px);
-    box-shadow: 0 15px 40px rgba(255,255,255,0.25);
-  }
-
-  /* Paso verificado */
-  .loader-dash {
-    width: 44px;
-    height: 44px;
-    border: 3px solid rgba(255,255,255,0.15);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 16px;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .oculto { display: none !important; }
-
-  @media (max-width: 760px) {
-    .galeria-wrap { height: 45vh; max-height: 400px; }
-    .titulo-superpuesto { font-size: clamp(30px, 12vw, 80px); }
-  }
-</style>
-</head>
-<body>
-<div id="app">
-
-  <!-- PASO 1: Bienvenida -->
-  <div id="paso-bienvenida" class="paso activo">
-    <h1 id="txt-bienvenida">Bienvenido, <span id="nombre"></span></h1>
-    <p class="sub" id="sub-bienvenida">Medellín RP</p>
-  </div>
-
-  <!-- PASO 2: Galería de fondo con superposición -->
-  <div id="paso-galeria" class="paso">
-    <div class="galeria-wrap" id="wrap-galeria"></div>
-    <div class="titulo-superpuesto">MEDELLÍN RP</div>
-  </div>
-
-  <!-- PASO 3: Verificar (solo usuarios nuevos) -->
-  <div id="paso-verificar" class="paso">
-    <p class="mensaje-verificar">Primero que todo debes verificarte.</p>
-    <a href="/crear-cedula.html" class="btn-continuar">Continuar</a>
-  </div>
-
-  <!-- PASO FINAL: Ya verificado -->
-  <div id="paso-verificado" class="paso">
-    <h1>Bienvenido de nuevo, <span id="nombre-vuelta"></span></h1>
-    <p class="sub" id="txt-dashboard">Llevando a la dashboard...</p>
-    <div class="loader-dash"></div>
-  </div>
-
-</div>
-
-<script>
-  const NOMBRE = "{{NOMBRE_USUARIO}}";
-  const YA_VERIFICADO = "{{VERIFICADO}}" === "true";
-
-  const IMAGENES = [
-    "https://cdn.discordapp.com/attachments/1537889409494556763/1563948321746452660/Captura_de_pantalla_2026-09-26_192109.png?ex=6adf7be0&is=6ade2a60&hm=1d6abd3716159d7b86593a6fc6fb9f08d720e4b1e909e9276af668fa52306301",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948332492005547/Captura_de_pantalla_2026-09-27_134241.png?ex=6adf7be3&is=6ade2a63&hm=86f03df222e897f73bf210915bac445b2ce13d06944e916e8e5ba7ee58c8d701&=&format=webp&quality=lossless&width=1280&height=694",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948332932661368/Captura_de_pantalla_2026-09-27_134951.png?ex=6adf7be3&is=6ade2a63&hm=70425938729e54b24faa3255f910db9f2414be91244cf7ca78c013cf75a1b3e4&=&format=webp&quality=lossless&width=1280&height=776",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948333662208032/Captura_de_pantalla_2026-09-27_140310.png?ex=6adf7be3&is=6ade2a63&hm=aa7173318306baf5211acac1cbee1145b6c34139b97ad1269b90480c93026766&=&format=webp&quality=lossless&width=1280&height=649",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948335050657972/Captura_de_pantalla_2026-09-27_161803.png?ex=6adf7be3&is=6ade2a63&hm=1491aeee918021307f7fad63e6d434185fb35346a141ef867cfb9a42a89a8070&=&format=webp&quality=lossless&width=1536&height=775",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948335994507364/Captura_de_pantalla_2026-09-27_162738.png?ex=6adf7be4&is=6ade2a64&hm=9a8c43bfc7f804fce841b4dff95506b13f35d6d03e1d884375678eb4930dc549&=&format=webp&quality=lossless&width=1280&height=723",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948336954867894/Captura_de_pantalla_2026-10-03_145344.png?ex=6adf7be4&is=6ade2a64&hm=5df9f576aedc2be96e947ab9b5775e3392b5bb6229b0aea63d722b7a974ed2e4&=&format=webp&quality=lossless&width=1536&height=742",
-    "https://media.discordapp.net/attachments/1537889409494556763/1563948337801990245/Captura_de_pantalla_2026-10-19_163128.png?ex=6adf7be4&is=6ade2a64&hm=f80f627a166d1bc2274b4207550b0f12cef764180d5623de9f58527dd893736a&=&format=webp&quality=lossless&width=1280&height=776"
-  ];
-
-  const nombreEl = document.getElementById("nombre");
-  const nombreVueltaEl = document.getElementById("nombre-vuelta");
-  const wrapGaleria = document.getElementById("wrap-galeria");
-
-  // Si ya tiene cédula: bienvenido de nuevo → dashboard
-  if (YA_VERIFICADO) {
-    document.getElementById("paso-bienvenida").classList.remove("activo");
-    document.getElementById("paso-verificado").classList.add("activo");
-    nombreVueltaEl.textContent = NOMBRE;
-    setTimeout(() => {
-      window.location.href = "/dashboard-user.html";
-    }, 3000);
-  } else {
-    // Máquina de escribir el nombre
-    let i = 0;
-    const escribirInterval = setInterval(() => {
-      nombreEl.textContent += NOMBRE.charAt(i);
-      i++;
-      if (i >= NOMBRE.length) clearInterval(escribirInterval);
-    }, 70);
-
-    // Transición a galería
-    setTimeout(() => {
-      document.getElementById("paso-bienvenida").classList.remove("activo");
-      document.getElementById("paso-galeria").classList.add("activo");
-
-      // Inyectar imágenes
-      IMAGENES.forEach((url, idx) => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = `Escena ${idx + 1}`;
-        img.className = "fondo-img";
-        if (idx === 0) img.classList.add("activa");
-        wrapGaleria.appendChild(img);
-      });
-
-      let actual = 0;
-      const total = IMAGENES.length;
-
-      function cambiarImagen() {
-        const imgs = wrapGaleria.querySelectorAll(".fondo-img");
-        imgs[actual].classList.remove("activa");
-        actual = (actual + 1) % total;
-        imgs[actual].classList.add("activa");
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Cargando... Medellín RP." />
+    <title>Cargando | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 20, 0.72);
+        --line: rgba(255, 255, 255, 0.10);
+        --text: #ffffff;
+        --muted: #a1a1a1;
+        --accent: #d4d4d4;
+        --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
+        --glow-sm: 0 0 8px rgba(255, 255, 255, 0.75), 0 0 22px rgba(255, 255, 255, 0.35);
+        --glow-md: 0 0 12px rgba(255, 255, 255, 0.85), 0 0 35px rgba(255, 255, 255, 0.45), 0 0 70px rgba(255, 255, 255, 0.2);
+        --glow-lg: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 45px rgba(255, 255, 255, 0.55), 0 0 90px rgba(255, 255, 255, 0.3);
       }
 
-      const timer = setInterval(cambiarImagen, 2200);
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
-      // Al finalizar la galería, mostrar paso de verificación
-      setTimeout(() => {
-        clearInterval(timer);
-        document.getElementById("paso-galeria").classList.remove("activo");
-        document.getElementById("paso-verificar").classList.add("activo");
-        localStorage.setItem("merp_cargando_visto", "1");
-      }, total * 2200 + 800);
+      html { scroll-behavior: smooth; }
 
-    }, 2200);
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background: var(--bg);
+        font-family:
+          "Inter",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Mismo fondo animado sutil de la página de inicio de sesión */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 40%);
+        background-size: 200% 200%;
+        animation: fondoMover 20s ease infinite;
+      }
+
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+      }
+
+      @keyframes aparecer {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes flotar {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+
+      @keyframes brilloTexto {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      /* ---------- Escenas ---------- */
+      .scene {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+        z-index: 2;
+      }
+
+      .scene.active {
+        display: flex;
+        animation: aparecer 0.8s ease both;
+      }
+
+      /* ---------- Panel (igual que el .shell del login) ---------- */
+      .shell {
+        width: min(760px, 92%);
+        max-height: 90vh;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        padding: clamp(32px, 6vh, 56px) clamp(24px, 5vw, 56px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #d4d4d4;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 30px;
+        height: 1px;
+        background: #d4d4d4;
+      }
+
+      .logo {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 24px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #111;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        animation: brilloTexto 3s ease-in-out infinite;
+      }
+
+      .logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: grayscale(100%) contrast(1.1);
+      }
+
+      h1 {
+        font-size: clamp(24px, 3.4vw, 34px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.35;
+        text-shadow: var(--glow-sm);
+      }
+
+      h1 b {
+        font-weight: 900;
+        text-shadow: var(--glow-md);
+      }
+
+      .intro {
+        color: var(--muted);
+        font-size: 15px;
+        margin-top: 12px;
+        line-height: 1.6;
+      }
+
+      /* ---------- Cargador ---------- */
+      .ring {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        margin: 36px 0 28px;
+      }
+
+      .ring span {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid transparent;
+      }
+
+      .ring span:nth-child(1) {
+        border-top-color: #fff;
+        animation: spin 1.1s linear infinite;
+        box-shadow: 0 0 14px rgba(255, 255, 255, 0.6);
+      }
+
+      .ring span:nth-child(2) {
+        inset: 14px;
+        border-right-color: rgba(255, 255, 255, 0.75);
+        animation: spin 1.6s linear infinite reverse;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+      }
+
+      .ring span:nth-child(3) {
+        inset: 28px;
+        border-bottom-color: rgba(255, 255, 255, 0.55);
+        animation: spin 0.9s linear infinite;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+      }
+
+      .ring .core {
+        position: absolute;
+        inset: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff, rgba(255, 255, 255, 0.15) 70%, transparent);
+        animation: corePulse 1.4s ease-in-out infinite;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      @keyframes corePulse {
+        0%, 100% { transform: scale(0.75); opacity: 0.55; }
+        50% { transform: scale(1.1); opacity: 1; }
+      }
+
+      .status {
+        font-size: 12px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--muted);
+        min-height: 1.4em;
+      }
+
+      .dots::after { content: ""; animation: puntos 1.5s steps(4, end) infinite; }
+
+      @keyframes puntos {
+        0% { content: ""; }
+        25% { content: "."; }
+        50% { content: ".."; }
+        75% { content: "..."; }
+      }
+
+      .progress {
+        width: min(360px, 72vw);
+        height: 6px;
+        margin-top: 26px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+
+      .progress i {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), #fff);
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+        border-radius: 99px;
+        transition: width 0.35s ease;
+      }
+
+      /* ---------- Galería (pantalla completa un poco más chica) ---------- */
+      #gallery { padding: clamp(14px, 2.4vw, 32px); }
+
+      .gallery-frame {
+        position: relative;
+        width: min(1500px, calc(100vw - 3vw));
+        height: min(880px, calc(100vh - 3vh));
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow), 0 0 60px rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        animation: frameGlow 4.5s ease-in-out infinite;
+      }
+
+      @keyframes frameGlow {
+        0%, 100% { box-shadow: var(--shadow), 0 0 30px rgba(255, 255, 255, 0.10); }
+        50% { box-shadow: var(--shadow), 0 0 70px rgba(255, 255, 255, 0.28), 0 0 140px rgba(255, 255, 255, 0.12); }
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        background-size: cover;
+        background-position: center;
+        transform: scale(1.08);
+        filter: grayscale(100%) contrast(1.06) brightness(0.9);
+        transition: opacity 1.1s ease, transform 6s linear;
+      }
+
+      .slide.on { opacity: 1; transform: scale(1); }
+
+      .gallery-frame::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, transparent 30%, transparent 58%, rgba(0, 0, 0, 0.82) 100%),
+          radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55) 100%);
+      }
+
+      .gallery-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: clamp(14px, 2vw, 26px) clamp(16px, 2.4vw, 32px);
+        font-size: 11px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--accent);
+        text-shadow: var(--glow-sm);
+      }
+
+      .gallery-top .live { display: flex; align-items: center; gap: 9px; }
+
+      .gallery-top .live i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 0 10px #fff, 0 0 22px rgba(255, 255, 255, 0.7);
+        animation: brilloTexto 1.2s ease-in-out infinite;
+      }
+
+      .gallery-title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: clamp(46px, 8vh, 92px);
+        z-index: 3;
+        text-align: center;
+        pointer-events: none;
+        animation: flotar 5s ease-in-out infinite;
+      }
+
+      .gallery-title h2 {
+        font-size: clamp(22px, 3vw, 40px);
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: #fff;
+        text-shadow: var(--glow-lg);
+      }
+
+      .gallery-title p {
+        margin-top: 8px;
+        font-size: clamp(10px, 1vw, 13px);
+        letter-spacing: 0.35em;
+        text-indent: 0.35em;
+        text-transform: uppercase;
+        color: #b3b3b3;
+        text-shadow: var(--glow-sm);
+      }
+
+      .bars {
+        position: absolute;
+        left: clamp(16px, 2.4vw, 32px);
+        right: clamp(16px, 2.4vw, 32px);
+        bottom: clamp(16px, 2.4vw, 26px);
+        z-index: 4;
+        display: flex;
+        gap: 8px;
+      }
+
+      .bars b {
+        flex: 1;
+        height: 4px;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--line);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .bars b::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 0;
+        background: #fff;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+      }
+
+      .bars b.done::after { width: 100%; }
+
+      .bars b.now::after { animation: llenar var(--dur, 2.6s) linear forwards; }
+
+      @keyframes llenar { from { width: 0; } to { width: 100%; } }
+
+      /* ---------- Tarjeta final (verificar / bienvenido) ---------- */
+      .card {
+        width: min(520px, 92vw);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        padding: clamp(32px, 5vh, 52px) clamp(24px, 4vw, 46px);
+        animation: aparecer 0.9s ease both, cardGlow 4s ease-in-out infinite;
+      }
+
+      @keyframes cardGlow {
+        0%, 100% { box-shadow: var(--shadow), 0 0 25px rgba(255, 255, 255, 0.06); }
+        50% { box-shadow: var(--shadow), 0 0 50px rgba(255, 255, 255, 0.18); }
+      }
+
+      .icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 24px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 22px rgba(255, 255, 255, 0.18);
+        animation: brilloTexto 3s ease-in-out infinite;
+      }
+
+      .icon svg {
+        width: 30px;
+        height: 30px;
+        stroke: #fff;
+        stroke-width: 2.2;
+        fill: none;
+        filter: grayscale(100%) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+      }
+
+      .card h2 {
+        font-size: clamp(20px, 2.4vw, 28px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.35;
+        text-shadow: var(--glow-sm);
+      }
+
+      .card p {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        margin-top: 14px;
+      }
+
+      /* Mismo botón del login */
+      .btn {
+        width: 100%;
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin-top: 28px;
+      }
+
+      .btn:hover,
+      .btn:focus {
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 255, 255, 0.1);
+      }
+
+      .notice {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-top: 22px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+        text-align: left;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .notice strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .skip {
+        position: fixed;
+        bottom: 18px;
+        right: 22px;
+        z-index: 6;
+        font-size: 13px;
+        color: var(--muted);
+        background: none;
+        border: none;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .skip:hover { color: #fff; }
+
+      @media (max-width: 560px) {
+        .gallery-frame {
+          width: calc(100vw - 20px);
+          height: calc(100vh - 20px);
+        }
+        .bars b { height: 3px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Escena 1: carga / bienvenida -->
+    <section class="scene active" id="scene-load">
+      <div class="shell">
+        <div class="logo">
+          <img
+            src="https://images-ext-1.discordapp.net/external/qJk_1yjcJFmAOc-2vevd1tODrWfNJ33iJQEv_N1Z3-Q/%3Fsize%3D512/https/cdn.discordapp.com/icons/1500206705055760406/9c275220f290867d374af759909de15a.png?format=webp&quality=lossless"
+            alt="Logo de Medellín RP"
+          />
+        </div>
+        <div class="eyebrow">「ME:RP」Medellín RP ︱ ER:LC</div>
+        <div class="ring"><span></span><span></span><span></span><div class="core"></div></div>
+        <h1 id="greet">Bienvenido</h1>
+        <p class="intro" id="status">Cargando experiencia<span class="dots"></span></p>
+        <div class="progress"><i id="bar"></i></div>
+      </div>
+    </section>
+
+    <!-- Escena 2: galería -->
+    <section class="scene" id="gallery">
+      <div class="gallery-frame">
+        <div id="slides"></div>
+        <div class="gallery-top">
+          <div class="live"><i></i> En vivo</div>
+          <div id="counter">01 / 07</div>
+        </div>
+        <div class="gallery-title">
+          <h2>Medellín RP</h2>
+          <p>Bienvenido a la ciudad</p>
+        </div>
+        <div class="bars" id="bars"></div>
+      </div>
+    </section>
+
+    <!-- Escena 3a: verificación -->
+    <section class="scene" id="scene-verify">
+      <div class="card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="eyebrow" style="justify-content:center">Paso 1 de 1</div>
+        <h2>Primero que todo<br />debes verificarte</h2>
+        <p>
+          Tu cuenta aún no está verificada. Completa tu cédula de ciudadanía
+          para continuar y acceder a todo el contenido de Medellín RP.
+        </p>
+        <a class="btn" href="/crear-cedula.html">Continuar</a>
+        <div class="notice">
+          <span aria-hidden="true">🔒</span>
+          <div>
+            <strong>Verificación segura</strong>
+            Tus datos solo se usan para validar tu identidad dentro de la comunidad.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Escena 3b: usuario verificado -->
+    <section class="scene" id="scene-welcome">
+      <div class="card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="eyebrow" style="justify-content:center">Cuenta verificada</div>
+        <h2 id="welcome-title">Bienvenido de nuevo</h2>
+        <p>Tu cuenta está verificada. Estamos preparando tu panel…</p>
+        <a class="btn" href="/dashboard-user.html">Ir al panel</a>
+      </div>
+    </section>
+
+    <button class="skip" id="skip">Saltar →</button>
+
+    <script>
+      
+/* ====== IMÁGENES DE LA GALERÍA (10 en total) ====== */
+const IMAGES = [
+  /* IMG_1 base64 */"data:image/png;base64,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",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948332492005547/Captura_de_pantalla_2026-09-27_134241.png?ex=6ae4c1e3&is=6ae37063&hm=c510f9aea175ab39741052df21bf2bebd44cc8d431ed127916c572ad67feb4c8&=&format=webp&quality=lossless&width=1280&height=694",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948332932661368/Captura_de_pantalla_2026-09-27_134951.png?ex=6ae4c1e3&is=6ae37063&hm=46c93db3ae08df94a9b9369c0c87241ff0e5860833ad02ff2834c91be6355099&=&format=webp&quality=lossless&width=1280&height=776",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948333662208032/Captura_de_pantalla_2026-09-27_140310.png?ex=6ae4c1e3&is=6ae37063&hm=72c8763a40fd561a69a8bd2ae6c76a57024bf9df54890df9a42afc48c752c1ae&=&format=webp&quality=lossless&width=1280&height=649",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948334257930410/Captura_de_pantalla_2026-09-27_153206.png?ex=6ae4c1e3&is=6ae37063&hm=cefb145f7b0e40d9525dd0e6753479f0098760c41da3a54a4986228c2b499c7a&=&format=webp&quality=lossless&width=1280&height=695",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948335050657972/Captura_de_pantalla_2026-09-27_161803.png?ex=6ae4c1e3&is=6ae37063&hm=a4b40ae0f1f8f63630b2125ca3dd40273207420e4eb1f3fe4e31ca6ddbc68722&=&format=webp&quality=lossless&width=1536&height=775",
+  "https://media.discordapp.net/attachments/1537889409494556763/1563948335994507364/Captura_de_pantalla_2026-09-27_162738.png?ex=6ae4c1e4&is=6ae37064&hm=5d5e9d41d97a9586fae67c9590ddf5ef550b678a689ca2bbedfb892804c7abc4&=&format=webp&quality=lossless&width=1280&height=723"
+];
+
+/* ====== Datos inyectados por server.js ====== */
+const NOMBRE = "{{NOMBRE_USUARIO}}";
+const VERIFICADO = "{{VERIFICADO}}";
+
+const esVerificado = ["1","true","si","sí","yes"].includes(String(VERIFICADO).toLowerCase().trim());
+
+/* ====== Partículas de fondo ====== */
+(function particles(){
+  const n = window.innerWidth < 600 ? 12 : 24;
+  for(let i=0;i<n;i++){
+    const p=document.createElement("div");
+    p.className="particle";
+    const s=Math.random()*3+1.5;
+    p.style.width=s+"px";p.style.height=s+"px";
+    p.style.left=(Math.random()*100)+"vw";
+    p.style.animationDuration=(9+Math.random()*14)+"s";
+    p.style.animationDelay=(-Math.random()*18)+"s";
+    document.body.appendChild(p);
   }
-</script>
-</body>
+})();
+
+/* ====== Escenas ====== */
+const scenes = {
+  load:   document.getElementById("scene-load"),
+  gallery:document.getElementById("gallery"),
+  verify: document.getElementById("scene-verify"),
+  welcome:document.getElementById("scene-welcome")
+};
+function show(name){
+  Object.values(scenes).forEach(s=>s.classList.remove("active"));
+  scenes[name].classList.add("active");
+}
+
+/* ====== Escena 1: barra de progreso + saludo ====== */
+const greetEl = document.getElementById("greet");
+const statusEl= document.getElementById("status");
+const barEl   = document.getElementById("bar");
+
+const nombreReal = (NOMBRE && !NOMBRE.includes("{{") && NOMBRE.trim() !== "") ? NOMBRE : "jugador";
+
+greetEl.innerHTML = esVerificado
+  ? "Bienvenido de nuevo, <b>"+nombreReal+"</b>"
+  : "Bienvenido, <b>"+nombreReal+"</b>";
+
+let pct=0;
+const loadTick=setInterval(()=>{
+  pct=Math.min(100,pct+Math.random()*13+5);
+  barEl.style.width=pct+"%";
+  if(pct>35&&pct<70) statusEl.innerHTML='Verificando sesión<span class="dots">';
+  else if(pct>=70)   statusEl.innerHTML='Preparando galería<span class="dots">';
+  if(pct>=100){clearInterval(loadTick);setTimeout(startGallery,500);}
+},380);
+
+/* ====== Escena 2: galería ====== */
+const SLIDE_MS = 2800;
+const slidesBox = document.getElementById("slides");
+const barsBox   = document.getElementById("bars");
+const counter   = document.getElementById("counter");
+let idx=0, galleryTimer=null;
+
+IMAGES.forEach((src,i)=>{
+  const d=document.createElement("div");
+  d.className="slide";
+  d.style.backgroundImage='url("'+src+'")';
+  slidesBox.appendChild(d);
+  const b=document.createElement("b");
+  barsBox.appendChild(b);
+});
+const slideEls=[...slidesBox.children];
+const barEls  =[...barsBox.children];
+
+function pad(n){return String(n).padStart(2,"0");}
+
+function renderSlide(){
+  slideEls.forEach((el,i)=>el.classList.toggle("on",i===idx));
+  barEls.forEach((el,i)=>{
+    el.classList.remove("now","done");
+    if(i<idx) el.classList.add("done");
+    if(i===idx){el.style.setProperty("--dur",SLIDE_MS+"ms");void el.offsetWidth;el.classList.add("now");}
+  });
+  counter.textContent=pad(idx+1)+" / "+pad(IMAGES.length);
+}
+
+function startGallery(){
+  show("gallery");
+  renderSlide();
+  galleryTimer=setInterval(()=>{
+    idx++;
+    if(idx>=IMAGES.length){clearInterval(galleryTimer);finish();return;}
+    renderSlide();
+  },SLIDE_MS);
+}
+
+/* ====== Escena final ====== */
+let finished=false;
+function finish(){
+  if(finished) return;
+  finished=true;
+  clearInterval(galleryTimer);
+  if(esVerificado){
+    show("welcome");
+    const t=document.getElementById("welcome-title");
+    t.innerHTML = "Bienvenido de nuevo, <b>"+nombreReal+"</b>";
+    setTimeout(()=>{location.href="/dashboard-user.html";},2600);
+  }else{
+    show("verify");
+  }
+}
+
+/* ====== Botón saltar ====== */
+document.getElementById("skip").addEventListener("click",()=>{
+  clearInterval(loadTick);
+  finish();
+});
+
+    </script>
+  </body>
 </html>
