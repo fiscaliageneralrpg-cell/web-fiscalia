@@ -204,6 +204,20 @@ function obtenerAvatarUrl(usuario) {
   return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
 }
 
+// Estado real de la whitelist del usuario. Mira las ultimas 5 solicitudes y
+// da prioridad a una aceptada: si el staff acepto una anterior y despues
+// quedaron filas pendientes/denegadas de pruebas, el usuario no se traba en
+// la pagina de pendiente; avanza al paso de crear la cedula.
+async function estadoWhitelistResumen(discordId) {
+  const [filas] = await pool.execute(
+    `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 5`,
+    [discordId]
+  );
+  const lista = filas.map((fila) => fila.estado);
+  if (lista.includes("aceptada")) return "aceptada";
+  return lista[0] || null;
+}
+
 async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}) {
   const respuesta = await fetch(`https://discord.com/api/v10/channels/${canalId}/messages`, {
     method: "POST",
@@ -248,11 +262,7 @@ app.get("/cargando", async (req, res) => {
     destino = "/dashboard-user.html";
   } else {
     try {
-      const [solicitudes] = await pool.execute(
-        `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
-        [req.session.usuario.id]
-      );
-      const estadoWhitelist = solicitudes[0]?.estado || null;
+      const estadoWhitelist = await estadoWhitelistResumen(req.session.usuario.id);
       if (estadoWhitelist === "aceptada") destino = "/crear-cedula.html";
       else if (estadoWhitelist === "pendiente") destino = "/whitelist-pendiente.html";
     } catch (error) {
@@ -336,11 +346,7 @@ app.get("/auth/discord/callback", async (req, res) => {
 
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
 
-    const [solicitudesWhitelist] = await pool.execute(
-      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
-      [usuario.id]
-    );
-    const estadoWhitelist = solicitudesWhitelist[0]?.estado || null;
+    const estadoWhitelist = await estadoWhitelistResumen(usuario.id);
 
     req.session.usuario = {
       id: usuario.id,
@@ -521,11 +527,10 @@ app.post("/api/whitelist", async (req, res) => {
 app.get("/api/whitelist/status", async (req, res) => {
   if (!exigirSesion(req, res)) return;
   try {
-    const [solicitudes] = await pool.execute(
-      `SELECT estado, motivo_denegacion FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
-      [req.session.usuario.id]
-    );
-    const estado = solicitudes[0] || null;
+    const listaUltimas = await pool
+      .execute(`SELECT estado, motivo_denegacion FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 5`, [req.session.usuario.id])
+      .then(([filas]) => filas);
+    const resumen = await estadoWhitelistResumen(req.session.usuario.id);
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
     // Regla de verificacion: con el rol de verificado en Discord (o con
@@ -540,14 +545,15 @@ app.get("/api/whitelist/status", async (req, res) => {
 
     // Aceptada por rol de Discord o por la base de datos:
     // paso 2 del flujo -> crear la cedula (o dashboard si ya la tiene).
-    if (aprobadaPorRol || estado?.estado === "aceptada") {
+    if (aprobadaPorRol || resumen === "aceptada") {
       return res.json({ estado: "aceptada", redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html" });
     }
-    if (estado?.estado === "pendiente") return res.json({ estado: "pendiente" });
-    if (estado?.estado === "denegada") {
+    if (resumen === "pendiente") return res.json({ estado: "pendiente" });
+    if (resumen === "denegada") {
+      const denegadaReciente = listaUltimas.find((fila) => fila.estado === "denegada");
       return res.json({
         estado: "denegada",
-        motivo: estado.motivo_denegacion || "La solicitud fue denegada.",
+        motivo: denegadaReciente?.motivo_denegacion || "La solicitud fue denegada.",
         redirect: "/whitelist-denegada.html",
       });
     }
@@ -599,12 +605,9 @@ app.post("/api/cedula", async (req, res) => {
 
   try {
     const roles = await obtenerRolesDelServidor(discordId);
-    const [estadoWhitelist] = await pool.execute(
-      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
-      [discordId]
-    );
+    const estadoWhitelist = await estadoWhitelistResumen(discordId);
     const whitelistAceptada =
-      roles.includes(ROL_WHITELIST_APROBADA) || estadoWhitelist[0]?.estado === "aceptada";
+      roles.includes(ROL_WHITELIST_APROBADA) || estadoWhitelist === "aceptada";
     if (!whitelistAceptada) {
       return res.status(403).json({ error: "Tu whitelist todavía no está aceptada." });
     }
@@ -704,12 +707,8 @@ app.get("/api/usuario", async (req, res) => {
     const rolesDiscord = await obtenerRolesDelServidor(req.session.usuario.id);
     const estaEnServidor = Array.isArray(rolesDiscord);
     const rolesActualizados = rolesDiscord || [];
-    const [solicitudes] = await pool.execute(
-      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
-      [req.session.usuario.id]
-    );
-    const estadoSolicitud = solicitudes[0]?.estado || null;
-    const tieneWhitelistPendiente = estadoSolicitud === "pendiente";
+    const resumenWhitelist = await estadoWhitelistResumen(req.session.usuario.id);
+    const tieneWhitelistPendiente = resumenWhitelist === "pendiente";
 
     req.session.usuario.cedula = cedulaActualizada;
     req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada) || rolesActualizados.includes(ROL_VERIFICADO);
