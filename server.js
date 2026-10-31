@@ -242,25 +242,24 @@ app.get("/cargando", async (req, res) => {
   }
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
-  const verificadoPorRol = Boolean(req.session.usuario.verificadoDiscord);
-  const verificado = Boolean(req.session.usuario.cedulaRegistrada) || verificadoPorRol;
+  // "Verificado" SOLO si tiene cedula guardada en la base de datos.
+  // El rol de Discord por si solo no cuenta para el mensaje ni el destino.
+  const verificado = Boolean(req.session.usuario.cedulaRegistrada);
 
-  // Gestion de roles: si ya es verificado por rol o por cedula lo dejamos
-  // (y le quitamos el de no verificado). Solo si NO esta verificado por
-  // ninguno de los dos se le asigna el de no verificado.
+  // Gestion de roles: con cedula se asegura el rol verificado. Sin cedula se
+  // pone el de no verificado, pero NUNCA se le quita el rol verificado a
+  // quien ya lo tiene en Discord (evita pelear con el bot).
   try {
-    await actualizarRolVerificacion(req.session.usuario.id, verificado);
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    const yaTieneVerificado = Array.isArray(roles) && roles.includes(ROL_VERIFICADO);
+    await actualizarRolVerificacion(req.session.usuario.id, verificado || yaTieneVerificado);
   } catch (error) {
     console.error("[CARGANDO ROLES]", error.message);
   }
 
-  // Destino segun el estado: con cedula guardada en la base de datos (o rol
-  // verificado en Discord) -> dashboard; en cualquier otro caso -> siempre
-  // crear la cedula (paso 2 del flujo).
-  let destino = "/crear-cedula.html";
-  if (verificado) {
-    destino = "/dashboard-user.html";
-  }
+  // Destino: con cedula en la base de datos -> dashboard; en cualquier otro
+  // caso -> siempre crear la cedula (paso 2 del flujo).
+  const destino = verificado ? "/dashboard-user.html" : "/crear-cedula.html";
 
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
@@ -352,7 +351,7 @@ app.get("/auth/discord/callback", async (req, res) => {
       verificadoDiscord,
       whitelistPendiente: estadoWhitelist === "pendiente",
       estadoWhitelist,
-      cedulaRegistrada: Boolean(usuarioRegistrado) || verificadoDiscord,
+      cedulaRegistrada: Boolean(usuarioRegistrado),
       cedula: usuarioRegistrado,
     };
 
@@ -703,7 +702,7 @@ app.get("/api/usuario", async (req, res) => {
     const tieneWhitelistPendiente = resumenWhitelist === "pendiente";
 
     req.session.usuario.cedula = cedulaActualizada;
-    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada) || rolesActualizados.includes(ROL_VERIFICADO);
+    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
     req.session.usuario.verificadoDiscord = rolesActualizados.includes(ROL_VERIFICADO);
     req.session.usuario.roles = rolesActualizados;
     req.session.usuario.estaEnServidor = estaEnServidor;
