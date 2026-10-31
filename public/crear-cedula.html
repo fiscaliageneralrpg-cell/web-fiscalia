@@ -1,93 +1,519 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Registro civil | Medellín RP</title>
-  <style>
-    :root{--navy:#06141f;--blue:#0c7890;--cyan:#42d8d0;--cream:#f4efe3;--muted:#a9bac6;--line:#42d8d044}
-    *{box-sizing:border-box}
-    body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;color:var(--cream);background:linear-gradient(135deg,#06141f,#0a3140);font-family:Inter,system-ui,sans-serif}
-    .card{position:relative;width:min(720px,100%);overflow:hidden;padding:42px 36px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(145deg,#102b42f5,#071b2bf5);box-shadow:0 25px 70px #0008,inset 0 1px #ffffff12}
-    .card:after{position:absolute;right:-130px;bottom:-180px;width:390px;height:390px;border:1px solid #42d8d033;border-radius:50%;content:""}
-    .brand,.content{position:relative;z-index:1}
-    .brand{color:var(--cyan);font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
-    .icon{display:grid;width:82px;height:82px;margin:22px 0;place-items:center;border:1px solid #42d8d066;border-radius:24px;background:#42d8d018;color:var(--cyan);font-size:44px}
-    h1{margin:0 0 12px;font-size:clamp(32px,6vw,58px);letter-spacing:-.07em}
-    .intro{max-width:570px;margin:0;color:var(--muted);line-height:1.65}
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:28px 0}
-    .step{padding:14px;border:1px solid var(--line);border-radius:14px;background:#06141f88;color:var(--muted);font-size:13px}
-    .step strong{display:block;margin-bottom:5px;color:var(--cyan);font-size:18px}
-    .instruction{margin-top:20px;padding:20px;border:1px solid #42d8d066;border-radius:17px;background:#42d8d012;line-height:1.6}
-    .instruction strong{color:var(--cyan)}
-    code{padding:4px 8px;border-radius:7px;color:var(--navy);background:var(--cyan);font-weight:900}
-    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:25px}
-    .button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border:0;border-radius:11px;text-decoration:none;font:inherit;font-weight:900;cursor:pointer}
-    .primary{color:var(--navy);background:var(--cyan)}
-    .secondary{border:1px solid #42d8d066;color:#c5e2e1;background:#42d8d012}
-    #estado{min-height:22px;margin-top:18px;color:var(--muted);font-size:13px}
-    .success{color:#8ff7d3!important}
-    .error{color:#ffb4b4!important}
-    .logout{display:inline-block;margin-top:26px;color:var(--muted);font-size:13px;text-decoration:none}
-    .logout:hover{color:var(--cream)}
-    @media(max-width:600px){.card{padding:32px 22px}.steps{grid-template-columns:1fr}.actions{flex-direction:column}.button{width:100%}}
-  </style>
-</head>
-<body>
-  <main class="card">
-    <section class="content">
-      <div class="brand">Registro civil digital · Medellín RP</div>
-      <div class="icon">🪪</div>
-      <h1>Vincula tu cédula</h1>
-      <p class="intro">Para mantener el registro civil seguro y sincronizado con Discord, la cédula debe crearse directamente dentro del servidor oficial.</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Registro civil: crea tu cédula ciudadana en Medellín RP."
+    />
+    <title>Crear cédula | Medellín RP</title>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 20, 0.72);
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #ffffff;
+        --muted: #a1a1a1;
+        --accent: #d4d4d4;
+        --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
+      }
 
-      <div class="steps">
-        <div class="step"><strong>01</strong>Entra al servidor</div>
-        <div class="step"><strong>02</strong>Ejecuta el comando</div>
-        <div class="step"><strong>03</strong>Regresa al portal</div>
-      </div>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-      <div class="instruction">
-        Entra al servidor y ejecuta el comando oficial:<br><br>
-        <code>/registrar cedula</code><br><br>
-        Completa el formulario de Discord. El sistema generará automáticamente tu NUIP y lo vinculará con tu cuenta del portal.
-      </div>
+      html {
+        scroll-behavior: smooth;
+      }
 
-      <div class="actions">
-        <a class="button primary" href="https://discord.com/channels/1500206705055760406" target="_blank" rel="noopener noreferrer">Abrir servidor de Discord</a>
-        <button id="verificar" class="button secondary" type="button">Ya la registré · Verificar</button>
-      </div>
-      <div id="estado">Esperando el registro de la cédula en Discord.</div>
-      <a class="logout" href="/cerrar-sesion">Cerrar sesión</a>
-    </section>
-  </main>
-  <script>
-    const estado = document.querySelector("#estado");
-    let comprobando = false;
-    async function verificarCedula() {
-      if (comprobando) return;
-      comprobando = true;
-      estado.className = "";
-      estado.textContent = "Verificando registro civil...";
-      try {
-        const respuesta = await fetch("/api/usuario", { cache: "no-store" });
-        if (respuesta.status === 401) { window.location.href = "/iniciar-seccion.html"; return; }
-        const datos = await respuesta.json();
-        if (datos.usuario?.cedulaRegistrada) {
-          estado.className = "success";
-          estado.textContent = "✅ Cédula encontrada. Redirigiendo al dashboard...";
-          setTimeout(() => { window.location.href = "/dashboard-user.html"; }, 700);
-        } else {
-          estado.textContent = "Todavía no aparece una cédula. Ejecuta /registrar cedula en Discord.";
+      body {
+        min-height: 100vh;
+        color: var(--text);
+        background: var(--bg);
+        font-family:
+          "Inter",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        overflow-x: hidden;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 0;
+      }
+
+      /* Fondo animado sutil en blanco y negro (igual que el login) */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 40%);
+        background-size: 200% 200%;
+        animation: fondoMover 20s ease infinite;
+      }
+
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+      }
+
+      @keyframes aparecer {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes brilloTexto {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      .shell {
+        width: min(680px, 92%);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+        animation: aparecer 1s ease both;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 22px clamp(22px, 4vw, 40px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        font-weight: 850;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+
+      .brand small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        white-space: nowrap;
+      }
+
+      .back:hover {
+        color: #fff;
+      }
+
+      .content {
+        padding: clamp(24px, 4vw, 40px);
+      }
+
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 17px;
+        background: rgba(0, 0, 0, 0.25);
+      }
+
+      .hero-icon {
+        display: grid;
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        place-items: center;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: #111;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 22px rgba(255, 255, 255, 0.18);
+        animation: brilloTexto 3s ease-in-out infinite;
+      }
+
+      .hero-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke: #fff;
+        stroke-width: 2.2;
+        fill: none;
+        filter: grayscale(100%) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+      }
+
+      .hero strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .hero span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 25px;
+      }
+
+      .step {
+        padding: 7px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+
+      .step.active {
+        border-color: rgba(255, 255, 255, 0.35);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(30px, 5vw, 44px);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+      }
+
+      .intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+
+      form h2 {
+        margin: 30px 0 16px;
+        padding: 11px 14px;
+        border-left: 3px solid #fff;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      form h2:first-of-type {
+        margin-top: 0;
+      }
+
+      .question {
+        display: block;
+        margin: 18px 0;
+      }
+
+      .question span {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .question input,
+      .question select {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        outline: 0;
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text);
+        font: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .question select option {
+        background: #0a0a0a;
+        color: #fff;
+      }
+
+      .question input::placeholder {
+        color: #6f6f6f;
+      }
+
+      .question input:focus,
+      .question select:focus {
+        border-color: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+      }
+
+      .actions {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-top: 28px;
+      }
+
+      /* Mismo botón del login */
+      .button {
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        padding: 0 26px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .button:hover,
+      .button:focus {
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 255, 255, 0.1);
+      }
+
+      .status {
+        display: none;
+        margin-top: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--muted);
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.25);
+      }
+
+      .status.show {
+        display: block;
+      }
+
+      .error {
+        border-color: rgba(248, 113, 113, 0.45);
+        background: rgba(127, 29, 29, 0.35);
+        color: #fecaca;
+      }
+
+      .success {
+        border-color: rgba(143, 247, 211, 0.4);
+        background: rgba(6, 78, 59, 0.35);
+        color: #8ff7d3;
+      }
+
+      .loading {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          padding: 16px 0;
         }
-      } catch (error) {
-        estado.className = "error";
-        estado.textContent = "No se pudo verificar ahora. Intenta nuevamente.";
-      } finally { comprobando = false; }
-    }
-    document.querySelector("#verificar").addEventListener("click", verificarCedula);
-    verificarCedula();
-    setInterval(verificarCedula, 10000);
-  </script>
-</body>
+
+        .top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .back {
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="top">
+        <div class="brand">
+          「ME:RP」Medellín RP︱ER:LC
+          <small>Registro civil</small>
+        </div>
+        <a class="back" href="/cerrar-sesion">Cerrar sesión</a>
+      </div>
+      <div class="content">
+        <div class="hero">
+          <div class="hero-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2" />
+              <path d="M9 9h6M9 13h6M9 17h4" />
+            </svg>
+          </div>
+          <div>
+            <strong>Registro civil de 「ME:RP」</strong>
+            <span>Te la aceptaron. Último paso: crea tu cédula ciudadana.</span>
+          </div>
+        </div>
+        <div class="steps">
+          <span class="step active">01 Whitelist enviada</span>
+          <span class="step active">02 Whitelist aceptada</span>
+          <span class="step active">03 Crear cédula</span>
+        </div>
+        <h1>Crear cédula</h1>
+        <p class="intro">
+          Completa tus datos de identidad. El sistema generará tu NUIP
+          automáticamente, la cédula quedará guardada en el registro civil y
+          recibirás el rol de <b>verificado</b> en Discord.
+        </p>
+        <form id="formulario">
+          <h2>01 — Identidad</h2>
+          <label class="question"
+            ><span>Nombres</span
+            ><input
+              name="nombres"
+              required
+              maxlength="60"
+              placeholder="Ej. Juan" /></label
+          ><label class="question"
+            ><span>Apellidos</span
+            ><input
+              name="apellidos"
+              required
+              maxlength="60"
+              placeholder="Ej. Gómez Ruiz" /></label
+          ><label class="question"
+            ><span>Lugar de nacimiento</span
+            ><input
+              name="lugar_nac"
+              required
+              maxlength="80"
+              placeholder="Ej. Medellín, Antioquia" /></label
+          ><label class="question"
+            ><span>Fecha de nacimiento</span
+            ><input
+              name="fecha_nac"
+              required
+              pattern="^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$"
+              title="Escribe la fecha como DD/MM/AAAA, por ejemplo 02/02/2000"
+              inputmode="numeric"
+              placeholder="DD/MM/AAAA · Ej. 02/02/2000" /></label
+          ><label class="question"
+            ><span>Sexo</span
+            ><select name="sexo" required>
+              <option value="" disabled selected>Selecciona una opción</option>
+              <option value="MASCULINO">MASCULINO</option>
+              <option value="FEMENINO">FEMENINO</option>
+            </select></label
+          ><label class="question"
+            ><span>Nacionalidad</span
+            ><select name="nacionalidad" required>
+              <option value="" disabled selected>Selecciona una opción</option>
+              <option value="COLOMBIANA">COLOMBIANA</option>
+              <option value="EXTRANJERA">EXTRANJERA</option>
+            </select></label
+          >
+          <h2>02 — Cuenta</h2>
+          <label class="question"
+            ><span>Usuario de Roblox</span
+            ><input
+              name="roblox"
+              required
+              maxlength="40"
+              placeholder="Tu usuario exacto de Roblox" /></label
+          >
+          <div class="actions">
+            <button class="button" type="submit">Crear cédula</button
+            ><a class="back" href="/index.html">Volver</a>
+          </div>
+          <div id="estado" class="status"></div>
+        </form>
+      </div>
+    </main>
+    <script>
+      const form = document.querySelector("#formulario"),
+        estado = document.querySelector("#estado");
+
+      function mostrar(mensaje, tipo) {
+        estado.className = "status show" + (tipo ? " " + tipo : "");
+        estado.textContent = mensaje;
+      }
+
+      // Si ya tiene cedula, ni se queda mirando el formulario.
+      (async () => {
+        try {
+          const respuesta = await fetch("/api/usuario", { cache: "no-store" });
+          if (respuesta.status === 401) {
+            window.location.href = "/iniciar-seccion.html";
+            return;
+          }
+          const datos = await respuesta.json();
+          if (datos.usuario?.cedulaRegistrada) {
+            window.location.replace("/dashboard-user.html");
+          }
+        } catch (error) {
+          /* Si falla el chequeo, se valida igual al enviar. */
+        }
+      })();
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        mostrar("Registrando en el registro civil...", "");
+        form.classList.add("loading");
+        const datosFormulario = Object.fromEntries(new FormData(form).entries());
+        try {
+          const respuesta = await fetch("/api/cedula", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(datosFormulario),
+          });
+          const datos = await respuesta.json();
+          if (respuesta.ok && datos.correcto) {
+            mostrar("✅ Cédula creada y guardada en el registro civil. Llevando al panel...", "success");
+            window.location.href = datos.redirect || "/dashboard-user.html";
+            return;
+          }
+          throw new Error(datos.error || "No se pudo crear la cédula.");
+        } catch (error) {
+          form.classList.remove("loading");
+          mostrar(error.message, "error");
+        }
+      });
+    </script>
+  </body>
 </html>

@@ -584,8 +584,14 @@ app.post("/api/cedula", async (req, res) => {
 
   try {
     const roles = await obtenerRolesDelServidor(discordId);
-    if (!roles.includes(ROL_WHITELIST_APROBADA)) {
-      return res.status(403).json({ error: "Tu whitelist todavía no está aprobada." });
+    const [estadoWhitelist] = await pool.execute(
+      `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
+      [discordId]
+    );
+    const whitelistAceptada =
+      roles.includes(ROL_WHITELIST_APROBADA) || estadoWhitelist[0]?.estado === "aceptada";
+    if (!whitelistAceptada) {
+      return res.status(403).json({ error: "Tu whitelist todavía no está aceptada." });
     }
 
     const conexion = await pool.getConnection();
