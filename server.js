@@ -237,12 +237,30 @@ app.get("/cargando", async (req, res) => {
     console.error("[CARGANDO ROLES]", error.message);
   }
 
-  // Todos los usuarios pasan por la misma pagina de cargando decorada.
-  // VERIFICADO=true  -> al terminar la galeria: "Bienvenido de nuevo" y va a /dashboard-user.html
-  // VERIFICADO=false -> al terminar la galeria: "Primero que todo debes verificarte" y va a /whitelist.html
+  // Destino segun el estado: con cedula o con whitelist aceptada -> dashboard;
+  // con whitelist pendiente -> pagina de pendiente; nuevo -> formulario de whitelist.
+  // La galeria ya no se muestra: solo la pantalla de "Bienvenido" que redirige sola.
+  let destino = "/whitelist.html";
+  if (verificado) {
+    destino = "/dashboard-user.html";
+  } else {
+    try {
+      const [solicitudes] = await pool.execute(
+        `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 1`,
+        [req.session.usuario.id]
+      );
+      const estadoWhitelist = solicitudes[0]?.estado || null;
+      if (estadoWhitelist === "aceptada") destino = "/dashboard-user.html";
+      else if (estadoWhitelist === "pendiente") destino = "/whitelist-pendiente.html";
+    } catch (error) {
+      console.error("[CARGANDO ESTADO]", error.message);
+    }
+  }
+
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
   html = html.replace("{{VERIFICADO}}", verificado ? "true" : "false");
+  html = html.replace("{{DESTINO}}", destino);
   res.send(html);
 });
 
@@ -505,8 +523,9 @@ app.get("/api/whitelist/status", async (req, res) => {
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
 
-    if (aprobadaPorRol) {
-      return res.json({ estado: "aceptada", redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html" });
+    // Aceptada por rol de Discord o por la base de datos: directo al dashboard.
+    if (aprobadaPorRol || estado?.estado === "aceptada") {
+      return res.json({ estado: "aceptada", redirect: "/dashboard-user.html" });
     }
     if (estado?.estado === "pendiente") return res.json({ estado: "pendiente" });
     if (estado?.estado === "denegada") {

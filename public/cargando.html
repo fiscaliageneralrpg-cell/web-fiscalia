@@ -597,20 +597,22 @@
 
     <script>
       
-/* ====== IMÁGENES DE LA GALERÍA (10 en total) ====== */
-const IMAGES = [
-  "photos/foto1.png",
-  "photos/foto2.png",
-  "photos/foto3.png",
-  "photos/foto4.png",
-  "photos/foto5.png",
-  "photos/foto6.png",
-  "photos/foto7.png"
-];
-
 /* ====== Datos inyectados por server.js ====== */
 const NOMBRE = "{{NOMBRE_USUARIO}}";
 const VERIFICADO = "{{VERIFICADO}}";
+const DESTINO = "{{DESTINO}}";
+
+/* Destiny inyectado por server.js. Si no se inyecto (visita directa al
+   archivo estatico), no se navega a ningun lado. */
+function destinoFinal(){
+  if (!DESTINO || DESTINO.includes("{{")) return null;
+  const d = String(DESTINO).trim();
+  return d.startsWith("/") ? d : null;
+}
+function irADestino(){
+  const d = destinoFinal();
+  if (d) location.href = d;
+}
 
 const esVerificado = ["1","true","si","sí","yes"].includes(String(VERIFICADO).toLowerCase().trim());
 
@@ -657,70 +659,14 @@ const loadTick=setInterval(()=>{
   pct=Math.min(100,pct+Math.random()*13+5);
   barEl.style.width=pct+"%";
   if(pct>35&&pct<70) statusEl.innerHTML='Verificando sesión<span class="dots">';
-  else if(pct>=70)   statusEl.innerHTML='Preparando galería<span class="dots">';
-  if(pct>=100){clearInterval(loadTick);setTimeout(startGallery,500);}
+  else if(pct>=70)   statusEl.innerHTML='Preparando panel<span class="dots">';
+  if(pct>=100){clearInterval(loadTick);setTimeout(irADestino,500);}
 },380);
-
-/* ====== Escena 2: galería ====== */
-const SLIDE_MS = 2800;
-const slidesBox = document.getElementById("slides");
-const barsBox   = document.getElementById("bars");
-const counter   = document.getElementById("counter");
-let idx=0, galleryTimer=null;
-
-IMAGES.forEach((src,i)=>{
-  const d=document.createElement("div");
-  d.className="slide";
-  d.style.backgroundImage='url("'+src+'")';
-  slidesBox.appendChild(d);
-  const b=document.createElement("b");
-  barsBox.appendChild(b);
-});
-const slideEls=[...slidesBox.children];
-const barEls  =[...barsBox.children];
-
-function pad(n){return String(n).padStart(2,"0");}
-
-function renderSlide(){
-  slideEls.forEach((el,i)=>el.classList.toggle("on",i===idx));
-  barEls.forEach((el,i)=>{
-    el.classList.remove("now","done");
-    if(i<idx) el.classList.add("done");
-    if(i===idx){el.style.setProperty("--dur",SLIDE_MS+"ms");void el.offsetWidth;el.classList.add("now");}
-  });
-  counter.textContent=pad(idx+1)+" / "+pad(IMAGES.length);
-}
-
-function startGallery(){
-  show("gallery");
-  renderSlide();
-  galleryTimer=setInterval(()=>{
-    idx++;
-    if(idx>=IMAGES.length){clearInterval(galleryTimer);finish();return;}
-    renderSlide();
-  },SLIDE_MS);
-}
-
-/* ====== Escena final ====== */
-let finished=false;
-function finish(){
-  if(finished) return;
-  finished=true;
-  clearInterval(galleryTimer);
-  if(esVerificado){
-    show("welcome");
-    const t=document.getElementById("welcome-title");
-    t.innerHTML = "Bienvenido de nuevo, <b>"+nombreReal+"</b>";
-    setTimeout(()=>{location.href="/dashboard-user.html";},2600);
-  }else{
-    show("verify");
-  }
-}
 
 /* ====== Botón saltar ====== */
 document.getElementById("skip").addEventListener("click",()=>{
   clearInterval(loadTick);
-  finish();
+  irADestino();
 });
 
     </script>
