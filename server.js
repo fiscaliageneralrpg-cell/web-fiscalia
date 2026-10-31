@@ -228,18 +228,21 @@ app.get("/cargando", async (req, res) => {
   }
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
-  const verificado = Boolean(req.session.usuario.cedulaRegistrada);
+  const verificadoPorRol = Boolean(req.session.usuario.verificadoDiscord);
+  const verificado = Boolean(req.session.usuario.cedulaRegistrada) || verificadoPorRol;
 
-  // Rol de verificado / no verificado en Discord (solo puede tener uno de los dos).
+  // Gestion de roles: si ya es verificado por rol o por cedula lo dejamos
+  // (y le quitamos el de no verificado). Solo si NO esta verificado por
+  // ninguno de los dos se le asigna el de no verificado.
   try {
     await actualizarRolVerificacion(req.session.usuario.id, verificado);
   } catch (error) {
     console.error("[CARGANDO ROLES]", error.message);
   }
 
-  // Destino segun el estado: con cedula -> dashboard; con whitelist aceptada
-  // sin cedula -> paso 2: crear la cedula; con whitelist pendiente -> pagina
-  // de pendiente; nuevo -> formulario de whitelist.
+  // Destino segun el estado: con rol verificado o con cedula -> dashboard;
+  // con whitelist aceptada sin cedula -> paso 2: crear la cedula; con
+  // whitelist pendiente -> pagina de pendiente; nuevo -> formulario.
   let destino = "/whitelist.html";
   if (verificado) {
     destino = "/dashboard-user.html";
@@ -327,6 +330,9 @@ app.get("/auth/discord/callback", async (req, res) => {
     const estaEnServidor = Array.isArray(rolesDiscord);
     const roles = rolesDiscord || [];
     const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
+    // Rol de verificado en Discord: con este rol no se le pide whitelist
+    // ni se le vuelve a asignar el de no verificado.
+    const verificadoDiscord = roles.includes(ROL_VERIFICADO);
 
     const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
 
@@ -345,14 +351,15 @@ app.get("/auth/discord/callback", async (req, res) => {
       roles,
       estaEnServidor,
       whitelistAprobada,
+      verificadoDiscord,
       whitelistPendiente: estadoWhitelist === "pendiente",
       estadoWhitelist,
-      cedulaRegistrada: Boolean(usuarioRegistrado),
+      cedulaRegistrada: Boolean(usuarioRegistrado) || verificadoDiscord,
       cedula: usuarioRegistrado,
     };
 
     console.log(
-      `[LOGIN] ${usuario.username} (${usuario.id}) | whitelist=${whitelistAprobada} | cedula=${Boolean(usuarioRegistrado)}`
+      `[LOGIN] ${usuario.username} (${usuario.id}) | whitelist=${whitelistAprobada} | verificado=${verificadoDiscord} | cedula=${Boolean(usuarioRegistrado)}`
     );
 
     if (!estaEnServidor) {
@@ -521,7 +528,15 @@ app.get("/api/whitelist/status", async (req, res) => {
     const estado = solicitudes[0] || null;
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
     const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
+    // Regla de verificacion: con el rol de verificado en Discord (o con
+    // cedula en la base de datos) la whitelist ya no se le vuelve a pedir.
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
+    const verificado = roles.includes(ROL_VERIFICADO) || Boolean(cedula);
+
+    // Verificado (rol de Discord o cedula): directo al dashboard.
+    if (verificado) {
+      return res.json({ estado: "verificado", redirect: "/dashboard-user.html" });
+    }
 
     // Aceptada por rol de Discord o por la base de datos:
     // paso 2 del flujo -> crear la cedula (o dashboard si ya la tiene).
@@ -697,10 +712,24 @@ app.get("/api/usuario", async (req, res) => {
     const tieneWhitelistPendiente = estadoSolicitud === "pendiente";
 
     req.session.usuario.cedula = cedulaActualizada;
-    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
+    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada) || rolesActualizados.includes(ROL_VERIFICADO);
+    req.session.usuario.verificadoDiscord = rolesActualizados.includes(ROL_VERIFICADO);
     req.session.usuario.roles = rolesActualizados;
     req.session.usuario.estaEnServidor = estaEnServidor;
     req.session.usuario.whitelistPendiente = tieneWhitelistPendiente;
+
+    // En cuanto la cedula aparece (la guardo el bot de Discord), se asigna el
+    // rol de verificado y se retira el de no verificado. Aqui es donde termina
+    // el circulo: crear-cedula -> bot guarda -> este endpoint -> rol verificado.
+    if (cedulaActualizada && !req.session.usuario.verificadoDiscord) {
+      try {
+        await actualizarRolVerificacion(req.session.usuario.id, true);
+        req.session.usuario.verificadoDiscord = true;
+        req.session.usuario.roles = await obtenerRolesDelServidor(req.session.usuario.id);
+      } catch (errorRol) {
+        console.error("[USUARIO ROLES] No se pudo asignar el rol verificado:", errorRol.message);
+      }
+    }
 
     return res.json({
       autenticado: true,
