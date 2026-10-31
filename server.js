@@ -254,20 +254,12 @@ app.get("/cargando", async (req, res) => {
     console.error("[CARGANDO ROLES]", error.message);
   }
 
-  // Destino segun el estado: con rol verificado o con cedula -> dashboard;
-  // con whitelist aceptada sin cedula -> paso 2: crear la cedula; con
-  // whitelist pendiente -> pagina de pendiente; nuevo -> formulario.
-  let destino = "/whitelist.html";
+  // Destino segun el estado: con cedula guardada en la base de datos (o rol
+  // verificado en Discord) -> dashboard; en cualquier otro caso -> siempre
+  // crear la cedula (paso 2 del flujo).
+  let destino = "/crear-cedula.html";
   if (verificado) {
     destino = "/dashboard-user.html";
-  } else {
-    try {
-      const estadoWhitelist = await estadoWhitelistResumen(req.session.usuario.id);
-      if (estadoWhitelist === "aceptada") destino = "/crear-cedula.html";
-      else if (estadoWhitelist === "pendiente") destino = "/whitelist-pendiente.html";
-    } catch (error) {
-      console.error("[CARGANDO ESTADO]", error.message);
-    }
   }
 
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
