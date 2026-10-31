@@ -1,10 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Cargando... Medellín RP." />
-    <title>Cargando | Medellín RP</title>
+    <meta name="description" content="Cargando... Medell├¡n RP." />
+    <title>Cargando | Medell├¡n RP</title>
     <style>
       :root {
         --bg: #0a0a0a;
@@ -42,7 +42,7 @@
         justify-content: center;
       }
 
-      /* Mismo fondo animado sutil de la página de inicio de sesión */
+      /* Mismo fondo animado sutil de la p├ígina de inicio de sesi├│n */
       body::before {
         content: "";
         position: fixed;
@@ -257,7 +257,7 @@
         transition: width 0.35s ease;
       }
 
-      /* ---------- Galería (pantalla completa un poco más chica) ---------- */
+      /* ---------- Galer├¡a (pantalla completa un poco m├ís chica) ---------- */
       #gallery { padding: clamp(14px, 2.4vw, 32px); }
 
       .gallery-frame {
@@ -437,7 +437,7 @@
         margin-top: 14px;
       }
 
-      /* Mismo botón del login */
+      /* Mismo bot├│n del login */
       .btn {
         width: 100%;
         min-height: 52px;
@@ -525,7 +525,7 @@
     <!-- Escena 1: carga / bienvenida -->
     <section class="scene active" id="scene-load">
       <div class="shell">
-        <div class="logo" aria-label="Logo de Medellín RP">
+        <div class="logo" aria-label="Logo de Medell├¡n RP">
           <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <rect width="64" height="64" fill="#111"/>
             <g fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
@@ -534,7 +534,7 @@
             </g>
           </svg>
         </div>
-        <div class="eyebrow">「ME:RP」Medellín RP ︱ ER:LC</div>
+        <div class="eyebrow">ÒÇîME:RPÒÇìMedell├¡n RP ´©▒ ER:LC</div>
         <div class="ring"><span></span><span></span><span></span><div class="core"></div></div>
         <h1 id="greet">Bienvenido</h1>
         <p class="intro" id="status">Cargando experiencia<span class="dots"></span></p>
@@ -542,7 +542,7 @@
       </div>
     </section>
 
-    <!-- Escena 2: galería -->
+    <!-- Escena 2: galer├¡a -->
     <section class="scene" id="gallery">
       <div class="gallery-frame">
         <div id="slides"></div>
@@ -550,14 +550,14 @@
           <div id="counter">01 / 07</div>
         </div>
         <div class="gallery-title">
-          <h2>Medellín RP</h2>
+          <h2>Medell├¡n RP</h2>
           <p>Bienvenido a la ciudad</p>
         </div>
         <div class="bars" id="bars"></div>
       </div>
     </section>
 
-    <!-- Escena 3a: verificación -->
+    <!-- Escena 3a: verificaci├│n -->
     <section class="scene" id="scene-verify">
       <div class="card">
         <div class="icon">
@@ -566,14 +566,14 @@
         <div class="eyebrow" style="justify-content:center">Paso 1 de 1</div>
         <h2>Primero que todo<br />debes verificarte</h2>
         <p>
-          Tu cuenta aún no está verificada. Completa tu whitelist
-          para continuar y acceder a todo el contenido de Medellín RP.
+          Tu cuenta a├║n no est├í verificada. Completa tu whitelist
+          para continuar y acceder a todo el contenido de Medell├¡n RP.
         </p>
-        <a class="btn" href="/whitelist.html">Continuar</a>
+        <a id="btn-continuar" class="btn" href="/whitelist.html">Continuar</a>
         <div class="notice">
-          <span aria-hidden="true">🔒</span>
+          <span aria-hidden="true">­ƒöÆ</span>
           <div>
-            <strong>Verificación segura</strong>
+            <strong>Verificaci├│n segura</strong>
             Tus datos solo se usan para validar tu identidad dentro de la comunidad.
           </div>
         </div>
@@ -588,35 +588,42 @@
         </div>
         <div class="eyebrow" style="justify-content:center">Cuenta verificada</div>
         <h2 id="welcome-title">Bienvenido de nuevo</h2>
-        <p>Tu cuenta está verificada. Estamos preparando tu panel…</p>
-        <a class="btn" href="/dashboard-user.html">Ir al panel</a>
+        <p>Tu cuenta est├í verificada. Estamos preparando tu panelÔÇª</p>
+        <a id="btn-panel" class="btn" href="/dashboard-user.html">Ir al panel</a>
       </div>
     </section>
 
-    <button class="skip" id="skip">Saltar →</button>
+    <button class="skip" id="skip">Saltar ÔåÆ</button>
 
     <script>
       
+/* ====== IM├üGENES DE LA GALER├ìA (10 en total) ====== */
+const IMAGES = [
+  "photos/foto1.png",
+  "photos/foto2.png",
+  "photos/foto3.png",
+  "photos/foto4.png",
+  "photos/foto5.png",
+  "photos/foto6.png",
+  "photos/foto7.png"
+];
+
 /* ====== Datos inyectados por server.js ====== */
 const NOMBRE = "{{NOMBRE_USUARIO}}";
 const VERIFICADO = "{{VERIFICADO}}";
 const DESTINO = "{{DESTINO}}";
 
-/* Destiny inyectado por server.js. Si no se inyecto (visita directa al
-   archivo estatico), no se navega a ningun lado. */
+/* Destino inyectado por server.js. Si no se inyectó (visita directa al
+   archivo estático), usa el comportamiento histórico: whitelist y dashboard. */
 function destinoFinal(){
   if (!DESTINO || DESTINO.includes("{{")) return null;
   const d = String(DESTINO).trim();
   return d.startsWith("/") ? d : null;
 }
-function irADestino(){
-  const d = destinoFinal();
-  if (d) location.href = d;
-}
 
-const esVerificado = ["1","true","si","sí","yes"].includes(String(VERIFICADO).toLowerCase().trim());
+const esVerificado = ["1","true","si","s├¡","yes"].includes(String(VERIFICADO).toLowerCase().trim());
 
-/* ====== Partículas de fondo ====== */
+/* ====== Part├¡culas de fondo ====== */
 (function particles(){
   const n = window.innerWidth < 600 ? 12 : 24;
   for(let i=0;i<n;i++){
@@ -658,15 +665,81 @@ let pct=0;
 const loadTick=setInterval(()=>{
   pct=Math.min(100,pct+Math.random()*13+5);
   barEl.style.width=pct+"%";
-  if(pct>35&&pct<70) statusEl.innerHTML='Verificando sesión<span class="dots">';
-  else if(pct>=70)   statusEl.innerHTML='Preparando panel<span class="dots">';
-  if(pct>=100){clearInterval(loadTick);setTimeout(irADestino,500);}
+  if(pct>35&&pct<70) statusEl.innerHTML='Verificando sesi├│n<span class="dots">';
+  else if(pct>=70)   statusEl.innerHTML='Preparando galer├¡a<span class="dots">';
+  if(pct>=100){clearInterval(loadTick);setTimeout(startGallery,500);}
 },380);
 
-/* ====== Botón saltar ====== */
+/* ====== Escena 2: galer├¡a ====== */
+const SLIDE_MS = 2800;
+const slidesBox = document.getElementById("slides");
+const barsBox   = document.getElementById("bars");
+const counter   = document.getElementById("counter");
+let idx=0, galleryTimer=null;
+
+IMAGES.forEach((src,i)=>{
+  const d=document.createElement("div");
+  d.className="slide";
+  d.style.backgroundImage='url("'+src+'")';
+  slidesBox.appendChild(d);
+  const b=document.createElement("b");
+  barsBox.appendChild(b);
+});
+const slideEls=[...slidesBox.children];
+const barEls  =[...barsBox.children];
+
+function pad(n){return String(n).padStart(2,"0");}
+
+function renderSlide(){
+  slideEls.forEach((el,i)=>el.classList.toggle("on",i===idx));
+  barEls.forEach((el,i)=>{
+    el.classList.remove("now","done");
+    if(i<idx) el.classList.add("done");
+    if(i===idx){el.style.setProperty("--dur",SLIDE_MS+"ms");void el.offsetWidth;el.classList.add("now");}
+  });
+  counter.textContent=pad(idx+1)+" / "+pad(IMAGES.length);
+}
+
+function startGallery(){
+  show("gallery");
+  renderSlide();
+  galleryTimer=setInterval(()=>{
+    idx++;
+    if(idx>=IMAGES.length){clearInterval(galleryTimer);finish();return;}
+    renderSlide();
+  },SLIDE_MS);
+}
+
+/* ====== Escena final ====== */
+let finished=false;
+function finish(){
+  if(finished) return;
+  finished=true;
+  clearInterval(galleryTimer);
+  if(esVerificado){
+    show("welcome");
+    const t=document.getElementById("welcome-title");
+    t.innerHTML = "Bienvenido de nuevo, <b>"+nombreReal+"</b>";
+    const btn=document.getElementById("btn-panel");
+    if(btn) btn.href = destinoFinal() || "/dashboard-user.html";
+    setTimeout(()=>{irADestino()||null;},2600);
+  }else{
+    show("verify");
+    const btn=document.getElementById("btn-continuar");
+    if(btn) btn.href = destinoFinal() || "/whitelist.html";
+  }
+}
+
+function irADestino(){
+  const d=destinoFinal();
+  if(d){location.href=d;return true;}
+  return false;
+}
+
+/* ====== Bot├│n saltar ====== */
 document.getElementById("skip").addEventListener("click",()=>{
   clearInterval(loadTick);
-  irADestino();
+  finish();
 });
 
     </script>
