@@ -613,6 +613,7 @@ const IMAGES = [
 const NOMBRE = "{{NOMBRE_USUARIO}}";
 const VERIFICADO = "{{VERIFICADO}}";
 const DESTINO = "{{DESTINO}}";
+const ESTADO = "{{ESTADO}}";
 
 /* Destino inyectado por server.js (crear-cedula o dashboard). Si no se
    inyectó (visita directa al archivo estático), se usan los destinos
@@ -718,17 +719,33 @@ function finish(){
   if(finished) return;
   finished=true;
   clearInterval(galleryTimer);
-  if(esVerificado){
+
+  const h2Verify = document.querySelector("#scene-verify h2");
+  const pVerify  = document.querySelector("#scene-verify p");
+  const btnContinuar = document.getElementById("btn-continuar");
+  const btnPanel     = document.getElementById("btn-panel");
+
+  if(btnContinuar) btnContinuar.href = destinoFinal() || "/crear-cedula.html";
+  if(btnPanel)     btnPanel.href     = destinoFinal() || "/dashboard-user.html";
+
+  if(ESTADO === "completo"){
+    // Estado 3: cedula en la base de datos -> dashboard.
     show("welcome");
     const t=document.getElementById("welcome-title");
     t.innerHTML = "Bienvenido de nuevo, <b>"+nombreReal+"</b>";
-    const btn=document.getElementById("btn-panel");
-    if(btn) btn.href = destinoFinal() || "/dashboard-user.html";
     setTimeout(()=>{ if(!irADestino()) location.href="/dashboard-user.html"; },2600);
-  }else{
+  } else if(ESTADO === "verificado_sin_cedula"){
+    // Estado 2: rol verificado en Discord pero SIN cedula en la base de datos.
     show("verify");
-    const btn=document.getElementById("btn-continuar");
-    if(btn) btn.href = destinoFinal() || "/whitelist.html";
+    if(h2Verify) h2Verify.innerHTML = "Ya estás verificado<br />pero te falta la cédula";
+    if(pVerify) pVerify.innerHTML =
+      "Tu cuenta de Discord ya tiene el rol de verificado, pero todavía no tienes una cédula registrada en la base de datos.<br><br>Crea tu cédula para completar tu registro y acceder al panel.";
+  } else {
+    // Estado 1: nada (sin rol verificado ni cedula).
+    show("verify");
+    if(h2Verify) h2Verify.innerHTML = "Primero que todo<br />debes verificarte";
+    if(pVerify) pVerify.innerHTML =
+      "Tu cuenta aún no tiene una cédula registrada. Completa el registro de tu cédula para continuar y acceder a todo el contenido de Medellín RP.";
   }
 }
 

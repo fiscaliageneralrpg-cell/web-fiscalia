@@ -242,28 +242,43 @@ app.get("/cargando", async (req, res) => {
   }
 
   const nombre = req.session.usuario.nombre || req.session.usuario.username;
-  // "Verificado" SOLO si tiene cedula guardada en la base de datos.
-  // El rol de Discord por si solo no cuenta para el mensaje ni el destino.
-  const verificado = Boolean(req.session.usuario.cedulaRegistrada);
 
-  // Gestion de roles: con cedula se asegura el rol verificado. Sin cedula se
-  // pone el de no verificado, pero NUNCA se le quita el rol verificado a
-  // quien ya lo tiene en Discord (evita pelear con el bot).
+  // Estados del usuario:
+  //   1. Nada (sin rol verificado ni cedula)        -> crear-cedula
+  //   2. Rol verificado en Discord pero SIN cedula  -> crear-cedula (mensaje distinto)
+  //   3. Cedula en la base de datos                 -> dashboard (ya esta todo completo)
+  const tieneCedulaDB = Boolean(req.session.usuario.cedulaRegistrada);
+  let tieneRolVerificado = Boolean(req.session.usuario.verificadoDiscord);
+
+  // Sincronizacion de roles en Discord: si ya tiene cedula se le asegura el
+  // rol verificado. Si no tiene cedula pero ya trae el rol verificado de
+  // Discord, no se lo quitamos (evita pelear con el bot).
   try {
     const roles = await obtenerRolesDelServidor(req.session.usuario.id);
-    const yaTieneVerificado = Array.isArray(roles) && roles.includes(ROL_VERIFICADO);
-    await actualizarRolVerificacion(req.session.usuario.id, verificado || yaTieneVerificado);
+    const yaTieneVerificadoDiscord = Array.isArray(roles) && roles.includes(ROL_VERIFICADO);
+    tieneRolVerificado = yaTieneVerificadoDiscord || tieneRolVerificado;
+    await actualizarRolVerificacion(req.session.usuario.id, tieneCedulaDB || yaTieneVerificadoDiscord);
   } catch (error) {
     console.error("[CARGANDO ROLES]", error.message);
   }
 
-  // Destino: con cedula en la base de datos -> dashboard; en cualquier otro
-  // caso -> siempre crear la cedula (paso 2 del flujo).
-  const destino = verificado ? "/dashboard-user.html" : "/crear-cedula.html";
+  // Destino: solo con cedula en la base de datos vas al dashboard.
+  // En cualquier otro caso (nada, o verificado pero sin cedula) vas a
+  // crear la cedula.
+  const destino = tieneCedulaDB ? "/dashboard-user.html" : "/crear-cedula.html";
+
+  // Mensaje segun el estado (inyectado a la pagina).
+  let estadoTexto = "nada";
+  if (tieneCedulaDB) {
+    estadoTexto = "completo"; // cedula en DB
+  } else if (tieneRolVerificado) {
+    estadoTexto = "verificado_sin_cedula"; // rol verificado pero sin cedula
+  }
 
   let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
   html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
-  html = html.replace("{{VERIFICADO}}", verificado ? "true" : "false");
+  html = html.replace("{{VERIFICADO}}", tieneCedulaDB ? "true" : "false");
+  html = html.replace("{{ESTADO}}", estadoTexto);
   html = html.replace("{{DESTINO}}", destino);
   res.send(html);
 });
