@@ -263,9 +263,16 @@ app.get("/cargando", async (req, res) => {
   }
 
   // Destino: solo con cedula en la base de datos vas al dashboard.
-  // En cualquier otro caso (nada, o verificado pero sin cedula) vas a
-  // crear la cedula.
-  const destino = tieneCedulaDB ? "/dashboard-user.html" : "/crear-cedula.html";
+  // Con rol verificado pero sin cedula vas a crear la cedula.
+  // Sin nada (ni verificado ni cedula) vas primero a la whitelist.
+  let destino;
+  if (tieneCedulaDB) {
+    destino = "/dashboard-user.html";
+  } else if (tieneRolVerificado) {
+    destino = "/crear-cedula.html";
+  } else {
+    destino = "/whitelist.html";
+  }
 
   // Mensaje segun el estado (inyectado a la pagina).
   let estadoTexto = "nada";
