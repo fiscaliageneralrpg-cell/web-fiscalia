@@ -549,17 +549,22 @@ app.get("/api/whitelist/status", async (req, res) => {
     // Regla de verificacion: con el rol de verificado en Discord (o con
     // cedula en la base de datos) la whitelist ya no se le vuelve a pedir.
     const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
-    const verificado = roles.includes(ROL_VERIFICADO) || Boolean(cedula);
+    const tieneRolVerificado = roles.includes(ROL_VERIFICADO);
 
-    // Verificado (rol de Discord o cedula): directo al dashboard.
-    if (verificado) {
+    // Cedula en la base de datos: directo al dashboard.
+    if (cedula) {
       return res.json({ estado: "verificado", redirect: "/dashboard-user.html" });
     }
 
+    // Rol verificado en Discord pero SIN cedula en DB: paso 2 crear cedula.
+    if (tieneRolVerificado) {
+      return res.json({ estado: "verificado_sin_cedula", redirect: "/crear-cedula.html" });
+    }
+
     // Aceptada por rol de Discord o por la base de datos:
-    // paso 2 del flujo -> crear la cedula (o dashboard si ya la tiene).
+    // paso 2 del flujo -> crear la cedula.
     if (aprobadaPorRol || resumen === "aceptada") {
-      return res.json({ estado: "aceptada", redirect: cedula ? "/dashboard-user.html" : "/crear-cedula.html" });
+      return res.json({ estado: "aceptada", redirect: "/crear-cedula.html" });
     }
     if (resumen === "pendiente") return res.json({ estado: "pendiente" });
     if (resumen === "denegada") {
