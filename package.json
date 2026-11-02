@@ -1,13 +1,17 @@
 {
-  "name": "latinaviationnetwork-bot",
+  "name": "web-medellin-rp",
   "version": "1.0.0",
-  "description": "Bot de Discord para LatinAviationNetwork",
-  "main": "index.js",
+  "description": "Página web oficial de 「ME:RP」Medellín RP︱ER:LC",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
-    "discord.js": "^14.15.3",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.12.0"
   }
-}
