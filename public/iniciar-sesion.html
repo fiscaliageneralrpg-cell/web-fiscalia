@@ -17,6 +17,8 @@
         --muted: #a1a1a1;
         --accent: #d4d4d4;
         --discord: #ffffff;
+        --cyan: #74e6ff;
+        --yellow: #ffd166;
         --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
       }
 
@@ -337,6 +339,44 @@
           transition-duration: 0.01ms !important;
         }
       }
+
+      /* ===== Insignia navideña ===== */
+      .navidad-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 9px 18px;
+        border: 1px solid rgba(116, 230, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(76, 164, 255, 0.12);
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        animation: flotar 4.5s ease-in-out infinite;
+      }
+
+      /* ===== Nieve de Navidad ===== */
+      #nieve {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .copo {
+        position: absolute;
+        top: -24px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #cfe4ff);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        animation: caerNieve linear infinite;
+      }
+      @keyframes caerNieve {
+        0% { transform: translate3d(0, -6vh, 0) rotate(0deg); }
+        100% { transform: translate3d(var(--der, 0px), 108vh, 0) rotate(360deg); }
+      }
     </style>
   </head>
   <body>
@@ -346,6 +386,7 @@
         <div class="visual-content">
           <div class="eyebrow">「ME:RP」Medellín RP ︱ ER:LC</div>
           <h1>Inicia sesión.<br />Escribe tu historia.</h1>
+          <div class="navidad-badge">❄️ ¡Feliz Navidad, Medellín RP! Nevando en la ciudad 🎄</div>
           <p>
             Accede con tu cuenta de Discord para entrar a la comunidad
             de roleplay inspirada en Colombia.
@@ -403,5 +444,28 @@
         </div>
       </section>
     </main>
+
+    <div id="nieve" aria-hidden="true"></div>
+    <script>
+      (function () {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const contenedor = document.getElementById("nieve");
+        const esMovil = window.innerWidth < 760;
+        const total = esMovil ? 26 : 60;
+        for (let i = 0; i < total; i++) {
+          const copo = document.createElement("span");
+          copo.className = "copo";
+          const tamano = 3 + Math.random() * 7;
+          copo.style.width = tamano + "px";
+          copo.style.height = tamano + "px";
+          copo.style.left = Math.random() * 100 + "%";
+          copo.style.opacity = 0.35 + Math.random() * 0.6;
+          copo.style.setProperty("--der", (Math.random() * 120 - 60) + "px");
+          copo.style.animationDuration = 9 + Math.random() * 14 + "s";
+          copo.style.animationDelay = -Math.random() * 20 + "s";
+          contenedor.appendChild(copo);
+        }
+      })();
+    </script>
   </body>
 </html>
