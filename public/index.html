@@ -353,6 +353,108 @@
         min-height: 558px;
       }
 
+      /* ===== Galería de fotos ===== */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 18px;
+      }
+      .photo-card {
+        position: relative;
+        margin: 0;
+        overflow: hidden;
+        min-height: 260px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        animation: aparecerArriba 0.8s ease both;
+      }
+      .photo-card:nth-child(1) { grid-column: span 4; min-height: 430px; animation-delay: 0.05s; }
+      .photo-card:nth-child(2) { grid-column: span 2; min-height: 430px; animation-delay: 0.15s; }
+      .photo-card:nth-child(3) { grid-column: span 2; animation-delay: 0.25s; }
+      .photo-card:nth-child(4) { grid-column: span 2; animation-delay: 0.35s; }
+      .photo-card:nth-child(5) { grid-column: span 2; animation-delay: 0.45s; }
+      .photo-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(116, 230, 255, 0.42);
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.35);
+      }
+      .photo-card img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.8;
+        transition: transform 0.5s ease, opacity 0.4s ease;
+      }
+      .photo-card:hover img {
+        transform: scale(1.06);
+        opacity: 0.97;
+      }
+      .photo-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(0deg, rgba(4, 10, 18, 0.95), transparent 62%);
+      }
+      .photo-card figcaption {
+        position: absolute;
+        z-index: 1;
+        left: 22px;
+        right: 22px;
+        bottom: 20px;
+      }
+      .photo-card figcaption strong {
+        display: block;
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+      .photo-card figcaption span {
+        color: #c4d0df;
+        font-size: 14px;
+      }
+
+      /* ===== Insignia navideña ===== */
+      .navidad-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+        padding: 9px 18px;
+        border: 1px solid rgba(116, 230, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(76, 164, 255, 0.12);
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        animation: flotar 4.5s ease-in-out infinite;
+      }
+
+      /* ===== Nieve de Navidad ===== */
+      #nieve {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .copo {
+        position: absolute;
+        top: -24px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #cfe4ff);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        animation: caerNieve linear infinite;
+      }
+      @keyframes caerNieve {
+        0% { transform: translate3d(0, -6vh, 0) rotate(0deg); }
+        100% { transform: translate3d(var(--der, 0px), 108vh, 0) rotate(360deg); }
+      }
+
       .pillars {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -451,6 +553,13 @@
         .pillars {
           grid-template-columns: 1fr;
         }
+        .gallery-grid {
+          grid-template-columns: 1fr;
+        }
+        .photo-card:nth-child(n) {
+          grid-column: auto;
+          min-height: 250px;
+        }
         .feature-card-wide {
           grid-row: auto;
         }
@@ -500,6 +609,7 @@
             en Colombia, donde cada patrulla, emergencia y decisión construye
             una historia diferente dentro de Roblox.
           </p>
+          <div class="navidad-badge">❄️ ¡Feliz Navidad, Medellín RP! Nevando en la ciudad 🎄</div>
           <div class="hero-actions">
             <a class="button button-primary" href="iniciar-sesion.html"
               >Entrar a la comunidad</a
@@ -612,6 +722,76 @@
         </div>
       </section>
 
+      <section class="section" id="fotos">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">Fotos de la comunidad</div>
+            <h2>La ciudad<br />en imágenes.</h2>
+          </div>
+          <p>
+            Escenas reales del RP: operativos, patrullas y encuentros
+            capturados por la comunidad de Medellín RP.
+          </p>
+        </div>
+        <div class="gallery-grid">
+          <figure class="photo-card">
+            <img
+              src="photos/foto1.png"
+              alt="Punto de control nocturno en Medellín RP"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong>Punto de control</strong>
+              <span>La Policía cierra la avenida bajo la niebla.</span>
+            </figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img
+              src="photos/foto2.png"
+              alt="Operativo junto a la granja en Medellín RP"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong>Operativo rural</strong>
+              <span>Unidad táctica junto a la granja.</span>
+            </figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img
+              src="photos/foto3.png"
+              alt="Detención de un ciudadano en Medellín RP"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong>Detención</strong>
+              <span>Revisión en la cancha del barrio.</span>
+            </figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img
+              src="photos/foto4.png"
+              alt="Patrullas en la gasolinera de Medellín RP"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong>Gasolinera</strong>
+              <span>Patrullas cubriendo el sur de la ciudad.</span>
+            </figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img
+              src="photos/foto5.png"
+              alt="Gran operativo con unidades policiales en Medellín RP"
+              loading="lazy"
+            />
+            <figcaption>
+              <strong>Gran operativo</strong>
+              <span>Fuerzas unidas en un mismo objetivo.</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
       <section class="section">
         <div class="join">
           <div class="eyebrow">El siguiente paso es tuyo</div>
@@ -631,5 +811,30 @@
       <strong>「ME:RP」Medellín RP︱ER:LC</strong>
       <span>Comunidad independiente de roleplay inspirada en Colombia.</span>
     </footer>
+
+    <div id="nieve" aria-hidden="true"></div>
+    <script>
+      // Copos de nieve de Navidad: se crean por JS para no saturar el HTML.
+      // Si el usuario prefiere menos movimiento, no se generan.
+      (function () {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const contenedor = document.getElementById("nieve");
+        const esMovil = window.innerWidth < 760;
+        const total = esMovil ? 26 : 60;
+        for (let i = 0; i < total; i++) {
+          const copo = document.createElement("span");
+          copo.className = "copo";
+          const tamano = 3 + Math.random() * 7;
+          copo.style.width = tamano + "px";
+          copo.style.height = tamano + "px";
+          copo.style.left = Math.random() * 100 + "%";
+          copo.style.opacity = 0.35 + Math.random() * 0.6;
+          copo.style.setProperty("--der", (Math.random() * 120 - 60) + "px");
+          copo.style.animationDuration = 9 + Math.random() * 14 + "s";
+          copo.style.animationDelay = -Math.random() * 20 + "s";
+          contenedor.appendChild(copo);
+        }
+      })();
+    </script>
   </body>
 </html>
