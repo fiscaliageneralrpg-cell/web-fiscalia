@@ -14,6 +14,7 @@
         --muted: #aab6c8;
         --line: rgba(255, 255, 255, 0.12);
         --panel: rgba(13, 22, 36, 0.76);
+        --bg: #0a0a0a;
         --blue: #4ca4ff;
         --cyan: #74e6ff;
         --yellow: #ffd166;
@@ -29,7 +30,7 @@
       body {
         margin: 0;
         color: var(--ink);
-        background: #07101d;
+        background: var(--bg);
         font-family:
           Inter,
           ui-sans-serif,
@@ -40,6 +41,21 @@
           sans-serif;
         line-height: 1.5;
         overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.04), transparent 40%);
+        background-size: 200% 200%;
+        animation: fondoMover 20s ease infinite;
+      }
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
       }
       @keyframes aparecerArriba {
         from { opacity: 0; transform: translateY(24px); }
