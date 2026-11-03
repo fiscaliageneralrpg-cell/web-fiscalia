@@ -72,6 +72,13 @@ app.use(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Favicon para cualquier ruta (web.com/1, web.com/2, etc.)
+app.get(["/favicon.ico", "/favicon.png"], (req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.type("png");
+  res.sendFile(path.join(__dirname, "public", "favicon.png"));
+});
+
 app.get("/iniciar-sesion.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
 });
@@ -1486,7 +1493,7 @@ async function enviarLogTwitter(titulo, descripcion, campos = [], thumbnail) {
     const thumbnailHttp = /^https?:\/\//i.test(String(thumbnail || "")) ? thumbnail : undefined;
     await enviarEmbedDiscord(CANAL_LOG_TWITTER, {
       title: titulo,
-      description,
+      description: descripcion,
       color: 0x22caa0,
       fields: campos,
       thumbnail: thumbnailHttp ? { url: thumbnailHttp } : undefined,
@@ -1983,7 +1990,7 @@ function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = con
     if (!(await exigirFundacion(req, res))) return;
     try {
       const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "DELETE", body: {}, timeout: 15_000 });
-      return res.status(resultado.estado).json(resultado.datos);
+      return res.status(resultado.status).json(resultado.datos);
     } catch (error) {
       return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
     }
