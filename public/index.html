@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Medellín RP | ER:LC — comunidad colombiana de roleplay en Emergency Response: Liberty County." />
   <title>「ME:RP」Medellín RP︱ER:LC</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
+  <link rel="shortcut icon" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
   <style>
     :root{
       --bg:#0a0a0a; --panel:rgba(20,20,20,.72); --line:rgba(255,255,255,.10);
@@ -31,6 +34,8 @@
       0%{transform:translate3d(0,-12vh,0) rotate(0deg)}
       100%{transform:translate3d(var(--desv,0px),112vh,0) rotate(360deg)}
     }
+    @keyframes giro{to{transform:rotate(360deg)}}
+    @keyframes frameGlow{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:var(--shadow),0 0 28px rgba(255,255,255,.12)}}
     .copo{
       position:fixed;top:-20px;border-radius:50%;background:#fff;
       box-shadow:0 0 12px rgba(255,255,255,.95);
@@ -291,7 +296,7 @@
           <figcaption>Calles con vida</figcaption>
         </figure>
       </div>
-    </div>
+    </section>
 
     <section class="section reveal" style="padding-top:0">
       <div class="join">
