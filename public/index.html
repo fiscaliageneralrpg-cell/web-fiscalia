@@ -147,18 +147,21 @@
     #toast-unico.mostrar{transform:translateY(0);display:block}
     #toast-unico .cerrar{float:right;background:none;border:none;color:#74e6ff;cursor:pointer;font-weight:900;font-size:14px;padding:4px 8px;margin-left:10px}
     #toast-unico .cerrar:hover{color:#fff}
-    /* Embed navideño (cuando termina el contador) */
+    /* Embed navideño (cuando termina el contador) - NEGRO con textura difuminada gris/blanco */
     #embed-navidad{
       position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;
-      background:rgba(8,8,12,.92);backdrop-filter:blur(14px);
+      background:rgba(0,0,0,.96);backdrop-filter:blur(14px);
     }
     #embed-navidad.mostrar{display:flex}
     .embed-card{
       width:min(460px,92vw);max-height:90vh;overflow-y:auto;
-      border:1px solid rgba(255,255,255,.22);border-radius:26px;
-      background:linear-gradient(145deg,#0f172a,#1e1b4b);
-      box-shadow:0 0 80px rgba(230,57,70,.35),0 0 40px rgba(244,162,97,.25);
-      padding:34px 26px;text-align:center;color:#fff;position:relative;
+      border:1px solid rgba(255,255,255,.10);border-radius:26px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14), transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.09), transparent 50%),
+        linear-gradient(135deg, #040404 0%, #0a0a0a 35%, #060606 70%, #040404 100%);
+      box-shadow:0 0 90px rgba(0,0,0,.75);
+      padding:36px 28px;text-align:center;color:#fff;position:relative;
     }
     .embed-card::before{content:"🎄";position:absolute;top:-14px;left:50%;transform:translateX(-50%);
       font-size:32px;filter:drop-shadow(0 0 12px #f4a261)}
@@ -166,11 +169,11 @@
     .embed-card p{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:26px}
     .embed-btn{
       display:inline-flex;align-items:center;justify-content:center;gap:8px;
-      border:1px solid rgba(255,255,255,.3);border-radius:14px;background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.3);border-radius:14px;background:rgba(255,255,255,.10);
       color:#fff;padding:12px 24px;font-weight:800;cursor:pointer;transition:all .3s ease;
       box-shadow:0 0 20px rgba(116,230,255,.25)
     }
-    .embed-btn:hover{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6);transform:translateY(-2px)}
+    .embed-btn:hover{background:rgba(255,255,255,.20);border-color:rgba(255,255,255,.6);transform:translateY(-2px)}
     @media(max-width:860px){.gallery{grid-template-columns:repeat(2,1fr);grid-auto-rows:190px}.shot:first-child{grid-column:span 2;grid-row:span 1}}
     @media(max-width:760px){
       .nav-links a:not(.nav-cta){display:none}
