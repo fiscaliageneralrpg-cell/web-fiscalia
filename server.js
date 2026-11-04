@@ -1139,8 +1139,50 @@ app.get("/api/nequi/diagnostico", async (req, res) => {
 
 // Prueba de red publica (sin sesion): sirve para saber desde Render
 // que puertos puede alcanzar mientras el login este caido por MySQL.
+// Ahora tambien muestra que host usa la web (MYSQL_HOST) y hace una
+// conexion MySQL REAL con mysql2 (la misma que usa el login).
 app.get("/api/red", async (req, res) => {
+  // 1) Configuracion real de la web (sin contrasena).
+  const configuracionMysql = {
+    host: process.env.MYSQL_HOST || null,
+    puerto: Number(process.env.MYSQL_PORT || 3306),
+    database: process.env.MYSQL_DATABASE || null,
+    user: process.env.MYSQL_USER || null,
+  };
+
+  // 2) DNS: a que IP(s) resuelve MYSQL_HOST (para ver si es la esperada).
+  let dns = null;
+  try {
+    const dnsModulo = require("node:dns/promises");
+    dns = await dnsModulo.lookup(configuracionMysql.host, { all: true });
+  } catch (error) {
+    dns = { error: error.message };
+  }
+
+  // 3) Conexion MySQL REAL con mysql2 (la misma del login).
+  let conexionReal = null;
+  try {
+    const inicioReal = Date.now();
+    const { pool } = require("./db");
+    const conexion = await pool.getConnection();
+    try {
+      await conexion.ping();
+      conexionReal = { estado: "CONECTA", ms: Date.now() - inicioReal };
+    } finally {
+      conexion.release();
+    }
+  } catch (error) {
+    conexionReal = {
+      estado: error.code || error.message,
+      mensaje: error.message,
+      errno: error.errno ?? null,
+      sqlState: error.sqlState ?? null,
+    };
+  }
+
+  // 4) Pruebas TCP a los destinos clave (incluye el host real de MySQL).
   const destinos = [
+    { nombre: "mysql-configurado", host: configuracionMysql.host, puerto: configuracionMysql.puerto },
     { nombre: "mysql-directo", host: "213.165.91.6", puerto: 3306 },
     { nombre: "bot-node", host: "179.236.233.10", puerto: 3000 },
     { nombre: "bot-dominio", host: "node.duck-hosting.lat", puerto: 3000 },
@@ -1167,7 +1209,8 @@ app.get("/api/red", async (req, res) => {
       };
     }
   }));
-  return res.json(resultados);
+
+  return res.json({ configuracionMysql, dns, conexionRealMysql: conexionReal, tcp: resultados });
 });
 
 app.get("/api/nequi/usuarios", async (req, res) => {
