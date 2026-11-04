@@ -1111,7 +1111,63 @@ app.get("/api/nequi/diagnostico", async (req, res) => {
   } else {
     informe.apiBot = { error: "Faltan NEQUI_API_URL o NEQUI_API_KEY en Render." };
   }
+  // Pruebas de red: desde Render hacia los destinos clave.
+  // Sirve para saber si da timeout (firewall) o si conecta.
+  informe.red = {};
+  const destinos = [
+    { nombre: "mysql-directo", host: "213.165.91.6", puerto: 3306 },
+    { nombre: "bot-node", host: "179.236.233.10", puerto: 3000 },
+    { nombre: "bot-dominio", host: "node.duck-hosting.lat", puerto: 3000 },
+  ];
+  await Promise.all(destinos.map(async (d) => {
+    const inicio = Date.now();
+    try {
+      const conectado = await new Promise((resolver, rechazar) => {
+        const socket = new (require("node:net").Socket)();
+        const limite = setTimeout(() => { socket.destroy(); rechazar(new Error("timeout")); }, 5000);
+        socket.once("connect", () => { clearTimeout(limite); socket.destroy(); resolver(true); });
+        socket.once("error", (e) => { clearTimeout(limite); rechazar(e); });
+        socket.connect(d.puerto, d.host);
+      });
+      informe.red[d.nombre] = { host: d.host, puerto: d.puerto, estado: "CONECTA", ms: Date.now() - inicio };
+    } catch (error) {
+      informe.red[d.nombre] = { host: d.host, puerto: d.puerto, estado: error.message === "timeout" ? "TIMEOUT (bloqueado)" : error.code || error.message, ms: Date.now() - inicio };
+    }
+  }));
   return res.json(informe);
+});
+
+// Prueba de red publica (sin sesion): sirve para saber desde Render
+// que puertos puede alcanzar mientras el login este caido por MySQL.
+app.get("/api/red", async (req, res) => {
+  const destinos = [
+    { nombre: "mysql-directo", host: "213.165.91.6", puerto: 3306 },
+    { nombre: "bot-node", host: "179.236.233.10", puerto: 3000 },
+    { nombre: "bot-dominio", host: "node.duck-hosting.lat", puerto: 3000 },
+    { nombre: "bot-api-4021", host: "213.165.91.6", puerto: 4021 },
+  ];
+  const resultados = {};
+  await Promise.all(destinos.map(async (d) => {
+    const inicio = Date.now();
+    try {
+      await new Promise((resolver, rechazar) => {
+        const socket = new (require("node:net").Socket)();
+        const limite = setTimeout(() => { socket.destroy(); rechazar(new Error("timeout")); }, 5000);
+        socket.once("connect", () => { clearTimeout(limite); socket.destroy(); resolver(true); });
+        socket.once("error", (e) => { clearTimeout(limite); rechazar(e); });
+        socket.connect(d.puerto, d.host);
+      });
+      resultados[d.nombre] = { host: d.host, puerto: d.puerto, estado: "CONECTA", ms: Date.now() - inicio };
+    } catch (error) {
+      resultados[d.nombre] = {
+        host: d.host,
+        puerto: d.puerto,
+        estado: error.message === "timeout" ? "TIMEOUT (bloqueado)" : error.code || error.message,
+        ms: Date.now() - inicio,
+      };
+    }
+  }));
+  return res.json(resultados);
 });
 
 app.get("/api/nequi/usuarios", async (req, res) => {
