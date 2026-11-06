@@ -72,6 +72,10 @@ app.use(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Carpeta photos/ en la raíz del repo (civil.png, encuesta.png, capturas).
+// Si la imagen también existe en public/photos, la de public gana.
+app.use("/photos", express.static(path.join(__dirname, "photos")));
+
 app.get("/iniciar-sesion.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
 });
