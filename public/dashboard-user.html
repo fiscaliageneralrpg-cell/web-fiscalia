@@ -117,6 +117,23 @@
         transform: translateY(-3px);
         background: #0d6170;
       }
+      .panel.with-img {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .panel-img {
+        flex-shrink: 0;
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        filter: drop-shadow(0 6px 10px #0006);
+        transition: transform 0.2s;
+      }
+      .panel.with-img:hover .panel-img {
+        transform: scale(1.08);
+      }
       .panel.foundation {
         display: none;
         border-color: #f3c96966;
@@ -154,6 +171,10 @@
         .info {
           grid-template-columns: 1fr;
         }
+        .panel-img {
+          width: 56px;
+          height: 56px;
+        }
       }
     </style>
   </head>
@@ -185,14 +206,30 @@
           <span class="value">Activo</span>
         </article>
       </section>
-      <a class="panel" href="/ciudadano.html"
-        ><strong>▣ Panel ciudadano</strong
-        ><span>Consulta tu cédula, expediente, Nequi y antecedentes.</span></a
-      >
-      <a class="panel" href="/encuestas-activas.html"
-        ><strong>📝 Encuestas activas</strong
-        ><span>Responde las evaluaciones vigentes de Policía, COPES, Ejército y Fiscalía.</span></a
-      >
+
+      <a class="panel with-img" href="/ciudadano.html">
+        <div>
+          <strong>Panel ciudadano</strong>
+          <span>Consulta tu cédula, expediente, Nequi y antecedentes.</span>
+        </div>
+        <img class="panel-img" src="/photos/civil.png" alt="Panel ciudadano" />
+      </a>
+
+      <a class="panel with-img" href="/encuestas-activas.html">
+        <div>
+          <strong>Encuestas activas</strong>
+          <span
+            >Responde las evaluaciones vigentes de Policía, COPES, Ejército y
+            Fiscalía.</span
+          >
+        </div>
+        <img
+          class="panel-img"
+          src="/photos/encuesta.png"
+          alt="Encuestas activas"
+        />
+      </a>
+
       <a id="panel-fundacion" class="panel foundation" href="/fundacion.html"
         ><strong>✦ Panel Fundación</strong
         ><span
