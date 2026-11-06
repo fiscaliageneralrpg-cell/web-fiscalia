@@ -3,263 +3,794 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Panel ciudadano de Medellín RP: cédula, expediente, Nequi y antecedentes."
+    />
     <title>Dashboard | Medellín RP</title>
     <style>
       :root {
-        --navy: #071b2b;
-        --blue: #0c7890;
-        --cyan: #42d8d0;
-        --cream: #f4efe3;
-        --muted: #a9bac6;
+        --bg: #0a0a0a;
+        --panel: rgba(20, 20, 20, 0.72);
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #ffffff;
+        --muted: #a1a1a1;
+        --accent: #d4d4d4;
+        --cyan: #74e6ff;
+        --yellow: #ffd166;
+        --green: #6ee7a8;
+        --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
       }
+
       * {
         box-sizing: border-box;
-      }
-      body {
         margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
         min-height: 100vh;
-        color: var(--cream);
-        background: linear-gradient(135deg, #06141f, #0a3140);
-        font-family: Inter, system-ui, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        font-family:
+          "Inter",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        overflow-x: hidden;
       }
-      .wrap {
-        width: min(920px, calc(100% - 32px));
-        margin: 42px auto;
+
+      /* ===== Fondo animado (igual que iniciar-sesion) ===== */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.06), transparent 40%),
+          radial-gradient(circle at 80% 80%, rgba(116, 230, 255, 0.07), transparent 42%),
+          radial-gradient(circle at 60% 10%, rgba(255, 209, 102, 0.05), transparent 38%);
+        background-size: 200% 200%;
+        animation: fondoMover 22s ease infinite;
       }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(circle at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+      }
+
+      @keyframes fondoMover {
+        0%, 100% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+      }
+
+      @keyframes aparecer {
+        from { opacity: 0; transform: translateY(26px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes flotar {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+
+      @keyframes brilloTexto {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      @keyframes brilloTitulo {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
+
+      @keyframes pulso {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(110, 231, 168, 0.55); }
+        70% { box-shadow: 0 0 0 9px rgba(110, 231, 168, 0); }
+      }
+
+      @keyframes caerNieve {
+        0% { transform: translate3d(0, -6vh, 0) rotate(0deg); }
+        100% { transform: translate3d(var(--der, 0px), 108vh, 0) rotate(360deg); }
+      }
+
+      .page {
+        width: min(1000px, 92%);
+        margin: 0 auto;
+        padding: 32px 0 64px;
+      }
+
+      /* ===== Cabecera ===== */
       .top {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        color: #cde9e5;
+        gap: 16px;
+        animation: aparecer 0.8s var(--d, 0s) ease both;
       }
-      .top a {
-        color: #9ec9cc;
-        text-decoration: none;
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
       }
-      .hero {
-        position: relative;
-        margin-top: 28px;
-        padding: 42px;
-        border: 1px solid #42d8d044;
-        border-radius: 28px;
-        background: linear-gradient(135deg, #0c7180, #102b42);
+
+      .logo {
+        width: 48px;
+        height: 48px;
+        flex: none;
+        border-radius: 14px;
         overflow: hidden;
+        border: 1px solid var(--line);
+        background: #111;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        animation: brilloTexto 3s ease-in-out infinite;
       }
-      .hero:after {
-        position: absolute;
-        right: -90px;
-        bottom: -150px;
-        width: 380px;
-        height: 380px;
-        border: 1px solid #42d8d033;
-        border-radius: 50%;
-        content: "";
+
+      .logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: grayscale(100%) contrast(1.1);
       }
-      .eyebrow {
-        color: var(--cyan);
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.17em;
+
+      .brand strong {
+        display: block;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+
+      .brand small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
+
+      .logout {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--accent);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .logout::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        transition: background 0.3s ease;
+      }
+
+      .logout:hover {
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 255, 255, 0.08);
+      }
+
+      .logout:hover::before {
+        background: #ff6b6b;
+      }
+
+      /* ===== Hero ===== */
+      .hero {
+        position: relative;
+        margin-top: 26px;
+        padding: 42px;
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+          var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        animation: aparecer 0.9s var(--d, 0s) ease both;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -140px;
+        right: -120px;
+        width: 420px;
+        height: 420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(116, 230, 255, 0.22), transparent 65%);
+        animation: flotar 7s ease-in-out infinite;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        right: -110px;
+        bottom: -170px;
+        width: 360px;
+        height: 360px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+      }
+
+      .eyebrow {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--cyan);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 30px;
+        height: 1px;
+        background: var(--cyan);
+      }
+
       .hero h1 {
         position: relative;
         z-index: 1;
-        margin: 12px 0 8px;
-        font-size: clamp(32px, 7vw, 66px);
-        letter-spacing: -0.07em;
+        margin: 14px 0 10px;
+        font-size: clamp(32px, 7vw, 62px);
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.05;
+        background: linear-gradient(100deg, #ffffff 22%, var(--cyan) 50%, #ffffff 78%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation:
+          aparecer 0.9s var(--d, 0s) ease both,
+          brilloTitulo 7s linear infinite;
       }
+
       .hero p {
         position: relative;
         z-index: 1;
-        max-width: 530px;
-        color: #c5e2e1;
+        max-width: 560px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.65;
       }
+
+      /* ===== Insignia navideña ===== */
+      .navidad-badge {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0 16px;
+        padding: 9px 18px;
+        border: 1px solid rgba(116, 230, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(76, 164, 255, 0.12);
+        color: var(--cyan);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        animation: flotar 4.5s ease-in-out infinite;
+      }
+
+      /* ===== Tarjetas de información ===== */
       .info {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 14px;
-        margin-top: 18px;
+        margin-top: 16px;
       }
-      .info article {
+
+      .card {
+        position: relative;
         padding: 22px;
-        border: 1px solid #ffffff1c;
+        border: 1px solid var(--line);
         border-radius: 18px;
-        background: #0b2737aa;
+        overflow: hidden;
+        background: var(--panel);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease,
+          box-shadow 0.3s ease;
+        animation: aparecer 0.9s var(--d, 0s) ease both;
       }
+
+      .card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 45%;
+        height: 100%;
+        background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+        transform: skewX(-18deg);
+        transition: left 0.6s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(116, 230, 255, 0.4);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+      }
+
+      .card:hover::after {
+        left: 130%;
+      }
+
       .label {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
       }
+
       .value {
         display: block;
-        margin-top: 10px;
+        margin-top: 12px;
         color: var(--cyan);
-        font-size: 22px;
+        font-size: 23px;
         font-weight: 900;
+        letter-spacing: -0.02em;
+        word-break: break-word;
       }
-      .panel {
-        display: block;
-        margin-top: 18px;
-        padding: 22px;
-        border: 1px solid #42d8d044;
-        border-radius: 20px;
-        color: #fff;
-        text-decoration: none;
-        background: #0a4050;
-        transition:
-          transform 0.2s,
-          background 0.2s;
-      }
-      .panel:hover {
-        transform: translateY(-3px);
-        background: #0d6170;
-      }
-      .panel.with-img {
+
+      .value.estado {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .panel-img {
-        flex-shrink: 0;
-        width: 72px;
-        height: 72px;
-        object-fit: contain;
-        filter: drop-shadow(0 6px 10px #0006);
-        transition: transform 0.2s;
-      }
-      .panel.with-img:hover .panel-img {
-        transform: scale(1.08);
-      }
-      .panel.foundation {
-        display: none;
-        border-color: #f3c96966;
-        background: linear-gradient(135deg, #624c16, #17394a);
-      }
-      .panel strong,
-      .panel span {
-        display: block;
-      }
-      .panel strong {
+        gap: 10px;
+        color: var(--green);
         font-size: 20px;
       }
-      .panel span {
-        margin-top: 6px;
-        color: #b5d5d7;
+
+      .value.estado::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--green);
+        animation: pulso 2s ease-out infinite;
+      }
+
+      /* ===== Paneles ===== */
+      .panels {
+        display: grid;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .panel {
+        position: relative;
+        display: block;
+        padding: 21px 60px 21px 24px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        color: var(--text);
+        text-decoration: none;
+        background: var(--panel);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease,
+          box-shadow 0.3s ease,
+          background 0.3s ease;
+        animation: aparecer 0.9s var(--d, 0s) ease both;
+      }
+
+      .panel::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 3px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--cyan), rgba(116, 230, 255, 0.15));
+        transform: scaleY(0.35);
+        transform-origin: center;
+        transition: transform 0.35s ease;
+      }
+
+      .panel strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        transition: color 0.3s ease;
+      }
+
+      .panel .desc {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
         font-size: 13px;
+        line-height: 1.55;
       }
+
+      .panel .arrow {
+        position: absolute;
+        right: 24px;
+        top: 50%;
+        color: var(--cyan);
+        font-size: 19px;
+        font-style: normal;
+        transform: translateY(-50%);
+        transition: transform 0.3s ease;
+      }
+
+      .panel:hover {
+        transform: translateY(-4px);
+        border-color: rgba(116, 230, 255, 0.45);
+        background: rgba(116, 230, 255, 0.06);
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+      }
+
+      .panel:hover::before {
+        transform: scaleY(1);
+      }
+
+      .panel:hover strong {
+        color: var(--cyan);
+      }
+
+      .panel:hover .arrow {
+        transform: translate(7px, -50%);
+      }
+
+      .panel:active {
+        transform: translateY(-1px) scale(0.995);
+      }
+
+      .panel.foundation {
+        display: none;
+        border-color: rgba(255, 209, 102, 0.35);
+        background:
+          linear-gradient(135deg, rgba(255, 209, 102, 0.12), rgba(255, 255, 255, 0.03)),
+          var(--panel);
+      }
+
+      .panel.foundation::before {
+        background: linear-gradient(180deg, var(--yellow), rgba(255, 209, 102, 0.15));
+      }
+
+      .panel.foundation:hover {
+        border-color: rgba(255, 209, 102, 0.6);
+        background:
+          linear-gradient(135deg, rgba(255, 209, 102, 0.18), rgba(255, 255, 255, 0.05)),
+          var(--panel);
+      }
+
+      .panel.foundation:hover strong {
+        color: var(--yellow);
+      }
+
+      .panel.policial::before {
+        background: linear-gradient(180deg, #74e6ff, rgba(80, 160, 255, 0.2));
+      }
+
+      /* ===== Paneles con imagen a la derecha ===== */
+      .panel.con-imagen {
+        padding: 26px 172px 26px 28px;
+        min-height: 152px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .panel.con-imagen strong {
+        font-size: 21px;
+      }
+
+      .panel.con-imagen .desc {
+        font-size: 14px;
+        margin-top: 9px;
+      }
+
+      .panel.con-imagen .arrow {
+        right: 142px;
+        color: var(--muted);
+        font-size: 21px;
+      }
+
+      .panel.con-imagen:hover .arrow {
+        color: var(--cyan);
+      }
+
+      .panel .thumb {
+        position: absolute;
+        right: 22px;
+        top: 50%;
+        width: 104px;
+        height: 104px;
+        object-fit: cover;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background-color: rgba(255, 255, 255, 0.06);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+        transform: translateY(-50%);
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease,
+          box-shadow 0.3s ease,
+          filter 0.3s ease;
+        filter: saturate(0.92);
+      }
+
+      .panel.con-imagen:hover .thumb {
+        transform: translateY(-50%) scale(1.07) rotate(-2deg);
+        border-color: rgba(116, 230, 255, 0.6);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
+        filter: saturate(1.18);
+      }
+
+      .panel.con-imagen:active .thumb {
+        transform: translateY(-50%) scale(1.02);
+      }
+
+      /* ===== Pie ===== */
       .foot {
-        margin-top: 22px;
-        color: #819ca7;
+        margin-top: 26px;
+        color: #7d97a3;
         font-size: 12px;
+        line-height: 1.6;
+        text-align: center;
+        animation: aparecer 0.9s var(--d, 0s) ease both;
       }
-      @media (max-width: 650px) {
-        .wrap {
-          margin: 25px auto;
+
+      /* ===== Nieve de Navidad ===== */
+      #nieve {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .copo {
+        position: absolute;
+        top: -24px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #cfe4ff);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        animation: caerNieve linear infinite;
+      }
+
+      /* ===== Responsive ===== */
+      @media (max-width: 760px) {
+        .page {
+          padding: 24px 0 48px;
         }
+
         .top {
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
           flex-direction: column;
         }
+
         .hero {
-          padding: 28px;
+          padding: 30px 26px;
         }
+
         .info {
           grid-template-columns: 1fr;
         }
-        .panel-img {
-          width: 56px;
-          height: 56px;
+
+        .panel {
+          padding: 20px 52px 20px 20px;
+        }
+
+        .panel .arrow {
+          right: 20px;
+        }
+
+        .panel.con-imagen {
+          padding: 20px 118px 20px 22px;
+          min-height: 124px;
+        }
+
+        .panel.con-imagen strong {
+          font-size: 18px;
+        }
+
+        .panel.con-imagen .thumb {
+          width: 80px;
+          height: 80px;
+          right: 16px;
+          border-radius: 16px;
+        }
+
+        .panel.con-imagen .arrow {
+          right: 104px;
+          font-size: 18px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
         }
       }
     </style>
   </head>
   <body>
-    <main class="wrap">
-      <div class="top">
-        <strong>「ME:RP」Medellín RP︱ER:LC</strong
-        ><a href="/cerrar-sesion">Cerrar sesión</a>
-      </div>
-      <section class="hero">
+    <main class="page">
+      <!-- Cabecera -->
+      <header class="top" style="--d: 0s">
+        <div class="brand">
+          <span class="logo">
+            <img
+              src="https://images-ext-1.discordapp.net/external/qJk_1yjcJFmAOc-2vevd1tODrWfNJ33iJQEv_N1Z3-Q/%3Fsize%3D512/https/cdn.discordapp.com/icons/1500206705055760406/9c275220f290867d374af759909de15a.png?format=webp&quality=lossless"
+              alt="Logo de Medellín RP"
+            />
+          </span>
+          <span>
+            <strong>「ME:RP」Medellín RP︱ER:LC</strong>
+            <small>Portal ciudadano</small>
+          </span>
+        </div>
+        <a class="logout" href="/cerrar-sesion">Cerrar sesión</a>
+      </header>
+
+      <!-- Hero -->
+      <section class="hero" style="--d: 0.1s">
         <div class="eyebrow">Portal ciudadano</div>
         <h1 id="saludo">Bienvenido</h1>
+        <div class="navidad-badge">
+          ❄️ ¡Feliz Navidad, Medellín RP! Nevando en la ciudad 🎄
+        </div>
         <p>
           Gestiona tu identidad y consulta la información oficial de tu
           personaje dentro de Medellín RP.
         </p>
       </section>
+
+      <!-- Información -->
       <section class="info">
-        <article>
+        <article class="card" style="--d: 0.2s">
           <div class="label">Ciudadano</div>
           <span id="nombre" class="value">—</span>
         </article>
-        <article>
+        <article class="card" style="--d: 0.3s">
           <div class="label">NUIP</div>
           <span id="nuip" class="value">—</span>
         </article>
-        <article>
+        <article class="card" style="--d: 0.4s">
           <div class="label">Estado</div>
-          <span class="value">Activo</span>
+          <span class="value estado">Activo</span>
         </article>
       </section>
 
-      <a class="panel with-img" href="/ciudadano.html">
-        <div>
+      <!-- Paneles -->
+      <nav class="panels">
+        <a class="panel con-imagen" href="/ciudadano.html" style="--d: 0.45s">
           <strong>Panel ciudadano</strong>
-          <span>Consulta tu cédula, expediente, Nequi y antecedentes.</span>
-        </div>
-        <img class="panel-img" src="/photos/civil.png" alt="Panel ciudadano" />
-      </a>
+          <span class="desc">Consulta tu cédula, expediente, Nequi y antecedentes.</span>
+          <i class="arrow" aria-hidden="true">→</i>
+          <img
+            class="thumb"
+            src="/photos/civil.png"
+            alt=""
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fiscaliageneralrpg-cell/web-fiscalia/main/photos/civil.png'"
+          />
+        </a>
 
-      <a class="panel with-img" href="/encuestas-activas.html">
-        <div>
+        <a class="panel con-imagen" href="/encuestas-activas.html" style="--d: 0.5s">
           <strong>Encuestas activas</strong>
-          <span
-            >Responde las evaluaciones vigentes de Policía, COPES, Ejército y
-            Fiscalía.</span
-          >
-        </div>
-        <img
-          class="panel-img"
-          src="/photos/encuesta.png"
-          alt="Encuestas activas"
-        />
-      </a>
+          <span class="desc">Responde las evaluaciones vigentes de Policía, COPES, Ejército y Fiscalía.</span>
+          <i class="arrow" aria-hidden="true">→</i>
+          <img
+            class="thumb"
+            src="/photos/encuesta.png"
+            alt=""
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fiscaliageneralrpg-cell/web-fiscalia/main/photos/encuesta.png'"
+          />
+        </a>
 
-      <a id="panel-fundacion" class="panel foundation" href="/fundacion.html"
-        ><strong>✦ Panel Fundación</strong
-        ><span
-          >Administra tienda, dinero, sanciones y notas del servidor.</span
-        ></a
-      >
-      <a
-        id="panel-staff"
-        class="panel foundation"
-        href="/staff.html"
-        style="display: none"
-        ><strong>✦ Panel Staff</strong
-        ><span>Gestiona dinero, notas y sanciones de los ciudadanos.</span></a
-      >
-      <a
-        id="panel-policial"
-        class="panel"
-        href="/policial.html"
-        style="display: none"
-        ><strong>▣ PDA Policial</strong
-        ><span
-          >Consulta cédulas, antecedentes, arrestos y multas del servidor.</span
-        ></a
-      >
-      <div class="foot">
+        <a
+          id="panel-fundacion"
+          class="panel foundation"
+          href="/fundacion.html"
+          style="--d: 0.55s"
+        >
+          <strong>✦ Panel Fundación</strong>
+          <span class="desc">Administra tienda, dinero, sanciones y notas del servidor.</span>
+          <i class="arrow" aria-hidden="true">→</i>
+        </a>
+
+        <a
+          id="panel-staff"
+          class="panel foundation"
+          href="/staff.html"
+          style="display: none; --d: 0.6s"
+        >
+          <strong>✦ Panel Staff</strong>
+          <span class="desc">Gestiona dinero, notas y sanciones de los ciudadanos.</span>
+          <i class="arrow" aria-hidden="true">→</i>
+        </a>
+
+        <a
+          id="panel-policial"
+          class="panel policial"
+          href="/policial.html"
+          style="display: none; --d: 0.65s"
+        >
+          <strong>▣ PDA Policial</strong>
+          <span class="desc">Consulta cédulas, antecedentes, arrestos y multas del servidor.</span>
+          <i class="arrow" aria-hidden="true">→</i>
+        </a>
+      </nav>
+
+      <div class="foot" style="--d: 0.7s">
         Sistema digital de Medellín RP · Información protegida para usuarios
         autenticados.
       </div>
     </main>
+
+    <div id="nieve" aria-hidden="true"></div>
+
     <script>
+      /* ===== Nieve de Navidad (igual que iniciar-sesion) ===== */
+      (function () {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const contenedor = document.getElementById("nieve");
+        const esMovil = window.innerWidth < 760;
+        const total = esMovil ? 26 : 60;
+        for (let i = 0; i < total; i++) {
+          const copo = document.createElement("span");
+          copo.className = "copo";
+          const tamano = 3 + Math.random() * 7;
+          copo.style.width = tamano + "px";
+          copo.style.height = tamano + "px";
+          copo.style.left = Math.random() * 100 + "%";
+          copo.style.opacity = 0.35 + Math.random() * 0.6;
+          copo.style.setProperty("--der", (Math.random() * 120 - 60) + "px");
+          copo.style.animationDuration = 9 + Math.random() * 14 + "s";
+          copo.style.animationDelay = -Math.random() * 20 + "s";
+          contenedor.appendChild(copo);
+        }
+      })();
+
+      /* ===== Datos del usuario ===== */
       (async () => {
         try {
           const r = await fetch("/api/usuario", { cache: "no-store" });
