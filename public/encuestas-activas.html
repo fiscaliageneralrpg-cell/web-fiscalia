@@ -5,43 +5,65 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Encuestas activas | Medellín RP</title>
     <style>
-      :root { --ink:#f3f6fb; --blue:#42d8d0; --yellow:#ffd166; --muted:#9eafbd; --line:#ffffff1c; --green:#79e2aa; }
+      :root { --bg:#0a0a0a; --panel:rgba(20,20,20,.72); --shadow:0 30px 100px rgba(0,0,0,.6); --ink:#ffffff; --blue:#74e6ff; --yellow:#ffd166; --muted:#a1a1a1; --line:rgba(255,255,255,.10); --green:#79e2aa; }
       * { box-sizing:border-box; }
-      body { margin:0; min-height:100vh; color:var(--ink); background:linear-gradient(145deg,#06141f,#0a3140); font-family:Inter,system-ui,sans-serif; }
-      .wrap { width:min(1080px,calc(100% - 28px)); margin:28px auto 60px; }
-      .top { display:flex; justify-content:space-between; gap:15px; align-items:center; } a { color:#9ec9cc; text-decoration:none; font-weight:800; }
-      .header { margin-top:18px; padding:28px 30px; border-radius:20px; color:#fff; background:linear-gradient(120deg,#0c7180,#102b42); box-shadow:0 18px 40px #0006; }
+      body { margin:0; min-height:100vh; color:var(--ink); background:var(--bg); font-family:"Inter",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      /* Fondo animado sutil en blanco y negro (igual que iniciar sesión) */
+      body::before { content:""; position:fixed; inset:0; z-index:-2; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.06), transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,.04), transparent 40%); background-size:200% 200%; animation:fondoMover 20s ease infinite; }
+      @keyframes fondoMover { 0%,100% { background-position:0% 0%; } 50% { background-position:100% 100%; } }
+      @keyframes aparecer { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+      .wrap { width:min(1080px,calc(100% - 28px)); margin:28px auto 60px; animation:aparecer .8s ease both; }
+      .top { display:flex; justify-content:space-between; gap:15px; align-items:center; } a { color:#d4d4d4; text-decoration:none; font-weight:800; transition:color .2s ease; } a:hover { color:#fff; }
+      .header { position:relative; overflow:hidden; margin-top:18px; padding:28px 30px; border:1px solid var(--line); border-radius:24px; color:#fff; background:var(--panel); box-shadow:var(--shadow); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); animation:aparecer .9s .1s ease both; }
+      /* Brillo blanco sutil dentro de la cabecera (estilo iniciar sesión) */
+      .header::before { content:""; position:absolute; inset:0; background:radial-gradient(680px 240px at 12% 0%, rgba(255,255,255,.08), transparent 70%); pointer-events:none; }
+      .header > * { position:relative; z-index:1; }
       .header small { color:var(--blue); font-weight:900; letter-spacing:.15em; text-transform:uppercase; }
-      .header h1 { margin:8px 0; font-size:clamp(32px,6vw,58px); letter-spacing:-.065em; } .header p { margin:0; color:#dcecff; }
+      .header h1 { margin:8px 0; font-size:clamp(32px,6vw,58px); letter-spacing:-.065em; } .header p { margin:0; color:#b3b3b3; }
       .filters { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
-      .filter { padding:10px 14px; border:1px solid var(--line); border-radius:8px; color:#cbd8e3; background:#ffffff0a; font-weight:850; cursor:pointer; }
+      .filter { padding:10px 14px; border:1px solid var(--line); border-radius:8px; color:#cbd8e3; background:rgba(255,255,255,.05); font-weight:850; cursor:pointer; transition:all .25s ease; }
+      .filter:hover { border-color:rgba(255,255,255,.35); background:rgba(255,255,255,.10); }
       .filter.active { border-color:var(--yellow); color:#06141f; background:var(--yellow); }
       .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
-      .card { display:grid; gap:12px; padding:20px; border:1px solid var(--line); border-radius:15px; background:#ffffff0a; box-shadow:0 10px 25px #0003; }
+      .card { display:grid; gap:12px; padding:20px; border:1px solid var(--line); border-radius:16px; background:var(--panel); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:0 12px 34px rgba(0,0,0,.5); animation:aparecer .5s ease both; }
       .head { display:flex; justify-content:space-between; gap:10px; align-items:start; } h2 { margin:0; font-size:20px; } p { margin:0; color:var(--muted); line-height:1.55; }
       .pill { display:inline-block; white-space:nowrap; padding:5px 9px; border-radius:999px; color:#06141f; background:var(--blue); font-size:11px; font-weight:900; }
       .meta { padding-top:10px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
       .btn { display:block; padding:12px 14px; border-radius:9px; color:#06141f; background:var(--yellow); text-align:center; font-weight:900; }
       .btn.done { color:#06141f; background:var(--green); pointer-events:none; }
-      .empty { grid-column:1/-1; padding:35px; border:1px dashed #42d8d055; border-radius:14px; color:var(--muted); text-align:center; }
+      .empty { grid-column:1/-1; padding:35px; border:1px dashed rgba(116,230,255,.35); border-radius:14px; color:var(--muted); text-align:center; }
       .status { margin-top:12px; color:var(--muted); }
-      .modal { display:none; position:fixed; inset:0; z-index:20; place-items:center; padding:18px; background:#0009; }
+      .modal { display:none; position:fixed; inset:0; z-index:20; place-items:center; padding:18px; background:rgba(0,0,0,.82); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
       .modal.open { display:grid; }
-      .modal-card { width:min(760px,100%); max-height:90vh; overflow:auto; padding:24px; border:1px solid #42d8d066; border-radius:18px; background:#0a2736; box-shadow:0 24px 70px #000b; }
+      .modal-card { width:min(760px,100%); max-height:90vh; overflow:auto; padding:24px; border:1px solid var(--line); border-radius:20px; background:rgba(15,15,15,.95); box-shadow:0 24px 70px rgba(0,0,0,.85); animation:aparecer .3s ease both; }
       .modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:15px; }
       .modal-head h2 { color:var(--blue); }
-      .question { display:grid; gap:8px; margin:15px 0; padding:15px; border:1px solid var(--line); border-radius:12px; background:#ffffff08; }
-      .question textarea, .question select { width:100%; padding:11px; border:1px solid #ffffff2b; border-radius:8px; color:var(--ink); background:#06141f; font:inherit; }
-      .question label { display:flex; gap:8px; align-items:center; padding:6px 0; color:#dcecff; }
+      .question { display:grid; gap:8px; margin:15px 0; padding:15px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.04); }
+      .question textarea, .question select { width:100%; padding:11px; border:1px solid rgba(255,255,255,.18); border-radius:8px; color:var(--ink); background:#0a0a0a; font:inherit; transition:border-color .2s ease; }
+      .question textarea:focus, .question select:focus { border-color:rgba(116,230,255,.6); outline:none; }
+      .question label { display:flex; gap:8px; align-items:center; padding:6px 0; color:#e5e5e5; cursor:pointer; }
       .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
       .btn.cancel { color:#fff; background:#ffffff20; }
+
+      /* ===== Nieve de Navidad (misma que el dashboard) ===== */
+      @keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      @keyframes caerNieve {
+        0% { transform: translate3d(0, -6vh, 0) rotate(0deg); }
+        100% { transform: translate3d(var(--der, 0px), 108vh, 0) rotate(360deg); }
+      }
+      #nieve { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+      .copo { position: absolute; top: -24px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, #cfe4ff); box-shadow: 0 0 8px rgba(255,255,255,.8); animation: caerNieve linear infinite; }
+
+      /* ===== Insignia navideña ===== */
+      .navidad-badge { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 16px; padding: 9px 18px; border: 1px solid rgba(116,230,255,.35); border-radius: 999px; background: rgba(76,164,255,.12); color: var(--blue); font-size: 13px; font-weight: 800; letter-spacing: .03em; animation: flotar 4.5s ease-in-out infinite; }
+
       @media(max-width:720px){ .grid { grid-template-columns:1fr; } .top,.head { align-items:flex-start; flex-direction:column; } }
     </style>
   </head>
   <body>
     <main class="wrap">
       <div class="top"><strong>「ME:RP」Medellín RP︱ER:LC</strong><a href="/dashboard-user.html">← Dashboard</a></div>
-      <header class="header"><small>Registro ciudadano digital</small><h1>Encuestas activas</h1><p>Responde las evaluaciones vigentes de las fuerzas de Medellín RP. Solo se admite un envío por usuario.</p></header>
+      <header class="header"><small>Registro ciudadano digital</small><h1>Encuestas activas</h1><div class="navidad-badge">❄️ ¡Feliz Navidad, Medellín RP! Nevando en la ciudad 🎄</div><p>Responde las evaluaciones vigentes de las fuerzas de Medellín RP. Solo se admite un envío por usuario.</p></header>
       <nav id="filters" class="filters" aria-label="Filtrar por fuerza"><button class="filter active" data-force="todas">Todas</button><button class="filter" data-force="policia_nacional">Policía Nacional</button><button class="filter" data-force="copes">COPES</button><button class="filter" data-force="ejercito">Ejército</button><button class="filter" data-force="fiscalia">Fiscalía</button></nav>
       <section id="list" class="grid"><div class="empty">Cargando encuestas…</div></section>
       <p id="status" class="status" aria-live="polite"></p>
@@ -49,8 +71,32 @@
     <div id="survey-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="survey-title">
       <div class="modal-card"><div class="modal-head"><h2 id="survey-title">Responder encuesta</h2><button id="close-survey" class="btn cancel" type="button">Cancelar</button></div><p id="survey-description"></p><form id="survey-form"><div id="survey-questions"></div><div class="modal-actions"><button id="cancel-survey" class="btn cancel" type="button">Cancelar</button><button class="btn" type="submit">Enviar respuestas</button></div><p id="survey-status" class="status"></p></form></div>
     </div>
+
+    <div id="nieve" aria-hidden="true"></div>
+
     <script>
       "use strict";
+      /* ===== Nieve de Navidad (igual que el dashboard) ===== */
+      (function () {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const contenedor = document.getElementById("nieve");
+        const esMovil = window.innerWidth < 760;
+        const total = esMovil ? 26 : 60;
+        for (let i = 0; i < total; i++) {
+          const copo = document.createElement("span");
+          copo.className = "copo";
+          const tamano = 3 + Math.random() * 7;
+          copo.style.width = tamano + "px";
+          copo.style.height = tamano + "px";
+          copo.style.left = Math.random() * 100 + "%";
+          copo.style.opacity = 0.35 + Math.random() * 0.6;
+          copo.style.setProperty("--der", (Math.random() * 120 - 60) + "px");
+          copo.style.animationDuration = 9 + Math.random() * 14 + "s";
+          copo.style.animationDelay = -Math.random() * 20 + "s";
+          contenedor.appendChild(copo);
+        }
+      })();
+
       const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
       let encuestas = []; let filtro = "todas";
       async function api(url, options={}) { const r = await fetch(url,{cache:"no-store",...options}); let d={}; try{d=await r.json();}catch{} if(r.status===401){location.href="/index.html";throw new Error("Sesión finalizada.");} if(!r.ok)throw new Error(d.error||"No se pudieron cargar las encuestas."); return d; }
