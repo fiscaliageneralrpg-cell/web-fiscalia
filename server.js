@@ -994,6 +994,56 @@ async function asegurarEsquemaSaldos() {
   return saldosSchemaPromise;
 }
 
+// Historial de movimientos Nequi en MySQL (lo que se ve en la pestaña
+// Movimientos de nequi.html). La tabla la crea el servidor sola, y tambien
+// se puede crear desde HeidiSQL sobre la base s66_medellin (ver SQL del chat).
+let movimientosSchemaPromise;
+
+async function asegurarEsquemaMovimientos() {
+  if (!movimientosSchemaPromise) {
+    movimientosSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS nequi_movimientos (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          discord_id VARCHAR(32) NOT NULL,
+          tipo VARCHAR(20) NOT NULL,
+          monto BIGINT NOT NULL DEFAULT 0,
+          destino_id VARCHAR(32) NULL,
+          destino_nombre VARCHAR(190) NULL,
+          origen VARCHAR(20) NOT NULL DEFAULT 'web',
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_mov_discord (discord_id, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    })().catch((error) => {
+      movimientosSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return movimientosSchemaPromise;
+}
+
+// Guarda un movimiento sin romper la operacion si algo falla en la tabla.
+async function registrarMovimiento(fila) {
+  try {
+    await asegurarEsquemaMovimientos();
+    await pool.execute(
+      `INSERT INTO nequi_movimientos
+         (discord_id, tipo, monto, destino_id, destino_nombre, origen)
+       VALUES (?, ?, ?, ?, ?, 'web')`,
+      [
+        String(fila.discordId || ""),
+        String(fila.tipo || "movimiento"),
+        Number(fila.monto) || 0,
+        fila.destinoId || null,
+        fila.destinoNombre || null,
+      ],
+    );
+  } catch (error) {
+    console.error("[NEQUI MOVIMIENTOS]", error.message);
+  }
+}
+
 // LECTURA DEL SALDO: SOLO MySQL. El bot escribe aqui cada 1 segundo lo que
 // lee de data/saldo.json, asi que la web ya no depende de la API del bot
 // (el "Not Found" que devolvia NEQUI_API_URL ya no puede aparecer aqui).
@@ -1065,12 +1115,84 @@ app.post("/api/nequi/operacion", async (req, res) => {
     const datos = await respuesta
       .json()
       .catch(() => ({ error: `El bot respondio ${respuesta.status} sin JSON valido.` }));
+
+    // Operacion exitosa: queda registrada en nequi_movimientos para que la
+    // pestana Movimientos de nequi.html muestre el historial de cada quien.
+    if (respuesta.ok && datos && datos.correcto) {
+      const tipo = String(req.body?.tipo || "");
+      const monto = Number(req.body?.monto) || 0;
+      const destinoId = req.body?.destinoId ? String(req.body.destinoId) : "";
+      const destinoNombre = req.body?.destinoNombre
+        ? String(req.body.destinoNombre).slice(0, 190)
+        : null;
+      await registrarMovimiento({
+        discordId,
+        tipo,
+        monto,
+        destinoId: destinoId || null,
+        destinoNombre,
+      });
+      // El que recibe la transferencia tambien la ve en SU lista.
+      if (tipo === "transferir" && destinoId) {
+        await registrarMovimiento({
+          discordId: destinoId,
+          tipo: "recibido",
+          monto,
+          destinoId: discordId,
+          destinoNombre:
+            req.session.usuario.nombre ||
+            req.session.usuario.username ||
+            null,
+        });
+      }
+    }
+
     return res.status(respuesta.status).json(datos);
   } catch (error) {
     console.error("[API NEQUI OPERACION]", error.message);
     return res.status(502).json({
       codigo: "NEQUI_API_INACCESIBLE",
       error: "No se pudo contactar la API del bot para completar la operacion.",
+    });
+  }
+});
+
+// HISTORIAL DE MOVIMIENTOS del usuario con sesion iniciada (los de SU cuenta
+// unicamente, ordenados del mas reciente al mas antiguo).
+app.get("/api/nequi/movimientos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await asegurarEsquemaMovimientos();
+    const limite = Math.min(Math.max(Number(req.query.limite) || 200, 1), 500);
+    const [filas] = await pool.execute(
+      `SELECT id, tipo, monto, destino_id, destino_nombre, origen, creado_en
+         FROM nequi_movimientos
+        WHERE discord_id = ?
+        ORDER BY id DESC
+        LIMIT ${limite}`,
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      origen: "mysql-nequi_movimientos",
+      movimientos: filas.map((fila) => ({
+        id: Number(fila.id),
+        tipo: fila.tipo,
+        monto: Number(fila.monto) || 0,
+        destinoId: fila.destino_id || null,
+        destinoNombre: fila.destino_nombre || null,
+        origen: fila.origen || "web",
+        creadoEn: fila.creado_en
+          ? new Date(fila.creado_en).toISOString()
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("[API NEQUI MOVIMIENTOS]", error.message);
+    return res.status(500).json({
+      codigo: "MOVIMIENTOS_NO_DISPONIBLES",
+      error: "No se pudo leer el historial de movimientos desde MySQL.",
     });
   }
 });
