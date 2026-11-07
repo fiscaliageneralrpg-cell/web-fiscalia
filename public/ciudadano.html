@@ -935,212 +935,6 @@
         animation: caerNieve linear infinite;
       }
 
-      /* ===== Decoración navideña ===== */
-      @keyframes balancear {
-        0%, 100% { transform: rotate(-8deg); }
-        50% { transform: rotate(8deg); }
-      }
-
-      @keyframes latirLuz {
-        0%, 100% { filter: brightness(1); }
-        50% { filter: brightness(1.7); }
-      }
-
-      @keyframes girarSuave {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-
-      /* Guirnalda de luces */
-      .guirnalda {
-        position: relative;
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        height: 32px;
-        margin-top: 20px;
-        animation: aparecer 0.8s var(--d, 0s) ease both;
-      }
-
-      .guirnalda::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 3%;
-        right: 3%;
-        height: 2px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.5) 12%,
-          rgba(116, 230, 255, 0.65) 50%,
-          rgba(255, 255, 255, 0.5) 88%,
-          transparent
-        );
-      }
-
-      .bombilla {
-        position: relative;
-        width: 12px;
-        height: 16px;
-        margin-top: 7px;
-        border-radius: 50% 50% 55% 55%;
-        background: var(--c);
-        box-shadow:
-          0 0 16px var(--c),
-          inset -3px -4px 8px rgba(0, 0, 0, 0.35);
-        transform-origin: 50% -2px;
-        animation:
-          balancear 3s ease-in-out infinite,
-          latirLuz 1.8s ease-in-out infinite;
-        animation-delay: var(--dl, 0s);
-      }
-
-      .bombilla::before {
-        content: "";
-        position: absolute;
-        top: -6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 6px;
-        height: 7px;
-        border-radius: 2px;
-        background: #d9b24a;
-      }
-
-      /* Tira de caramelo (bordes superiores) */
-      .paper::before,
-      .metric.gold::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        z-index: 1;
-        background: repeating-linear-gradient(
-          45deg,
-          #ff6b6b 0 9px,
-          #ffffff 9px 18px,
-          #6ee7a8 18px 27px,
-          #ffffff 27px 36px
-        );
-        opacity: 0.85;
-      }
-
-      /* Capa de nieve sobre la cabecera */
-      .nieve-tapa {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 24px;
-        z-index: 1;
-        pointer-events: none;
-        background:
-          radial-gradient(circle at 16px 26px, #eef8ff 12px, transparent 13px) 0 -10px / 32px 32px repeat-x,
-          linear-gradient(#eef8ff, #eef8ff) 0 0 / 100% 8px no-repeat;
-        opacity: 0.92;
-        filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
-      }
-
-      /* Adornos colgantes */
-      .adornos {
-        position: absolute;
-        top: 0;
-        right: 36px;
-        z-index: 2;
-        display: flex;
-        gap: 18px;
-        pointer-events: none;
-      }
-
-      .adornos i {
-        position: relative;
-        display: block;
-        width: 15px;
-        height: 19px;
-        margin-top: 30px;
-        border-radius: 50% 50% 55% 55%;
-        background: var(--c);
-        box-shadow:
-          0 0 18px var(--c),
-          inset -3px -5px 9px rgba(0, 0, 0, 0.4);
-        transform-origin: 50% -30px;
-        animation: balancear 3.6s ease-in-out infinite;
-        animation-delay: var(--dl, 0s);
-      }
-
-      .adornos i::before {
-        content: "";
-        position: absolute;
-        top: -30px;
-        left: 50%;
-        width: 1px;
-        height: 30px;
-        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.6));
-      }
-
-      .adornos i::after {
-        content: "";
-        position: absolute;
-        top: -34px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 7px;
-        height: 6px;
-        border: 1px solid #ffd166;
-        border-radius: 2px;
-        background: #c9a227;
-      }
-
-      /* Insignia navideña */
-      .navidad-badge {
-        position: relative;
-        z-index: 1;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin: 4px 0 14px;
-        padding: 9px 18px;
-        border: 1px solid rgba(116, 230, 255, 0.35);
-        border-radius: 999px;
-        background: rgba(76, 164, 255, 0.12);
-        color: var(--cyan);
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 0.03em;
-        animation: flotar 4.5s ease-in-out infinite;
-      }
-
-      /* Copo gigante girando en la cabecera */
-      .copo-gigante {
-        position: absolute;
-        left: -70px;
-        bottom: -80px;
-        z-index: 0;
-        color: rgba(255, 255, 255, 0.06);
-        font-size: 260px;
-        line-height: 1;
-        pointer-events: none;
-        animation: girarSuave 60s linear infinite;
-      }
-
-      /* Suelo nevado */
-      .suelo-nieve {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 70px;
-        z-index: -1;
-        pointer-events: none;
-        background:
-          radial-gradient(ellipse 60% 100% at 18% 100%, rgba(255, 255, 255, 0.16), transparent 70%),
-          radial-gradient(ellipse 55% 100% at 62% 100%, rgba(214, 240, 255, 0.13), transparent 70%),
-          radial-gradient(ellipse 50% 100% at 95% 100%, rgba(255, 255, 255, 0.1), transparent 70%);
-      }
-
       /* ===== Responsive ===== */
       @media (max-width: 780px) {
         .wrap {
@@ -1210,38 +1004,10 @@
         <a href="/dashboard-user.html">← Dashboard</a>
       </div>
 
-      <!-- Guirnalda de luces navideñas -->
-      <div class="guirnalda" style="--d: 0.08s" aria-hidden="true">
-        <i class="bombilla" style="--c: #ff6b6b; --dl: 0s"></i>
-        <i class="bombilla" style="--c: #6ee7a8; --dl: -0.35s"></i>
-        <i class="bombilla" style="--c: #74e6ff; --dl: -0.7s"></i>
-        <i class="bombilla" style="--c: #ffd166; --dl: -1.05s"></i>
-        <i class="bombilla" style="--c: #ff6b6b; --dl: -1.4s"></i>
-        <i class="bombilla" style="--c: #6ee7a8; --dl: -1.75s"></i>
-        <i class="bombilla" style="--c: #74e6ff; --dl: -2.1s"></i>
-        <i class="bombilla" style="--c: #ffd166; --dl: -2.45s"></i>
-        <i class="bombilla" style="--c: #ff6b6b; --dl: -2.8s"></i>
-        <i class="bombilla" style="--c: #6ee7a8; --dl: -0.5s"></i>
-        <i class="bombilla" style="--c: #74e6ff; --dl: -1.2s"></i>
-        <i class="bombilla" style="--c: #ffd166; --dl: -1.9s"></i>
-        <i class="bombilla" style="--c: #ff6b6b; --dl: -2.6s"></i>
-        <i class="bombilla" style="--c: #6ee7a8; --dl: -0.9s"></i>
-      </div>
-
       <header class="header" style="--d: 0.14s">
-        <span class="copo-gigante" aria-hidden="true">❄</span>
-        <span class="nieve-tapa" aria-hidden="true"></span>
-        <span class="adornos" aria-hidden="true">
-          <i style="--c: #ff6b6b; --dl: -0.4s"></i>
-          <i style="--c: #6ee7a8; --dl: -1.3s"></i>
-          <i style="--c: #ffd166; --dl: -2.2s"></i>
-        </span>
         <div class="header-txt">
           <div class="kicker">Registro ciudadano digital</div>
           <h1>Panel ciudadano</h1>
-          <div class="navidad-badge">
-            ❄️ ¡Feliz Navidad, Medellín RP! Nevando en la ciudad 🎄
-          </div>
           <p id="nombre-header">
             Información personal y expediente de tu personaje.
           </p>
@@ -1406,7 +1172,6 @@
       </div>
     </main>
 
-    <div class="suelo-nieve" aria-hidden="true"></div>
     <div id="nieve" aria-hidden="true"></div>
 
     <script>
@@ -1425,7 +1190,7 @@
           copo.style.width = tamano + "px";
           copo.style.height = tamano + "px";
           copo.style.left = Math.random() * 100 + "%";
-          copo.style.opacity = 0.35 + Math.random() * 0.6;
+          copo.style.opacity = 0.38 + Math.random() * 0.42;
           copo.style.setProperty("--der", (Math.random() * 120 - 60) + "px");
           copo.style.animationDuration = 9 + Math.random() * 14 + "s";
           copo.style.animationDelay = -Math.random() * 20 + "s";
@@ -1860,7 +1625,7 @@
             await respuestaComportamiento.value.json();
           estadoExpediente.notas = datosComportamiento.notas || [];
           estadoExpediente.sanciones = datosComportamiento.sanciones || [];
-          if (estadoExpediente.vista === "comportamiento")
+          if (estadoExpediente.vista === "comportamiento")s
             pintarComportamiento();
         }
         document.querySelector("#estado-carga").textContent =
