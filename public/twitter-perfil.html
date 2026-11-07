@@ -1,6 +1,219 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perfil Twitter · Medellín RP</title><style>:root{--bg:#071722;--panel:#0d2939ee;--cyan:#42d8d0;--muted:#9db5c0;--line:#ffffff18;--red:#ef7777}*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100vh;color:#eff8f5;background:radial-gradient(circle at 8% 0,#15505a66,transparent 35%),linear-gradient(145deg,#06141f,#071d2c 60%,#101d3b);font-family:Inter,system-ui,sans-serif}.page{width:min(850px,calc(100% - 28px));margin:auto;padding:25px 0 60px;animation:enter .35s ease}.top{display:flex;justify-content:space-between;gap:14px;margin-bottom:18px;color:#c5e5e3;font-size:13px}.top a,.back{color:var(--cyan);font-weight:800;text-decoration:none}.back{display:inline-block;margin-bottom:15px;padding:10px 13px;border:1px solid #42d8d055;border-radius:10px;background:#42d8d012;font-size:12px}.profile,.post{border:1px solid var(--line);background:var(--panel);box-shadow:0 22px 60px #0004}.profile{padding:24px;border-radius:22px;background:linear-gradient(135deg,#0d5058,#273b78);}.profile-row{display:flex;align-items:center;gap:16px}.avatar{width:78px;height:78px;border:3px solid #42d8d0aa;border-radius:50%;object-fit:cover}.profile h1{margin:0 0 5px;font-size:29px}.profile p{margin:0;color:#c6dce0;font-size:13px}.profile-stats{display:flex;flex-wrap:wrap;gap:14px 24px;margin-top:16px;color:#d8eeec;font-size:13px}.profile-stats b{color:var(--cyan)}.profile-stats span{min-width:140px;padding:10px 17px;text-align:center;border:1px solid #42d8d044;border-radius:999px;background:#42d8d00b}.verified-icon{width:18px;height:18px;vertical-align:middle}.follow-btn{margin-top:15px;padding:10px 15px;border:1px solid #42d8d077;border-radius:10px;color:#06141f;background:var(--cyan);font-weight:900;cursor:pointer}.follow-btn.following{color:#dff9f4;background:#ffffff16}.follow-lists{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}.follow-list{padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}.follow-list b{display:block;margin-bottom:7px;color:#c5e5e3}.follow-list div{margin:4px 0}@media(max-width:600px){.follow-lists{grid-template-columns:1fr}}.posts{margin-top:16px;border-radius:22px;overflow:hidden}.post{position:relative;padding:20px;border-bottom:1px solid var(--line);animation:rise .3s ease}.author{display:flex;align-items:center;gap:10px}.author img{width:44px;height:44px}.author b{display:block}.author small,.desc,.empty{color:var(--muted);font-size:12px}.title{margin:14px 0 6px;font-size:18px}.desc{color:#c5d6db;line-height:1.55;font-size:14px;white-space:pre-wrap}.photo{display:block;max-width:100%;max-height:450px;margin-top:14px;border-radius:13px;border:1px solid var(--line)}.actions{display:flex;gap:8px;margin-top:13px;color:#a9c1c8;font-size:12px;font-weight:800}.actions button{padding:8px 10px;border:1px solid transparent;border-radius:9px;color:#a9c1c8;background:transparent;font-weight:800;cursor:pointer}.actions button:hover,.actions button.liked{border-color:#ef777766;color:#ffadad;background:#ef777712}.avatar-link{padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer}.avatar-link:hover img{border-color:var(--cyan)}.post{cursor:pointer}.modal{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:18px;background:#02080dcc;backdrop-filter:blur(8px)}.modal-card{width:min(680px,100%);max-height:90vh;overflow:auto;padding:22px;border:1px solid #42d8d077;border-radius:20px;background:#0d2939;box-shadow:0 30px 100px #0009}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.close{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;color:white;background:transparent;font-size:20px;cursor:pointer}.comment-list{margin-top:15px;padding-top:10px;border-top:1px solid var(--line)}.comment{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;color:#c5d6db}.comment img{width:32px;height:32px;border-radius:50%;object-fit:cover}.comment b{color:var(--cyan)}.comment .comment-body{flex:1}.comment-menu{float:right;border:0;color:#ffadad;background:transparent;cursor:pointer}.comment-form{display:flex;gap:8px;margin-top:13px}.comment-form input{flex:1;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;color:white;background:#061923}.comment-form button{padding:10px 13px;border:0;border-radius:9px;color:#06141f;background:var(--cyan);font-weight:900}.pager{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:13px 0}.pager button{padding:8px;border:1px solid #42d8d055;border-radius:8px;color:#eff8f5;background:#42d8d012;font-weight:800;cursor:pointer}.pager button:disabled{opacity:.4}.comment-profile{cursor:pointer}.menu{position:absolute;right:15px;top:15px}.dots{width:34px;height:34px;border:1px solid transparent;border-radius:50%;color:#c4d9dc;background:transparent;font-size:20px;cursor:pointer}.dots:hover{border-color:#42d8d055;color:var(--cyan)}.menu-list{position:absolute;right:0;top:38px;z-index:2;min-width:160px;padding:6px;border:1px solid #42d8d066;border-radius:12px;background:#0c2838}.menu-list button{width:100%;padding:10px;border:0;border-radius:8px;color:#ffadad;background:transparent;text-align:left;font-weight:800;cursor:pointer}.empty,.loading{padding:65px 20px;text-align:center}.toast{position:fixed;right:18px;bottom:18px;padding:12px 15px;border:1px solid #42d8d077;border-radius:12px;background:#0c3545}@keyframes enter{from{opacity:0;transform:translateX(25px)}to{opacity:1;transform:translateX(0)}}@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:600px){.top{flex-direction:column}.profile-row{align-items:flex-start;flex-direction:column}}
-</style></head><body><main class="page"><div class="top"><strong>「ME:RP」 Medellín RP · Perfil Twitter</strong><a href="/twitter.html">← Inicio Twitter</a></div><a class="back" href="/twitter.html">← Volver a Twitter</a><section id="profile" class="profile"><div class="loading">Cargando perfil...</div></section><section id="posts" class="posts"><div class="loading">Cargando publicaciones...</div></section></main><div id="post-modal" class="modal" hidden><div class="modal-card"><div class="modal-head"><h2>Publicación</h2><button class="close" id="post-close">×</button></div><div id="post-detail"></div></div></div><div id="toast" class="toast" hidden></div><script>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Perfil Twitter · Medellín RP</title>
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
+<style>
+/* Tema Medellín RP (igual al login) — sirve para twitter.html, twitter-perfil.html y twitter-buscar.html */
+:root{
+  --bg:#0a0a0a;--panel:rgba(20,20,20,.72);--panel2:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.18);
+  --text:#fff;--muted:#a1a1a1;--accent:#d4d4d4;--cyan:#74e6ff;--gold:#fff;
+  --danger:#ef7777;--red:#ef7777;--ink:#fff;--shadow:0 30px 100px rgba(0,0,0,.6)
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--text);background:var(--bg);font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.06),transparent 40%),radial-gradient(circle at 80% 80%,rgba(255,255,255,.04),transparent 40%);background-size:200% 200%;animation:fondoMover 20s ease infinite}
+a{color:inherit}
+@keyframes fondoMover{0%,100%{background-position:0 0}50%{background-position:100% 100%}}
+@keyframes appear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes searchIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+/* ===== Layout ===== */
+.page{width:min(1420px,calc(100% - 32px));margin:0 auto;padding:22px 0 60px;animation:enter .8s ease both}
+.page:has(>.top){width:min(900px,calc(100% - 28px))}
+.topbar,.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0 20px;color:var(--muted);font-size:13px}
+.top{margin-bottom:0}
+.topbar a,.top a{color:var(--muted);text-decoration:none;font-weight:700;transition:color .2s}
+.topbar a:hover,.top a:hover{color:#fff}
+.brand,.top strong{color:#fff;font-weight:900;letter-spacing:-.01em}
+.brand::after,.top strong::after{content:" ❄️"}
+.app{display:grid;grid-template-columns:230px minmax(420px,680px) 280px;gap:18px;align-items:start}
+
+/* ===== Paneles de vidrio ===== */
+.side,.right,.feed,.onboarding,.box,.profile,.posts{
+  border:1px solid var(--line);border-radius:22px;background:var(--panel);
+  box-shadow:0 22px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px)
+}
+.side,.right{padding:18px;position:sticky;top:18px}
+.feed{min-width:0;overflow:hidden}
+.posts{margin-top:16px;overflow:hidden}
+.profile-posts{padding:0}
+
+/* ===== Lateral ===== */
+.profile-mini{display:flex;align-items:center;gap:11px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.profile-mini b{display:block;font-size:14px}
+.profile-mini small{color:var(--muted);font-size:11px}
+.avatar{width:45px;height:45px;border-radius:50%;object-fit:cover;border:2px solid var(--line2);background:#111;transition:transform .18s,border-color .18s}
+.author .avatar,.author img{width:44px;height:44px}
+.profile-row .avatar,.profile .avatar{width:78px;height:78px;border:3px solid rgba(255,255,255,.35)}
+.welcome .avatar{width:68px;height:68px}
+.nav{display:grid;gap:8px;margin-top:18px}
+.nav button{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid transparent;border-radius:14px;color:var(--accent);background:transparent;text-align:left;font:inherit;font-weight:700;cursor:pointer;transition:all .3s ease}
+.nav button:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12);transform:translateX(3px)}
+.nav button.active{border-color:#fff;color:#0a0a0a;background:#fff}
+.side-note{margin-top:24px;color:#777;font-size:11px;line-height:1.5}
+
+/* ===== Cabecera del feed ===== */
+.feed-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,rgba(255,255,255,.08),rgba(0,0,0,.25))}
+.feed-head h1{margin:0;font-size:23px;letter-spacing:-.04em}
+.feed-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.head{position:relative;overflow:hidden;padding:24px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,rgba(0,0,0,.55),rgba(255,255,255,.05))}
+.head::after{content:"✦";position:absolute;right:28px;top:15px;font-size:70px;color:rgba(255,255,255,.07);transform:rotate(18deg)}
+.head h1,h1{margin:0;letter-spacing:-.04em}
+.head h1{font-size:28px}
+.head p{margin:7px 0 0;color:#b3b3b3}
+.query{display:inline-block;margin-top:15px;padding:8px 14px;border:1px solid rgba(116,230,255,.35);border-radius:999px;color:var(--cyan);background:rgba(76,164,255,.12);font-weight:800}
+
+/* ===== Campos ===== */
+input,textarea{width:100%;padding:12px 13px;border:1px solid var(--line2);border-radius:12px;color:#fff;background:rgba(0,0,0,.35);font:inherit;transition:border-color .2s,background .2s}
+input:focus,textarea:focus{outline:none;border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.5);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+input::placeholder,textarea::placeholder{color:#777}
+.search{width:min(260px,42%);border-radius:999px}
+.compose{display:flex;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.compose textarea{flex:1;min-height:48px;max-height:120px;resize:vertical}
+.settings-form,.onboarding form{display:grid;gap:10px}
+.settings-form label,.onboarding label{display:grid;gap:6px;color:var(--accent);font-size:12px;font-weight:700}
+.hint,.file-note{color:var(--muted);font-size:11px;line-height:1.5}
+.comment-form{display:flex;gap:8px;margin-top:12px}
+.comment-form input{flex:1;min-width:0;padding:10px 12px;border-radius:10px}
+
+/* ===== Botones ===== */
+.btn,.comment-form button,.follow-btn{border:1px solid #fff;border-radius:12px;padding:10px 15px;color:#0a0a0a;background:#fff;font-weight:800;cursor:pointer;transition:all .3s ease}
+.btn:hover,.comment-form button:hover,.follow-btn:hover{transform:translateY(-2px);background:#e5e5e5;box-shadow:0 12px 30px rgba(255,255,255,.15)}
+.btn:active{transform:scale(.97)}
+.btn.secondary,.follow-btn.following{color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15)}
+.btn.secondary:hover,.follow-btn.following:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);box-shadow:none}
+.btn.gold{color:#0a0a0a;background:#fff}
+.btn.danger{color:#ffb5b5;background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)}
+.btn:disabled,.pager button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.follow-btn{margin-top:15px}
+.back,.back-search,.back-profile{display:inline-flex;align-items:center;gap:7px;margin:0 0 16px;padding:10px 14px;border:1px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;background:rgba(255,255,255,.05);text-decoration:none;font-weight:700;font-size:12px;transition:all .3s ease}
+.back:hover,.back-search:hover,.back-profile:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.back-profile{margin:18px 20px 0}
+
+/* ===== Publicaciones ===== */
+.post,.result{position:relative;padding:20px;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;animation:appear .3s ease both;transition:transform .2s,background .2s,border-color .2s}
+.post:hover,.result:hover{background:rgba(255,255,255,.04);transform:translateY(-2px)}
+.result:hover{border-left:3px solid #fff}
+.post-top,.author{display:flex;gap:11px;align-items:center;cursor:default}
+.post-top strong,.author b{display:block}
+.post-top small,.author small{color:var(--muted);font-size:11px}
+.post-title,.title{margin:15px 0 6px;font-size:18px}
+.post-description,.desc{margin:0;color:#c9c9c9;white-space:pre-wrap;line-height:1.55;font-size:14px}
+.post-image,.photo{display:block;max-width:100%;width:100%;max-height:430px;margin:15px 0 0;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
+.post-actions,.actions{display:flex;align-items:center;gap:10px;margin-top:15px;cursor:default;color:var(--muted);font-size:12px;font-weight:700}
+.post-actions button,.actions button,.like{padding:8px 12px;border:1px solid var(--line);border-radius:10px;color:var(--accent);background:rgba(255,255,255,.04);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s ease}
+.post-actions button:hover,.actions button:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff}
+.post-actions button.liked,.actions button.liked,.like{border-color:rgba(239,119,119,.5);color:#ff9b9b;background:rgba(239,119,119,.1)}
+.verified-icon{width:18px!important;height:18px!important;vertical-align:middle;border:0!important}
+.avatar-link{display:block;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer}
+.avatar-link:hover .avatar,.avatar-link:hover img{border-color:#fff;transform:scale(1.06)}
+.comment-profile{cursor:pointer}
+
+/* Menús ⋯ */
+.post-menu,.menu,.menu-search{position:absolute;top:16px;right:16px}
+.dots,.dots-search{width:34px;height:34px;border:1px solid transparent;border-radius:50%;color:var(--accent);background:transparent;font-size:20px;cursor:pointer}
+.dots:hover,.dots-search:hover{border-color:var(--line2);color:#fff;background:rgba(255,255,255,.08)}
+.post-menu-list,.menu-list,.menu-search>div{position:absolute;right:0;top:38px;z-index:4;min-width:160px;padding:6px;border:1px solid var(--line2);border-radius:14px;background:rgba(18,18,18,.97);box-shadow:0 15px 38px rgba(0,0,0,.6)}
+.post-menu-list button,.menu-list button,.menu-search [data-delete]{display:block;width:100%;padding:10px;border:0;border-radius:9px;color:#ffadad;background:transparent;text-align:left;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.post-menu-list button:hover,.menu-list button:hover,.menu-search [data-delete]:hover{background:rgba(239,119,119,.12)}
+
+/* ===== Comentarios ===== */
+.comments{margin-top:13px;padding-top:13px;border-top:1px solid var(--line);cursor:default}
+.comment-list{padding:0}
+#comments-embed{margin-top:15px;padding-top:10px;border-top:1px solid var(--line)}
+.comment{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);color:#c9c9c9;font-size:12px}
+.comment img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.comment b{color:#fff}
+.comment-body{flex:1}
+.comment-menu{border:0;padding:5px 10px;border-radius:8px;color:#ffadad;background:transparent;font-size:18px;cursor:pointer}
+.comment-menu:hover{background:rgba(239,119,119,.12)}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0}
+.pager button{padding:8px 12px;border:1px solid var(--line2);border-radius:10px;color:#fff;background:rgba(255,255,255,.06);font-size:11px;font-weight:800;cursor:pointer;transition:background .2s}
+.pager button:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.status{color:var(--muted);font-size:12px}
+
+/* ===== Perfil ===== */
+.profile{padding:24px;background:linear-gradient(135deg,rgba(0,0,0,.55),rgba(255,255,255,.06)),var(--panel)}
+.profile-row{display:flex;align-items:center;gap:16px}
+.profile h1{margin:0 0 5px;font-size:29px}
+.profile p{margin:0;color:#b3b3b3;font-size:13px}
+.profile-view{padding:22px;border-bottom:1px solid var(--line)}
+.profile-cover{padding:22px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(255,255,255,.07))}
+.profile-cover h2{margin:10px 0 6px}
+.profile-cover p{margin:0;color:#b3b3b3;font-size:12px}
+.profile-stats{display:flex;flex-wrap:wrap;gap:14px 24px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--accent);font-size:13px}
+.profile-stats span{min-width:140px;padding:10px 17px;text-align:center;border:1px solid var(--line2);border-radius:999px;background:rgba(255,255,255,.04)}
+.profile-stats b{color:#fff}
+.follow-lists{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.follow-list{padding:12px;border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:12px}
+.follow-list b{display:block;margin-bottom:7px;color:#fff}
+
+/* ===== Onboarding ===== */
+.onboarding{width:min(620px,100%);margin:55px auto;padding:34px}
+.onboarding h1{margin:0 0 8px;font-size:34px}
+.onboarding p{color:var(--muted);line-height:1.6}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.eyebrow::before{content:"";width:30px;height:1px;background:var(--accent)}
+.welcome{display:flex;align-items:center;gap:16px;margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.25)}
+
+/* ===== Varios ===== */
+.empty,.loading{padding:60px 24px;text-align:center;color:var(--muted)}
+.toast{position:fixed;right:22px;bottom:22px;z-index:120;max-width:360px;padding:13px 16px;border:1px solid var(--line2);border-radius:14px;color:#fff;background:rgba(20,20,20,.95);backdrop-filter:blur(20px);box-shadow:0 18px 45px rgba(0,0,0,.7);animation:appear .2s ease}
+
+/* ===== Modales ===== */
+.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)}
+.modal-card{width:min(580px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid var(--line2);border-radius:22px;background:rgba(20,20,20,.95);box-shadow:0 30px 100px rgba(0,0,0,.8);animation:pop .25s cubic-bezier(.23,1,.32,1)}
+.detail-card{width:min(680px,100%)}
+.comments-card{width:min(620px,100%)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px;padding:0;border:0}
+.modal-head h2{margin:0}
+.detail{padding:0}
+.detail-card .post,.modal-card .post{border:0;cursor:default}
+.detail-card .post:hover,.modal-card .post:hover{transform:none;background:transparent}
+.close{width:34px;height:34px;border:1px solid var(--line2);border-radius:50%;color:#fff;background:rgba(255,255,255,.06);font-size:20px;cursor:pointer;transition:background .2s}
+.close:hover{background:rgba(255,255,255,.16)}
+.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:5px}
+
+/* ===== Botón de seleccionar archivo ===== */
+input[type=file]{padding:8px;border:1px dashed rgba(255,255,255,.3);border-radius:14px;background:rgba(255,255,255,.04);color:var(--muted);font-size:12px;cursor:pointer;transition:all .3s ease}
+input[type=file]:hover{border-color:#fff;background:rgba(255,255,255,.09)}
+input[type=file]:focus{border-style:solid}
+input[type=file]::file-selector-button{margin-right:12px;padding:10px 16px;border:1px solid #fff;border-radius:10px;color:#0a0a0a;background:#fff;font:inherit;font-weight:800;cursor:pointer;transition:all .3s ease}
+input[type=file]::file-selector-button:hover{background:#e5e5e5;transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,255,255,.18)}
+input[type=file]::-webkit-file-upload-button{margin-right:12px;padding:10px 16px;border:1px solid #fff;border-radius:10px;color:#0a0a0a;background:#fff;font:inherit;font-weight:800;cursor:pointer}
+
+/* ===== Nieve ===== */
+#nieve{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden}
+.copo{position:absolute;top:-24px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#cfe4ff);box-shadow:0 0 8px rgba(255,255,255,.8);animation:caerNieve linear infinite}
+@keyframes caerNieve{0%{transform:translate3d(0,-6vh,0) rotate(0)}100%{transform:translate3d(var(--der,0px),108vh,0) rotate(360deg)}}
+
+/* ===== Responsive ===== */
+@media(max-width:1080px){.app{grid-template-columns:190px minmax(0,1fr)}.right{display:none}}
+@media(max-width:700px){
+  .page{width:min(100% - 18px,680px);padding-top:10px}
+  .app{display:block}
+  .side{position:static;margin-bottom:12px}
+  .side-note{display:none}
+  .nav{display:flex;flex-wrap:wrap}
+  .nav button{flex:1;justify-content:center}
+  .feed-head{align-items:flex-start;flex-direction:column}
+  .search{width:100%;max-width:none}
+  .compose{padding:14px;flex-direction:column}
+  .compose .btn{align-self:flex-end}
+  .onboarding{margin:25px auto;padding:24px}
+  .top{align-items:flex-start;flex-direction:column}
+  .profile-row{align-items:flex-start;flex-direction:column}
+  .follow-lists{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+</style>
+</head><body><main class="page"><div class="top"><strong>「ME:RP」 Medellín RP · Perfil Twitter</strong><a href="/twitter.html">← Inicio Twitter</a></div><a class="back" href="/twitter.html">← Volver a Twitter</a><section id="profile" class="profile"><div class="loading">Cargando perfil...</div></section><section id="posts" class="posts"><div class="loading">Cargando publicaciones...</div></section></main><div id="post-modal" class="modal" hidden><div class="modal-card"><div class="modal-head"><h2>Publicación</h2><button class="close" id="post-close">×</button></div><div id="post-detail"></div></div></div><div id="toast" class="toast" hidden></div><script>
 const DEFAULT_AVATAR="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";const VERIFIED_ICON="https://cdn-icons-png.flaticon.com/512/6711/6711626.png";
 const targetId=new URLSearchParams(location.search).get("id");let me=null,profile=null,posts=[],commentPages={},commentDrafts={};const $=s=>document.querySelector(s);const esc=v=>String(v??"").replace(/[&<>\'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));const date=v=>new Date(v).toLocaleString("es-CO",{dateStyle:"medium",timeStyle:"short",timeZone:"America/Bogota"});
 async function api(u,o={}){const r=await fetch(u,{...o,cache:"no-store",headers:{"Content-Type":"application/json",...(o.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"No se pudo completar la solicitud.");return d}function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,2800)}
@@ -15,4 +228,32 @@ async function showComments(id){const box=$("#comments-embed");if(!box)return;bo
 function openPost(id){const p=posts.find(x=>String(x.id)===String(id));if(!p)return;$("#post-detail").innerHTML=renderPost(p,true)+`<div id="comments-embed" class="comment-list"></div>`;$("#post-modal").hidden=false;showComments(id)}
 async function deleteComment(id,postId){if(!confirm("¿Eliminar este comentario?"))return;try{await api(`/api/twitter/comentarios/${id}`,{method:"DELETE"});await showComments(postId)}catch(e){toast(e.message)}}
 document.addEventListener("click",e=>{const close=e.target.closest("#post-close");if(close)$("#post-modal").hidden=true;const follow=e.target.closest("[data-follow]");if(follow){toggleFollow(follow.dataset.follow,follow);return}const profileLink=e.target.closest("[data-profile]");if(profileLink){e.stopPropagation();location.href=`/twitter-perfil.html?id=${encodeURIComponent(profileLink.dataset.profile)}`;return}const like=e.target.closest("[data-like]");if(like){e.stopPropagation();toggleLike(like.dataset.like,like);return}const cm=e.target.closest("[data-comments]");if(cm){e.stopPropagation();openPost(cm.dataset.comments);return}const pg=e.target.closest("[data-comment-page]");if(pg&&!pg.disabled){commentPages[pg.dataset.commentPage]=Number(pg.dataset.page);showComments(pg.dataset.commentPage);return}const dc=e.target.closest("[data-delete-comment]");if(dc){deleteComment(dc.dataset.deleteComment,dc.dataset.commentPost);return}const dp=e.target.closest("[data-delete-post]");if(dp){removePost(dp.dataset.deletePost);return}const dots=e.target.closest("[data-dots]");if(dots){const menu=$("#menu-"+dots.dataset.dots);if(menu)menu.hidden=!menu.hidden;return}const post=e.target.closest("[data-post]");if(post&&!e.target.closest("button")&&!e.target.closest("input"))openPost(post.dataset.post)});document.addEventListener("submit",e=>{const form=e.target.closest("[data-comment-form]");if(!form)return;e.preventDefault();const postId=form.dataset.commentForm,texto=new FormData(form).get("texto"),draft={id:`draft-${Date.now()}`,cuenta_id:me.id,nombre:me.nombre,discord_id:me.discord_id,avatar_url:me.avatar_url,texto};commentDrafts[postId]=[...(commentDrafts[postId]||[]),draft];form.reset();commentPages[postId]=1;showComments(postId);(async()=>{try{await api(`/api/twitter/publicaciones/${postId}/comentarios`,{method:"POST",body:JSON.stringify({texto})});commentDrafts[postId]=(commentDrafts[postId]||[]).filter(x=>x.id!==draft.id);await showComments(postId)}catch(err){commentDrafts[postId]=(commentDrafts[postId]||[]).filter(x=>x.id!==draft.id);await showComments(postId);toast(err.message)}})()});$("#post-modal").addEventListener("click",e=>{if(e.target.id==="post-modal")$("#post-modal").hidden=true});load();
-</script></body></html>
+</script>
+<script>
+(function () {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let contenedor = document.getElementById("nieve");
+  if (!contenedor) {
+    contenedor = document.createElement("div");
+    contenedor.id = "nieve";
+    contenedor.setAttribute("aria-hidden", "true");
+    document.body.appendChild(contenedor);
+  }
+  const total = window.innerWidth < 760 ? 26 : 60;
+  for (let i = 0; i < total; i++) {
+    const copo = document.createElement("span");
+    copo.className = "copo";
+    const t = 3 + Math.random() * 7;
+    copo.style.width = t + "px";
+    copo.style.height = t + "px";
+    copo.style.left = Math.random() * 100 + "%";
+    copo.style.opacity = 0.35 + Math.random() * 0.6;
+    copo.style.setProperty("--der", Math.random() * 120 - 60 + "px");
+    copo.style.animationDuration = 9 + Math.random() * 14 + "s";
+    copo.style.animationDelay = -Math.random() * 20 + "s";
+    contenedor.appendChild(copo);
+  }
+})();
+
+</script>
+</body></html>
