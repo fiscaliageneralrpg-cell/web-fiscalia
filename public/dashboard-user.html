@@ -477,7 +477,6 @@
       }
 
       .panel.foundation {
-        display: none;
         border-color: rgba(255, 209, 102, 0.35);
         background:
           linear-gradient(135deg, rgba(255, 209, 102, 0.12), rgba(255, 255, 255, 0.03)),
@@ -728,35 +727,56 @@
 
         <a
           id="panel-fundacion"
-          class="panel foundation"
+          class="panel foundation con-imagen"
           href="/fundacion.html"
-          style="--d: 0.55s"
+          style="display: none; --d: 0.55s"
         >
-          <strong>✦ Panel Fundación</strong>
+          <strong>Panel Fundación</strong>
           <span class="desc">Administra tienda, dinero, sanciones y notas del servidor.</span>
           <i class="arrow" aria-hidden="true">→</i>
+          <img
+            class="thumb"
+            src="/photos/fundacion.png"
+            alt=""
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fiscaliageneralrpg-cell/web-fiscalia/main/photos/fundacion.png'"
+          />
         </a>
 
         <a
           id="panel-staff"
-          class="panel foundation"
+          class="panel foundation con-imagen"
           href="/staff.html"
           style="display: none; --d: 0.6s"
         >
-          <strong>✦ Panel Staff</strong>
+          <strong>Panel Staff</strong>
           <span class="desc">Gestiona dinero, notas y sanciones de los ciudadanos.</span>
           <i class="arrow" aria-hidden="true">→</i>
+          <img
+            class="thumb"
+            src="/photos/mod.png"
+            alt=""
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fiscaliageneralrpg-cell/web-fiscalia/main/photos/mod.png'"
+          />
         </a>
 
         <a
           id="panel-policial"
-          class="panel policial"
+          class="panel policial con-imagen"
           href="/policial.html"
           style="display: none; --d: 0.65s"
         >
-          <strong>▣ PDA Policial</strong>
+          <strong>PDA Policial</strong>
           <span class="desc">Consulta cédulas, antecedentes, arrestos y multas del servidor.</span>
           <i class="arrow" aria-hidden="true">→</i>
+          <img
+            class="thumb"
+            src="/photos/policia.png"
+            alt=""
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fiscaliageneralrpg-cell/web-fiscalia/main/photos/policia.png'"
+          />
         </a>
       </nav>
 
@@ -808,13 +828,13 @@
             d.fundacionAutorizada ||
             u.roles?.includes("1508156676350673017")
           ) {
-            document.querySelector("#panel-fundacion").style.display = "block";
+            document.querySelector("#panel-fundacion").style.display = "";
           }
           if (d.staffAutorizado || u.roles?.includes("1510018366964891829")) {
-            document.querySelector("#panel-staff").style.display = "block";
+            document.querySelector("#panel-staff").style.display = "";
           }
           if (d.policialAutorizado === true) {
-            document.querySelector("#panel-policial").style.display = "block";
+            document.querySelector("#panel-policial").style.display = "";
           }
           document.querySelector("#saludo").textContent =
             "Hola, " + (u.nombre || "ciudadano");
