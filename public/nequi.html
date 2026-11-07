@@ -372,6 +372,42 @@
         font-size: 15px;
       }
 
+      /* Ojito para ocultar/mostrar el saldo (como la app real) */
+      .btn-ojo {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.14);
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+
+      .btn-ojo:hover {
+        transform: scale(1.08);
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .btn-ojo svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .btn-ojo .ico-ojo-cerrado {
+        display: none;
+      }
+
+      body.saldo-oculto .btn-ojo .ico-ojo {
+        display: none;
+      }
+
+      body.saldo-oculto .btn-ojo .ico-ojo-cerrado {
+        display: block;
+      }
+
       .saldo-valor {
         margin-top: 6px;
         font-size: clamp(40px, 11vw, 56px);
@@ -956,6 +992,42 @@
         padding: 14px 0;
       }
 
+      /* Recientes / Anteriores (segmentado estilo Nequi) */
+      .mov-tabs {
+        display: flex;
+        gap: 6px;
+        width: min(1080px, calc(100% - 32px));
+        margin: 14px auto 0;
+        padding: 5px;
+        border-radius: 999px;
+        background: var(--lavanda);
+      }
+
+      .mov-tab {
+        flex: 1;
+        padding: 11px 14px;
+        border: 0;
+        border-radius: 999px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .mov-tab:hover {
+        color: var(--tinta);
+      }
+
+      .mov-tab.activa {
+        color: var(--tinta);
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(43, 0, 51, 0.12);
+      }
+
       .mov {
         display: flex;
         align-items: center;
@@ -1208,19 +1280,19 @@
         flex: none;
         place-items: center;
         border: 0;
-        border-radius: 18px;
+        border-radius: 16px;
         color: #fff;
-        background: linear-gradient(135deg, var(--magenta), var(--uva));
+        background: var(--magenta);
         font-size: 25px;
         font-weight: 800;
         cursor: pointer;
-        box-shadow: 0 12px 28px rgba(218, 0, 129, 0.35);
+        box-shadow: 0 12px 28px rgba(218, 0, 129, 0.45);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
       .nav-dinero:hover {
         transform: translateY(-3px);
-        box-shadow: 0 16px 34px rgba(218, 0, 129, 0.45);
+        box-shadow: 0 16px 34px rgba(218, 0, 129, 0.55);
       }
 
       .nav-dinero:active {
@@ -1354,7 +1426,46 @@
           </div>
 
           <div class="saldo-bloque">
-            <div class="saldo-label">Disponible en Nequi</div>
+            <div class="saldo-label">
+              Disponible en Nequi
+              <button
+                class="btn-ojo"
+                id="btn-ojo"
+                type="button"
+                aria-label="Mostrar u ocultar el saldo"
+              >
+                <svg
+                  class="ico-ojo"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="ico-ojo-cerrado"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+                  />
+                  <path
+                    d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+                  />
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                  <path d="M1 1l22 22" />
+                </svg>
+              </button>
+            </div>
             <div class="saldo-valor" id="banco">$ 0</div>
             <span class="saldo-total">Total <b id="total-cab">$ 0</b></span>
             <span id="actualizado" class="saldo-actualizado"
@@ -1625,6 +1736,15 @@
         </div>
         <h1 class="vista-titulo">Movimientos</h1>
 
+        <div class="mov-tabs">
+          <button class="mov-tab activa" type="button" data-mov="recientes">
+            Recientes
+          </button>
+          <button class="mov-tab" type="button" data-mov="anteriores">
+            Anteriores
+          </button>
+        </div>
+
         <div class="lista-movs" id="lista-movimientos"></div>
       </section>
 
@@ -1790,7 +1910,17 @@
           const respuesta = await fetch("/api/nequi/operacion", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tipo: operacionActual, monto, destinoId }),
+            body: JSON.stringify({
+              tipo: operacionActual,
+              monto,
+              destinoId,
+              destinoNombre:
+                operacionActual === "transferir" &&
+                destino.selectedOptions &&
+                destino.selectedOptions[0]
+                  ? destino.selectedOptions[0].textContent
+                  : undefined,
+            }),
           });
           const datos = await respuesta.json();
           if (!respuesta.ok)
@@ -1901,7 +2031,9 @@
           document.querySelector("#tarjeta-numero").textContent = numero;
           document.querySelector("#tarjeta-dato").textContent = numero;
         }
-        if (nombre === "movimientos") pintarMovimientos();
+        if (nombre === "movimientos") {
+          refrescarMovimientos().finally(() => pintarMovimientos());
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
@@ -1915,8 +2047,41 @@
         else location.href = "/dashboard-user.html";
       });
 
+      /* Ocultar / mostrar saldo con el ojito (como la app real) */
+      let saldoOculto = false;
+      let saldosReales = { banco: "$ 0", total: "$ 0" };
+      const TEXTO_OCULTO = "$ ••••••";
+
+      function aplicarMascara() {
+        const b = document.querySelector("#banco");
+        const t = document.querySelector("#total");
+        if (b && !b.textContent.includes("••")) saldosReales.banco = b.textContent;
+        if (t && !t.textContent.includes("••")) saldosReales.total = t.textContent;
+        if (!saldoOculto) return;
+        if (b && b.textContent !== TEXTO_OCULTO) b.textContent = TEXTO_OCULTO;
+        if (t && t.textContent !== TEXTO_OCULTO) t.textContent = TEXTO_OCULTO;
+      }
+
+      (function () {
+        const btn = document.querySelector("#btn-ojo");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          saldoOculto = !saldoOculto;
+          document.body.classList.toggle("saldo-oculto", saldoOculto);
+          const b = document.querySelector("#banco");
+          const t = document.querySelector("#total");
+          if (saldoOculto) {
+            aplicarMascara();
+          } else {
+            if (b) b.textContent = saldosReales.banco;
+            if (t) t.textContent = saldosReales.total;
+          }
+        });
+      })();
+
       /* Espejo: #banco (lo pone el script original) -> pantallas secundarias */
       function espejoSaldos() {
+        aplicarMascara();
         const banco = document.querySelector("#banco");
         if (!banco) return;
         const tp = document.querySelector("#tp-nequi");
@@ -1956,11 +2121,14 @@
           if (!r.ok) return;
           const d = await r.json();
           const u = d.usuario || {};
+          usuarioId = u.id || u.discordId || u.discord_id || null;
           const nombre = u.cedula?.nombre || u.nombre || "Ciudadano";
           const n = document.querySelector("#nombre");
           if (n) n.textContent = nombre;
           const t = document.querySelector("#titular-tarjeta");
           if (t) t.textContent = nombre;
+          await refrescarMovimientos();
+          pintarMovimientos();
         } catch (e) {
           /* sin sesión o sin red: se queda el texto por defecto */
         }
@@ -2013,12 +2181,21 @@
         }
       }
 
-      /* ---------------- Movimientos ---------------- */
-      const CLAVE_MOV = "movimientos-nequi-medellin-rp";
+      /* ---------------- Movimientos (guardados por usuario) ---------------- */
+      const CLAVE_MOV_BASE = "movimientos-nequi-medellin-rp";
+      let usuarioId = null;
+
+      function claveMovimientos() {
+        return usuarioId
+          ? CLAVE_MOV_BASE + "::" + usuarioId
+          : CLAVE_MOV_BASE + "::sin-sesion";
+      }
 
       function leerMovimientos() {
         try {
-          const datos = JSON.parse(localStorage.getItem(CLAVE_MOV) || "[]");
+          const datos = JSON.parse(
+            localStorage.getItem(claveMovimientos()) || "[]",
+          );
           return Array.isArray(datos) ? datos : [];
         } catch (e) {
           return [];
@@ -2029,10 +2206,21 @@
         try {
           const lista = leerMovimientos();
           lista.unshift(mov);
-          localStorage.setItem(CLAVE_MOV, JSON.stringify(lista.slice(0, 100)));
+          localStorage.setItem(
+            claveMovimientos(),
+            JSON.stringify(lista.slice(0, 100)),
+          );
         } catch (e) {
           /* modo privado / almacenamiento lleno */
         }
+      }
+
+      /* El historial viejo era compartido por navegador (se mezclaban cuentas):
+         se borra para que cada quien solo vea lo suyo desde ahora. */
+      try {
+        localStorage.removeItem(CLAVE_MOV_BASE);
+      } catch (e) {
+        /* sin permiso */
       }
 
       const ETIQUETAS = {
@@ -2044,13 +2232,50 @@
           signo: -1,
         },
       };
+      /* Lo que otro usuario te transfiere: entra como "Recibido" (+). */
+      ETIQUETAS.recibido = { ...ETIQUETAS.depositar, texto: "Recibido" };
+
+      /* Historial: la fuente principal es MySQL (traído por el servidor);
+         localStorage queda como respaldo cuando no hay sesión/red. */
+      let movsServidor = null; // null = todavía no se consulta
+      let movVista = "recientes"; // recientes | anteriores
+
+      async function refrescarMovimientos() {
+        try {
+          const r = await fetch("/api/nequi/movimientos?limite=200", {
+            cache: "no-store",
+          });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const d = await r.json();
+          if (d && Array.isArray(d.movimientos)) movsServidor = d.movimientos;
+        } catch (e) {
+          /* sin sesión o sin red: se sigue con lo guardado en el navegador */
+        }
+        return movsServidor;
+      }
+
+      function obtenerMovimientos() {
+        if (Array.isArray(movsServidor)) {
+          return movsServidor.map((m) => ({
+            tipo: m.tipo,
+            monto: m.monto,
+            destino: m.destinoNombre || "",
+            fecha: m.creadoEn || null,
+          }));
+        }
+        return leerMovimientos();
+      }
 
       function pintarMovimientos() {
         const contenedor = document.querySelector("#lista-movimientos");
         if (!contenedor) return;
-        const lista = leerMovimientos();
+        const todos = obtenerMovimientos();
+        const recientes = todos.slice(0, 10);
+        const anteriores = todos.slice(10);
+        const lista = movVista === "anteriores" ? anteriores : recientes;
         contenedor.textContent = "";
-        if (!lista.length) {
+
+        if (!todos.length) {
           const vacio = document.createElement("div");
           vacio.className = "vacio";
           vacio.innerHTML =
@@ -2059,6 +2284,19 @@
           contenedor.appendChild(vacio);
           return;
         }
+        if (!lista.length) {
+          const vacio = document.createElement("div");
+          vacio.className = "vacio";
+          vacio.innerHTML =
+            movVista === "anteriores"
+              ? "<strong>No tienes movimientos anteriores</strong>" +
+                "Todos tus movimientos más recientes están en la pestaña <b>Recientes</b>."
+              : "<strong>Todo al día</strong>" +
+                "Aquí solo aparecen tus 10 movimientos más recientes. El resto está en <b>Anteriores</b>.";
+          contenedor.appendChild(vacio);
+          return;
+        }
+
         lista.forEach((mov, i) => {
           const meta = ETIQUETAS[mov.tipo] || {
             texto: "Movimiento",
@@ -2072,7 +2310,12 @@
           fila.className = "mov";
           fila.style.animationDelay = Math.min(i * 0.04, 0.4) + "s";
           const fecha = mov.fecha ? new Date(mov.fecha) : new Date();
-          const destinoTxt = mov.destino ? ` → ${mov.destino}` : "";
+          const esRecibido = mov.tipo === "recibido";
+          const destinoTxt = mov.destino
+            ? esRecibido
+              ? ` de ${mov.destino}`
+              : ` → ${mov.destino}`
+            : "";
           fila.innerHTML =
             `<span class="mov-icono">${iconoHtml}</span>` +
             `<span class="mov-txt"><b>${meta.texto}${destinoTxt}</b>` +
@@ -2082,6 +2325,17 @@
           contenedor.appendChild(fila);
         });
       }
+
+      /* Pestañas Recientes / Anteriores */
+      document.querySelectorAll(".mov-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          movVista = btn.dataset.mov === "anteriores" ? "anteriores" : "recientes";
+          document
+            .querySelectorAll(".mov-tab")
+            .forEach((b) => b.classList.toggle("activa", b === btn));
+          pintarMovimientos();
+        });
+      });
 
       /* Captura los datos de la operación ANTES de que el script original
          limpie el formulario, y la registra cuando confirma el éxito. */
@@ -2114,7 +2368,7 @@
               fecha: new Date().toISOString(),
             });
             operacionPendiente = null;
-            pintarMovimientos();
+            refrescarMovimientos().finally(() => pintarMovimientos());
           }
         }).observe(mensajeOperacion, {
           childList: true,
