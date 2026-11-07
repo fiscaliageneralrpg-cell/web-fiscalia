@@ -1649,6 +1649,67 @@ app.get("/api/fundacion/usuarios", async (req, res) => {
   }
 });
 
+/* ===================== FUNDACIÓN TWITTER (panel admin) ===================== */
+
+app.get("/api/fundacion/twitter", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    await asegurarEsquemaTwitter();
+    const [filas] = await pool.execute(
+      `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en, actualizado_en
+         FROM twitter_cuentas
+        ORDER BY nombre ASC`
+    );
+    return res.json({
+      correcto: true,
+      cuentas: filas.map((f) => ({
+        id: f.id,
+        discord_id: f.discord_id,
+        nombre: f.nombre,
+        avatar_url: f.avatar_url || null,
+        verificado: Number(f.verificado),
+        creado_en: f.creado_en,
+        actualizado_en: f.actualizado_en,
+      })),
+    });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER LISTA]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar las cuentas Twitter." });
+  }
+});
+
+app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  const { verificado } = req.body || {};
+  try {
+    await asegurarEsquemaTwitter();
+    const [existente] = await pool.execute("SELECT 1 FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!existente.length) return res.status(404).json({ error: "La cuenta de Twitter no existe." });
+    await pool.execute("UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?", [verificado ? 1 : 0, discordId]);
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER VERIFICAR]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar la verificación." });
+  }
+});
+
+app.delete("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  try {
+    await asegurarEsquemaTwitter();
+    const [resultado] = await pool.execute("DELETE FROM twitter_cuentas WHERE discord_id = ?", [discordId]);
+    if (!resultado.affectedRows) return res.status(404).json({ error: "La cuenta de Twitter no existe." });
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER ELIMINAR]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar la cuenta Twitter." });
+  }
+});
+
 /* ===================== TWITTER CIUDADANO ===================== */
 
 const TWITTER_AVATAR_DEFECTO = "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
