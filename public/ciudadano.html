@@ -21,6 +21,7 @@
         --yellow: #ffd166;
         --green: #6ee7a8;
         --red: #ff6b6b;
+        --nequi: #e5007d;
         --shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
       }
 
@@ -109,6 +110,102 @@
       @keyframes popModal {
         from { opacity: 0; transform: translateY(22px) scale(0.97); }
         to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @keyframes abrirCelular {
+        0% { opacity: 0; transform: translateY(80px) scale(0.5) rotate(-7deg); }
+        55% { opacity: 1; transform: translateY(-10px) scale(1.03) rotate(1deg); }
+        100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+      }
+
+      @property --ang {
+        syntax: "<angle>";
+        initial-value: 0deg;
+        inherits: false;
+      }
+
+      @keyframes moverFondo {
+        0%, 100% { background-position: 0% 0%, 100% 0%, 50% 100%, 0 0; }
+        50% { background-position: 60% 45%, 25% 65%, 40% 20%, 0 0; }
+      }
+
+      @keyframes soloAparecer {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes flotarApp {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      @keyframes pulsoAura {
+        0%, 100% {
+          box-shadow:
+            0 30px 60px rgba(0, 0, 0, 0.65),
+            0 0 16px rgba(116, 230, 255, 0.16),
+            inset 0 0 0 2px rgba(0, 0, 0, 0.65);
+        }
+        50% {
+          box-shadow:
+            0 30px 60px rgba(0, 0, 0, 0.65),
+            0 0 44px rgba(116, 230, 255, 0.42),
+            inset 0 0 0 2px rgba(0, 0, 0, 0.65);
+        }
+      }
+
+      @keyframes barraBrillo {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+      }
+
+      @keyframes brilloPantalla {
+        0% { transform: translateX(-140%) rotate(14deg); }
+        55%, 100% { transform: translateX(260%) rotate(14deg); }
+      }
+
+      @keyframes rebotarApp {
+        0% { opacity: 0; transform: translateY(30px) scale(0.3); }
+        70% { opacity: 1; transform: translateY(-8px) scale(1.12); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @keyframes brilloMarco {
+        0%, 100% {
+          box-shadow:
+            0 50px 110px rgba(0, 0, 0, 0.8),
+            0 0 0 rgba(116, 230, 255, 0);
+        }
+        50% {
+          box-shadow:
+            0 50px 110px rgba(0, 0, 0, 0.8),
+            0 0 46px rgba(116, 230, 255, 0.35);
+        }
+      }
+
+      @keyframes reboteBadge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.22); }
+      }
+
+      @keyframes tiraHaciaAbajo {
+        0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.75; }
+        50% { transform: translateX(-50%) translateY(7px); opacity: 1; }
+      }
+
+      @keyframes notifEntrada {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes latidoReloj {
+        from { opacity: 0; transform: translateY(-16px) scale(0.86); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @keyframes giroBoton {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
 
       .wrap {
@@ -475,126 +572,762 @@
         gap: 16px;
       }
 
-      /* ===== Cuenta Nequi ===== */
-      .money {
+      /* ===== Celular (mockup) ===== */
+      .celular-mini-wrap {
+        display: grid;
+        place-items: center;
+        padding: 14px 0 6px;
+      }
+
+      .celular {
+        position: relative;
+        width: 154px;
+        aspect-ratio: 9 / 19.5;
+        padding: 5px;
+        border-radius: 34px;
+        background: linear-gradient(155deg, #2c2c30 0%, #0d0d0f 38%, #000 100%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+          0 30px 60px rgba(0, 0, 0, 0.65),
+          inset 0 0 0 2px rgba(0, 0, 0, 0.65);
+        transition: transform 0.35s ease, box-shadow 0.35s ease;
+      }
+
+      /* botones laterales estilo iPhone (barras fijas a los costados) */
+      .lateral {
+        position: absolute;
+        width: 3px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #43434a, #101013);
+        z-index: 6;
+        pointer-events: none;
+      }
+
+      .lateral.izq1 {
+        left: -3px;
+        top: 15%;
+        height: 5%;
+      }
+
+      .lateral.izq2 {
+        left: -3px;
+        top: 23%;
+        height: 11%;
+      }
+
+      .lateral.der1 {
+        right: -3px;
+        top: 25%;
+        height: 13%;
+      }
+
+      .celular:hover {
+        transform: translateY(-6px) rotate(-1.5deg);
+        box-shadow:
+          0 38px 70px rgba(0, 0, 0, 0.7),
+          inset 0 0 0 2px rgba(0, 0, 0, 0.65);
+      }
+
+      .celular .pantalla {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 30px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 22% 16%, rgba(116, 230, 255, 0.42), transparent 42%),
+          radial-gradient(circle at 82% 30%, rgba(255, 255, 255, 0.16), transparent 40%),
+          radial-gradient(circle at 55% 96%, rgba(154, 125, 255, 0.38), transparent 52%),
+          linear-gradient(170deg, #131316 0%, #07070a 55%, #000 100%);
+        background-size: 220% 220%, 240% 240%, 230% 230%, 100% 100%;
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.65);
+      }
+
+      .celular .isla {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 42%;
+        height: 15px;
+        max-width: 74px;
+        border-radius: 999px;
+        background: #000;
+        z-index: 3;
+      }
+
+      .celular .inicio {
+        position: absolute;
+        bottom: 7px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36%;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+        z-index: 3;
+      }
+
+      /* Celular pequeño del panel (sin apps) */
+      .celular-mini {
+        transition: transform 0.35s ease, box-shadow 0.35s ease;
+      }
+
+      /* ===== Botón abrir celular ===== */
+      .btn-celular {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        margin-top: 16px;
+        padding: 14px 18px;
+        overflow: hidden;
+        border: 1px solid rgba(116, 230, 255, 0.55);
+        border-radius: 14px;
+        color: var(--cyan);
+        background: #101014;
+        font-size: 14.5px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow:
+          0 16px 36px rgba(0, 0, 0, 0.6),
+          0 0 22px rgba(116, 230, 255, 0.22);
+        transition: transform 0.25s ease, box-shadow 0.25s ease,
+          border-color 0.25s ease, color 0.25s ease;
+      }
+
+      .btn-celular:hover {
+        transform: translateY(-3px);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow:
+          0 22px 46px rgba(0, 0, 0, 0.7),
+          0 0 38px rgba(116, 230, 255, 0.55);
+      }
+
+      .btn-celular:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      /* ===== Modal del celular ===== */
+      .celular-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        background: rgba(2, 8, 13, 0.84);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        animation: aparecer 0.25s ease both;
+      }
+
+      .celular-modal-escena {
+        position: relative;
+        animation: soloAparecer 0.3s ease both;
+      }
+
+      .celular-grande {
+        width: min(330px, 82vw);
+        padding: 9px;
+        border-radius: 54px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow:
+          0 50px 110px rgba(0, 0, 0, 0.8),
+          inset 0 0 0 2px rgba(0, 0, 0, 0.7);
+      }
+
+      .celular-grande .pantalla {
+        border-radius: 46px;
+      }
+
+      .celular-grande:hover {
+        transform: none;
+        box-shadow:
+          0 50px 110px rgba(0, 0, 0, 0.8),
+          inset 0 0 0 2px rgba(0, 0, 0, 0.7);
+      }
+
+      .celular-grande .isla {
+        top: 14px;
+        height: 24px;
+        max-width: 110px;
+      }
+
+      .celular-grande .inicio {
+        bottom: 12px;
+        height: 5px;
+        width: 34%;
+      }
+
+      .celular-cerrar {
+        position: absolute;
+        top: -16px;
+        right: -16px;
+        z-index: 5;
+        width: 46px;
+        height: 46px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(10, 10, 10, 0.82);
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+        transition: all 0.25s ease;
+      }
+
+      @keyframes pulsoCerrar {
+        0%, 100% { box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 0 0 rgba(116, 230, 255, 0); }
+        50% { box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), 0 0 26px rgba(116, 230, 255, 0.5); }
+      }
+
+      .celular-cerrar:hover {
+        transform: rotate(90deg) scale(1.06);
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* Barra de estado (hora / señal) */
+      .barra-estado {
+        position: absolute;
+        top: 16px;
+        left: 0;
+        right: 0;
+        z-index: 2;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 13px 0;
-        border-bottom: 1px solid var(--line);
-        color: var(--muted);
-        font-size: 14px;
-        transition: padding-left 0.25s ease, color 0.25s ease;
-      }
-
-      .money:hover {
-        padding-left: 6px;
-        color: #d8e6f0;
-      }
-
-      .money:last-of-type {
-        border-bottom: 0;
-      }
-
-      .money strong {
-        color: var(--text);
-        font-weight: 900;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .visa {
-        margin-top: 16px;
-        padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 16px;
+        padding: 0 22px;
         color: #fff;
-        background: linear-gradient(135deg, #182d51, #3d70bf);
-        box-shadow: 0 18px 44px rgba(24, 45, 81, 0.55);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        font-size: 12.5px;
+        font-weight: 800;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
       }
 
-      .visa:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 24px 54px rgba(24, 45, 81, 0.65);
+      .barra-estado .iconos {
+        letter-spacing: 1px;
+        font-size: 11.5px;
       }
 
-      .visa small,
-      .visa strong {
+      /* logos de Nequi / Twitter que aparecen si hay notificaciones */
+      .logo-notif {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        margin-left: 5px;
+        object-fit: cover;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 4px;
+        vertical-align: -3px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+      }
+
+      .celular-mini .logo-notif {
+        width: 12px;
+        height: 12px;
+        margin-left: 3px;
+        vertical-align: -2px;
+      }
+
+      .celular-mini .barra-estado {
+        top: 9px;
+        padding: 0 12px;
+        font-size: 8.5px;
+      }
+
+      .celular-mini .barra-estado .iconos {
+        font-size: 7.5px;
+      }
+
+      /* Rejilla de apps */
+      .apps {
+        position: absolute;
+        inset: 54px 0 0;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px 10px;
+        align-content: start;
+        padding: 14px 18px 0;
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+        color: #fff;
+        transition: transform 0.22s ease;
+      }
+
+      .app:hover .icono {
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.55);
+        border-color: rgba(255, 255, 255, 0.85);
+      }
+
+      .app:hover {
+        transform: translateY(-5px) scale(1.06);
+      }
+
+      .app:active {
+        transform: scale(0.94);
+      }
+
+      .app .icono {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 16px;
+        font-size: 27px;
+        font-weight: 900;
+        color: #fff;
+        background: linear-gradient(150deg, #232327 0%, #0a0a0c 60%, #000 100%);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        transition: box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+
+      /* logo real (imagen) que cubre todo el ícono */
+      .app .icono img {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
         display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
       }
 
-      .visa small {
+      /* letra de respaldo si la imagen no carga */
+      .app .icono .letra {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #fff;
+      }
+
+      .app .icono.nequi .letra {
+        color: #74e6ff;
+        font-style: italic;
+      }
+
+      .app .icono.twitter .letra {
+        color: #fff;
+      }
+
+      @keyframes resplandorCian {
+        0%, 100% {
+          box-shadow:
+            0 12px 26px rgba(0, 0, 0, 0.5),
+            0 0 14px rgba(116, 230, 255, 0.25),
+            inset 0 0 16px rgba(116, 230, 255, 0.12);
+        }
+        50% {
+          box-shadow:
+            0 12px 26px rgba(0, 0, 0, 0.5),
+            0 0 34px rgba(116, 230, 255, 0.75),
+            inset 0 0 24px rgba(116, 230, 255, 0.3);
+        }
+      }
+
+      .app .icono.twitter {
+        color: #fff;
+        font-size: 26px;
+      }
+
+      @keyframes resplandorBlanco {
+        0%, 100% {
+          box-shadow:
+            0 12px 26px rgba(0, 0, 0, 0.5),
+            0 0 12px rgba(255, 255, 255, 0.2),
+            inset 0 0 14px rgba(255, 255, 255, 0.06);
+        }
+        50% {
+          box-shadow:
+            0 12px 26px rgba(0, 0, 0, 0.5),
+            0 0 32px rgba(255, 255, 255, 0.6),
+            inset 0 0 24px rgba(255, 255, 255, 0.18);
+        }
+      }
+
+      .app .icono img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .app span.nombre {
+        font-size: 12px;
+        font-weight: 700;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+      }
+
+      /* Puntos de página + dock */
+      .puntos {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 74px;
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+      }
+
+      .puntos i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.45);
+      }
+
+      .puntos i.activo {
+        background: #fff;
+      }
+
+      .dock {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 26px;
+        z-index: 2;
+        height: 58px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+
+      @keyframes pulsoDock {
+        0%, 100% {
+          background: rgba(255, 255, 255, 0.16);
+          box-shadow: 0 0 0 rgba(116, 230, 255, 0);
+        }
+        50% {
+          background: rgba(255, 255, 255, 0.28);
+          box-shadow: 0 0 24px rgba(116, 230, 255, 0.35);
+        }
+      }
+
+      .pista-hogar {
+        position: absolute;
+        left: 50%;
+        bottom: 9px;
+        transform: translateX(-50%);
+        z-index: 4;
+        width: 34%;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .celular-mini .pista-hogar {
+        bottom: 6px;
+        height: 4px;
+      }
+
+      .celular-mini .apps,
+      .celular-mini .dock,
+      .celular-mini .puntos {
+        display: none;
+      }
+
+      .leyenda-celular {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -52px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+
+      .puntos i.activo {
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
+      }
+
+      /* ===== Barra de estado interactiva + señal de "bajar" ===== */
+      .celular-grande .barra-estado {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .tirador {
+        position: absolute;
+        top: 42px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 6;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        pointer-events: auto;
+      }
+
+      .badge-notifs {
+        position: absolute;
+        top: 34px;
+        right: 7px;
+        z-index: 7;
+        display: grid;
+        min-width: 21px;
+        height: 21px;
+        padding: 0 6px;
+        place-items: center;
+        border: 2px solid rgba(0, 0, 0, 0.7);
+        border-radius: 999px;
+        color: #000;
+        background: #ffffff;
+        font-size: 11px;
+        font-weight: 900;
+        box-shadow:
+          0 8px 18px rgba(0, 0, 0, 0.55),
+          0 0 8px rgba(255, 255, 255, 0.5);
+      }
+
+      /* ===== Centro de notificaciones (se baja desde arriba) ===== */
+      .shade {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        padding: 52px 13px 66px;
+        background:
+          radial-gradient(
+            circle at 50% -10%,
+            rgba(116, 230, 255, 0.22),
+            transparent 55%
+          ),
+          linear-gradient(180deg, rgba(3, 3, 5, 0.94), rgba(15, 15, 18, 0.9));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-radius: 42px;
+        transform: translateY(-102%);
+        transition: transform 0.52s cubic-bezier(0.22, 1.18, 0.36, 1);
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .shade.abierto {
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      .shade-reloj {
+        text-align: center;
+        padding-top: 4px;
+      }
+
+      .shade-reloj .hora-grande {
+        display: block;
+        font-size: 52px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: #fff;
+        text-shadow:
+          0 6px 24px rgba(0, 0, 0, 0.75),
+          0 0 30px rgba(116, 230, 255, 0.55);
+      }
+
+      .shade-reloj .fecha {
+        display: block;
+        margin-top: 5px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .shade-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .shade-head b {
+        font-size: 13.5px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+      }
+
+      .borrar-todas {
+        padding: 6px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.14);
         font-size: 11px;
         font-weight: 800;
-        letter-spacing: 0.16em;
-        opacity: 0.85;
+        cursor: pointer;
+        transition: all 0.22s ease;
       }
 
-      .visa strong {
-        margin-top: 26px;
-        font-size: 17px;
-        letter-spacing: 0.15em;
+      .borrar-todas:hover {
+        color: #000;
+        background: #ffffff;
+        border-color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(255, 255, 255, 0.35);
       }
 
-      .visa-link {
-        display: inline-block;
-        margin-top: 16px;
-        color: var(--cyan);
-        font-size: 13.5px;
-        font-weight: 800;
-        text-decoration: none;
-        transition: transform 0.25s ease, opacity 0.25s ease;
-      }
-
-      .visa-link:hover {
-        transform: translateX(4px);
-        opacity: 0.85;
-      }
-
-      .twitter-link {
+      .lista-notifs {
         display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 16px;
-        padding: 15px;
-        border: 1px solid rgba(116, 230, 255, 0.3);
-        border-radius: 14px;
-        color: var(--text);
-        background: linear-gradient(135deg, rgba(116, 230, 255, 0.08), rgba(154, 125, 255, 0.08));
-        text-decoration: none;
-        transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 2px;
+        scrollbar-width: thin;
       }
 
-      .twitter-link:hover {
-        transform: translateY(-3px);
-        border-color: rgba(116, 230, 255, 0.7);
-        background: linear-gradient(135deg, rgba(116, 230, 255, 0.16), rgba(154, 125, 255, 0.16));
+      .lista-notifs::-webkit-scrollbar {
+        width: 4px;
       }
 
-      .twitter-link b {
+      .lista-notifs::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.28);
+        border-radius: 999px;
+      }
+
+      .notif {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 11px 11px 11px 13px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 16px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.16),
+          rgba(255, 255, 255, 0.07)
+        );
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        animation: notifEntrada 0.42s var(--d, 0s)
+          cubic-bezier(0.22, 1.2, 0.36, 1) both;
+        transition: transform 0.22s ease, border-color 0.22s ease;
+      }
+
+      .notif:hover {
+        transform: translateX(-4px);
+        border-color: rgba(116, 230, 255, 0.5);
+      }
+
+      .notif.saliendo {
+        animation: notifSalida 0.3s ease forwards;
+      }
+
+      @keyframes notifSalida {
+        to { opacity: 0; }
+      }
+
+      .notif .ico {
+        font-size: 21px;
+        line-height: 1.2;
+        flex: none;
+      }
+
+      .notif .cuerpo {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .notif .cuerpo b {
         display: block;
-        font-size: 14px;
-      }
-
-      .twitter-link small {
-        display: block;
-        margin-top: 3px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .twitter-mark {
-        display: grid;
-        width: 38px;
-        height: 38px;
-        flex: 0 0 38px;
-        place-items: center;
-        border-radius: 12px;
-        color: #06141f;
-        background: var(--cyan);
-        font-size: 20px;
+        font-size: 12.8px;
         font-weight: 900;
-        box-shadow: 0 10px 24px rgba(116, 230, 255, 0.3);
+      }
+
+      .notif .cuerpo p {
+        margin-top: 2px;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 11.8px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .notif .cuerpo time {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 10.3px;
+        font-weight: 700;
+      }
+
+      .notif .borrar {
+        flex: none;
+        width: 26px;
+        height: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.35);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.22s ease;
+      }
+
+      .notif .borrar:hover {
+        color: #000;
+        background: #ffffff;
+        border-color: #ffffff;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.55);
+        transform: rotate(90deg);
+      }
+
+      .sin-notifs {
+        margin-top: 26px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 12.5px;
+        font-weight: 700;
+        line-height: 1.7;
+      }
+
+      .shade-cerrar {
+        position: absolute;
+        left: 50%;
+        bottom: 34px;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.24s ease;
+      }
+
+      .shade-cerrar:hover {
+        background: rgba(255, 255, 255, 0.28);
+        transform: translateX(-50%) translateY(-3px);
       }
 
       /* ===== Registros / expediente ===== */
@@ -979,6 +1712,13 @@
           flex-wrap: wrap;
           justify-content: center;
         }
+
+        .celular-cerrar {
+          top: -10px;
+          right: -6px;
+          width: 42px;
+          height: 42px;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -1065,30 +1805,42 @@
         </article>
         <aside class="side">
           <article class="paper" style="--d: 0.62s">
-            <h2>💜 Cuenta Nequi</h2>
-            <div class="money">
-              <span>💰 Mano</span><strong id="mano">$ 0</strong>
+            <h2>📱 Mi celular</h2>
+            <div class="celular-mini-wrap">
+              <div class="celular celular-mini" aria-hidden="true">
+                <span class="lateral izq1"></span>
+                <span class="lateral izq2"></span>
+                <span class="lateral der1"></span>
+                <span class="badge-notifs" id="badge-notifs" hidden>0</span>
+                <div class="pantalla">
+                  <div class="isla"></div>
+                  <div class="barra-estado">
+                    <span class="hora">12:00</span>
+                    <span class="iconos">
+                      <img
+                        class="logo-notif logo-nequi"
+                        src="/photos/logo-nequi.png"
+                        alt="Notificaciones Nequi"
+                        hidden
+                      /><img
+                        class="logo-notif logo-twitter"
+                        src="/photos/logo-x.png"
+                        alt="Notificaciones Twitter"
+                        hidden
+                      />
+                    </span>
+                  </div>
+                  <div class="pista-hogar"></div>
+                </div>
+              </div>
             </div>
-            <div class="money">
-              <span>Nequi</span><strong id="nequi">$ 0</strong>
-            </div>
-            <div class="money">
-              <span>📊 Total</span><strong id="total">$ 0</strong>
-            </div>
-            <div class="visa">
-              <small>💳 TARJETA DIGITAL</small
-              ><strong id="tarjeta">VISA • ----</strong>
-            </div>
-            <a class="visa-link" href="/nequi.html">Abrir gestión Nequi →</a>
-            <a class="twitter-link" href="/twitter.html">
-              <span class="twitter-mark">𝕏</span>
-              <span
-                ><b>Twitter Medellín RP</b
-                ><small
-                  >Publica, comenta y comparte con la comunidad →</small
-                ></span
-              >
-            </a>
+            <p class="empty">
+              Tu celular está apagado. Ábrelo para entrar a las apps de Nequi y
+              Twitter.
+            </p>
+            <button id="abrir-celular" class="btn-celular" type="button">
+              📱 Abrir celular
+            </button>
           </article>
         </aside>
       </section>
@@ -1103,11 +1855,7 @@
         </div>
       </section>
 
-      <div
-        id="expediente-detalle"
-        class="detail-modal"
-        hidden
-      >
+      <div id="expediente-detalle" class="detail-modal" hidden>
         <div
           class="detail-card"
           role="dialog"
@@ -1174,6 +1922,126 @@
 
     <div id="nieve" aria-hidden="true"></div>
 
+    <!-- ===== Modal: celular abierto en el centro de la pantalla ===== -->
+    <div
+      id="celular-modal"
+      class="celular-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Celular abierto"
+      hidden
+    >
+      <div class="celular-modal-escena">
+        <button
+          id="cerrar-celular"
+          class="celular-cerrar"
+          type="button"
+          aria-label="Cerrar celular"
+        >
+          ×
+        </button>
+        <div class="celular celular-grande">
+          <span class="lateral izq1"></span>
+          <span class="lateral izq2"></span>
+          <span class="lateral der1"></span>
+          <div class="pantalla">
+            <div class="isla"></div>
+            <div
+              class="barra-estado"
+              id="barra-estado"
+              role="button"
+              tabindex="0"
+              title="Baja o toca para ver las notificaciones"
+            >
+              <span class="hora">12:00</span>
+              <span class="iconos">
+                <img
+                  class="logo-notif logo-nequi"
+                  id="logo-notif-nequi"
+                  src="/photos/logo-nequi.png"
+                  alt="Notificaciones Nequi"
+                  hidden
+                /><img
+                  class="logo-notif logo-twitter"
+                  id="logo-notif-twitter"
+                  src="/photos/logo-x.png"
+                  alt="Notificaciones Twitter"
+                  hidden
+                />
+              </span>
+            </div>
+            <div class="tirador" id="tirador" title="Bajar notificaciones">
+              ⌄
+            </div>
+
+            <div class="apps">
+              <a
+                class="app"
+                href="/nequi.html"
+                style="--d: 0.34s"
+                title="Abrir Nequi"
+              >
+                <span class="icono nequi"
+                  ><span class="letra">N</span
+                  ><img
+                    src="/photos/logo-nequi.png"
+                    alt="Nequi"
+                    onerror="this.remove()"
+                /></span>
+                <span class="nombre">Nequi</span>
+              </a>
+              <a
+                class="app"
+                href="/twitter.html"
+                style="--d: 0.48s"
+                title="Abrir Twitter"
+              >
+                <span class="icono twitter"
+                  ><span class="letra">𝕏</span
+                  ><img
+                    src="/photos/logo-x.png"
+                    alt="Twitter / X"
+                    onerror="this.remove()"
+                /></span>
+                <span class="nombre">Twitter</span>
+              </a>
+            </div>
+
+            <div class="puntos">
+              <i class="activo"></i><i></i><i></i>
+            </div>
+            <div class="dock"></div>
+            <div class="pista-hogar"></div>
+
+            <!-- Centro de notificaciones (bajar con el ratón/dedo desde arriba) -->
+            <div class="shade" id="shade" aria-hidden="true">
+              <div class="shade-reloj">
+                <span class="hora-grande" id="shade-hora">12:00:00</span>
+                <span class="fecha" id="shade-fecha">—</span>
+              </div>
+              <div class="shade-head">
+                <b>🔔 Notificaciones</b>
+                <button
+                  class="borrar-todas"
+                  id="borrar-todas"
+                  type="button"
+                >
+                  🗑 Eliminar todas
+                </button>
+              </div>
+              <div class="lista-notifs" id="lista-notifs"></div>
+              <button class="shade-cerrar" id="shade-cerrar" type="button">
+                ⌃ Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="leyenda-celular">
+          Toca una app para abrirla · Cierra con el botón ✕
+        </p>
+      </div>
+    </div>
+
     <script>
       /* ===== Nieve de Navidad (igual que iniciar-sesion / dashboard) ===== */
       (function () {
@@ -1216,6 +2084,259 @@
       };
       const registrosPorPagina = 10;
       const productosPorPagina = 5;
+
+      /* ===== Abrir / cerrar celular ===== */
+      const modalCelular = document.querySelector("#celular-modal");
+      function abrirCelular() {
+        if (!modalCelular) return;
+        modalCelular.hidden = false;
+        document.body.style.overflow = "hidden";
+        cargarNotificaciones();
+      }
+      function cerrarCelular() {
+        if (!modalCelular || modalCelular.hidden) return;
+        modalCelular.hidden = true;
+        document.body.style.overflow = "";
+        cerrarShade();
+      }
+      document
+        .querySelector("#abrir-celular")
+        .addEventListener("click", abrirCelular);
+      document
+        .querySelector("#cerrar-celular")
+        .addEventListener("click", cerrarCelular);
+      modalCelular.addEventListener("click", (evento) => {
+        if (evento.target.id === "celular-modal") cerrarCelular();
+      });
+
+      /* ===== Reloj real del equipo (hora/fecha del PC) ===== */
+      const dosDigitos = (n) => String(n).padStart(2, "0");
+      function actualizarRelojes() {
+        const ahora = new Date();
+        const hora = `${dosDigitos(ahora.getHours())}:${dosDigitos(ahora.getMinutes())}`;
+        document
+          .querySelectorAll(".hora")
+          .forEach((el) => (el.textContent = hora));
+        const grande = document.querySelector("#shade-hora");
+        if (grande)
+          grande.textContent = `${hora}:${dosDigitos(ahora.getSeconds())}`;
+        const fecha = document.querySelector("#shade-fecha");
+        if (fecha)
+          fecha.textContent = ahora.toLocaleDateString("es-CO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+      }
+      actualizarRelojes();
+      setInterval(actualizarRelojes, 1000);
+
+      /* ===== Notificaciones del celular (guardadas en MySQL del servidor) ===== */
+      let cacheNotificaciones = [];
+
+      // Descarga la bandeja desde /api/celular/notificaciones (el servidor
+      // sincroniza por ti los movimientos de Nequi y las publicaciones).
+      async function cargarNotificaciones() {
+        try {
+          const respuesta = await fetch("/api/celular/notificaciones", {
+            cache: "no-store",
+          });
+          if (respuesta.status === 401) return;
+          const datos = await respuesta.json().catch(() => ({}));
+          if (!respuesta.ok) {
+            throw new Error(datos.error || "Sin respuesta del servidor.");
+          }
+          if (Array.isArray(datos.notificaciones)) {
+            cacheNotificaciones = datos.notificaciones;
+            pintarNotificaciones();
+          }
+        } catch {
+          const contenedor = document.querySelector("#lista-notifs");
+          if (contenedor && !cacheNotificaciones.length) {
+            contenedor.innerHTML =
+              '<p class="sin-notifs">🔕 No se pudieron cargar las notificaciones.<br>Revisa que el servidor esté en línea.</p>';
+          }
+        }
+      }
+      function tiempoRelativo(iso) {
+        const momento = new Date(iso);
+        if (isNaN(momento.getTime())) return "";
+        const segundos = Math.round((Date.now() - momento.getTime()) / 1000);
+        if (segundos < 60) return "ahora";
+        if (segundos < 3600) return `hace ${Math.floor(segundos / 60)} min`;
+        if (segundos < 86400) return `hace ${Math.floor(segundos / 3600)} h`;
+        return momento.toLocaleDateString("es-CO", {
+          day: "numeric",
+          month: "short",
+        });
+      }
+      function escaparNotificacion(valor) {
+        return String(valor ?? "").replace(
+          /[&<>"']/g,
+          (caracter) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[caracter],
+        );
+      }
+
+      function pintarNotificaciones() {
+        const contenedor = document.querySelector("#lista-notifs");
+        const lista = cacheNotificaciones;
+        const badge = document.querySelector("#badge-notifs");
+        if (badge) {
+          badge.textContent = String(lista.length);
+          badge.hidden = lista.length === 0;
+        }
+        // Arriba en la barra de estado: el logo de Nequi y/o de Twitter solo
+        // aparece cuando hay notificaciones de ese tipo pendientes.
+        const hayNequi = lista.some(
+          (notificacion) =>
+            notificacion.icono === "💰" ||
+            notificacion.icono === "💸" ||
+            /nequi|plata/i.test(String(notificacion.titulo || "")),
+        );
+        const hayTwitter = lista.some(
+          (notificacion) =>
+            notificacion.icono === "🐦" ||
+            /publicaci/i.test(String(notificacion.titulo || "")),
+        );
+        document
+          .querySelectorAll(".logo-nequi")
+          .forEach((img) => (img.hidden = !hayNequi));
+        document
+          .querySelectorAll(".logo-twitter")
+          .forEach((img) => (img.hidden = !hayTwitter));
+        if (!contenedor) return;
+        if (!lista.length) {
+          contenedor.innerHTML =
+            '<p class="sin-notifs">🔕 No tienes notificaciones.<br>Se avisará aquí cuando te den plata o haya publicaciones nuevas.</p>';
+          return;
+        }
+        contenedor.innerHTML = lista
+          .map(
+            (notificacion, indice) => `
+            <article class="notif" style="--d: ${(indice * 0.07).toFixed(2)}s">
+              <span class="ico">${escaparNotificacion(notificacion.icono || "🔔")}</span>
+              <div class="cuerpo">
+                <b>${escaparNotificacion(notificacion.titulo || "Notificación")}</b>
+                <p>${escaparNotificacion(notificacion.texto || "")}</p>
+                <time>${escaparNotificacion(tiempoRelativo(notificacion.fecha))}</time>
+              </div>
+              <button class="borrar" type="button" data-borrar="${escaparNotificacion(notificacion.id)}" aria-label="Eliminar notificación">×</button>
+            </article>`,
+          )
+          .join("");
+      }
+
+      async function borrarNotificacion(id) {
+        const card = [...document.querySelectorAll(".notif")].find(
+          (elemento) =>
+            elemento.querySelector("[data-borrar]")?.dataset.borrar ===
+            String(id),
+        );
+        // Quita la tarjeta de la pantalla con animación (optimista)...
+        if (card) card.classList.add("saliendo");
+        // ...y la borra de verdad en MySQL.
+        try {
+          await fetch(
+            `/api/celular/notificaciones/${encodeURIComponent(id)}`,
+            { method: "DELETE" },
+          );
+        } catch {
+          /* sin conexión: se recupera al volver a cargar la bandeja */
+        }
+        cacheNotificaciones = cacheNotificaciones.filter(
+          (notificacion) => String(notificacion.id) !== String(id),
+        );
+        setTimeout(pintarNotificaciones, card ? 260 : 0);
+      }
+
+      async function borrarTodasNotificaciones() {
+        const tarjetas = [...document.querySelectorAll(".notif")];
+        tarjetas.forEach((tarjeta, indice) => {
+          setTimeout(() => tarjeta.classList.add("saliendo"), indice * 45);
+        });
+        try {
+          await fetch("/api/celular/notificaciones", { method: "DELETE" });
+        } catch {
+          /* sin conexión */
+        }
+        cacheNotificaciones = [];
+        setTimeout(
+          pintarNotificaciones,
+          tarjetas.length ? tarjetas.length * 45 + 240 : 60,
+        );
+      }
+
+      // La sincronización de notificaciones (Nequi + Twitter) ahora la hace
+      // el servidor en MySQL dentro de GET /api/celular/notificaciones.
+
+      /* ===== Abrir/cerrar el centro de notificaciones ===== */
+      const shade = document.querySelector("#shade");
+      function abrirShade() {
+        if (!shade) return;
+        shade.classList.add("abierto");
+        shade.setAttribute("aria-hidden", "false");
+        pintarNotificaciones();
+        cargarNotificaciones();
+      }
+      function cerrarShade() {
+        if (!shade) return;
+        shade.classList.remove("abierto");
+        shade.setAttribute("aria-hidden", "true");
+      }
+      document
+        .querySelector("#barra-estado")
+        .addEventListener("click", () =>
+          shade.classList.contains("abierto") ? cerrarShade() : abrirShade(),
+        );
+      document
+        .querySelector("#tirador")
+        .addEventListener("click", abrirShade);
+      document
+        .querySelector("#shade-cerrar")
+        .addEventListener("click", cerrarShade);
+      document
+        .querySelector("#borrar-todas")
+        .addEventListener("click", borrarTodasNotificaciones);
+      document
+        .querySelector("#lista-notifs")
+        .addEventListener("click", (evento) => {
+          const boton = evento.target.closest("[data-borrar]");
+          if (!boton) return;
+          borrarNotificacion(boton.dataset.borrar);
+        });
+
+      /* Gesto: arrastrar desde arriba hacia abajo abre, hacia arriba cierra */
+      (function gestoShade() {
+        const pantalla = document.querySelector(".celular-grande .pantalla");
+        if (!pantalla) return;
+        let inicioY = null;
+        pantalla.addEventListener("pointerdown", (evento) => {
+          inicioY = evento.clientY;
+        });
+        pantalla.addEventListener("pointerup", (evento) => {
+          if (inicioY === null) return;
+          const delta = evento.clientY - inicioY;
+          const desdeArriba =
+            inicioY - pantalla.getBoundingClientRect().top < 100;
+          inicioY = null;
+          if (shade.classList.contains("abierto")) {
+            if (delta < -40) cerrarShade();
+          } else if (desdeArriba && delta > 40) {
+            abrirShade();
+          }
+        });
+        pantalla.addEventListener("pointercancel", () => (inicioY = null));
+      })();
+
+      cargarNotificaciones();
 
       function escaparHtmlCiudadano(valor) {
         return String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({
@@ -1438,7 +2559,9 @@
         if (evento.target.id === "expediente-detalle") evento.currentTarget.hidden = true;
       });
       document.addEventListener("keydown", (evento) => {
-        if (evento.key === "Escape") document.querySelector("#expediente-detalle").hidden = true;
+        if (evento.key !== "Escape") return;
+        document.querySelector("#expediente-detalle").hidden = true;
+        cerrarCelular();
       });
       document
         .querySelector("#expediente-registros")
@@ -1519,7 +2642,6 @@
       async function cargar() {
         const rs = await Promise.allSettled([
           fetch("/api/usuario", { cache: "no-store" }),
-          fetch("/api/nequi", { cache: "no-store" }),
           fetch("/api/expediente", { cache: "no-store" }),
           fetch("/api/tienda", { cache: "no-store" }),
           fetch("/api/comportamiento", { cache: "no-store" }),
@@ -1543,28 +2665,7 @@
           };
           document.querySelector("#sin-cedula").style.display = "none";
         }
-        const respuestaNequi = rs[1];
-        const n =
-          respuestaNequi.status === "fulfilled"
-            ? await respuestaNequi.value.json()
-            : {};
-        if (respuestaNequi.status === "fulfilled" && respuestaNequi.value.ok) {
-          const s = n.saldo;
-          const billetera = Number(s?.billetera || 0);
-          const banco = Number(s?.banco || 0);
-          document.querySelector("#mano").textContent =
-            moneda.format(billetera);
-          document.querySelector("#nequi").textContent = moneda.format(banco);
-          document.querySelector("#total").textContent = moneda.format(
-            billetera + banco,
-          );
-          document.querySelector("#tarjeta").textContent = s?.numeroTarjeta
-            ? "VISA • " + String(s.numeroTarjeta).slice(-4)
-            : "VISA • ----";
-        } else {
-          document.querySelector("#nequi").textContent = "No disponible";
-        }
-        const respuestaExpediente = rs[2];
+        const respuestaExpediente = rs[1];
         if (respuestaExpediente.status === "rejected") {
           document.querySelector("#estado").textContent = "No disponible";
         } else {
@@ -1603,7 +2704,7 @@
             estadoExpediente.multas = e.multas || [];
           }
         }
-        const respuestaTienda = rs[3];
+        const respuestaTienda = rs[2];
         if (
           respuestaTienda.status === "fulfilled" &&
           respuestaTienda.value.ok
@@ -1616,7 +2717,7 @@
             pintarInventarioTienda();
           }
         }
-        const respuestaComportamiento = rs[4];
+        const respuestaComportamiento = rs[3];
         if (
           respuestaComportamiento.status === "fulfilled" &&
           respuestaComportamiento.value.ok
@@ -1625,7 +2726,7 @@
             await respuestaComportamiento.value.json();
           estadoExpediente.notas = datosComportamiento.notas || [];
           estadoExpediente.sanciones = datosComportamiento.sanciones || [];
-          if (estadoExpediente.vista === "comportamiento")s
+          if (estadoExpediente.vista === "comportamiento")
             pintarComportamiento();
         }
         document.querySelector("#estado-carga").textContent =
