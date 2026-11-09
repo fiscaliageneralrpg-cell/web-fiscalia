@@ -809,29 +809,48 @@
         background: #fff;
       }
 
-      .app-volver {
+      /* Barra de inicio estilo iPhone (sube para salir de la app) */
+      .app-inicio {
         position: absolute;
-        top: 46px;
-        left: 14px;
-        z-index: 2;
-        padding: 6px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.35);
-        border-radius: 999px;
-        background: rgba(8, 8, 10, 0.8);
-        color: #fff;
-        font-size: 11.5px;
-        font-weight: 800;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-        transition: all 0.2s ease;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 3;
+        height: 46px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 9px;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.28) 100%
+        );
+        opacity: 0.9;
+        transition: opacity 0.2s ease;
       }
 
-      .app-volver:hover {
-        background: #fff;
-        color: #000;
-        border-color: #fff;
+      .app-inicio:active {
+        cursor: grabbing;
+        opacity: 1;
+      }
+
+      .app-inicio-linea {
+        display: block;
+        width: 148px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+        transition: transform 0.2s ease;
+      }
+
+      .app-inicio.subiendo .app-inicio-linea {
+        transform: translateY(-14px);
       }
 
       /* ===== Modal del celular ===== */
@@ -2156,8 +2175,8 @@
             <div class="apps">
               <a
                 class="app"
-                href="/nequi.html"
-                data-app="/nequi.html"
+                href="#nequi"
+                data-app="nequi"
                 style="--d: 0.34s"
                 title="Abrir Nequi"
               >
@@ -2171,8 +2190,8 @@
               </a>
               <a
                 class="app"
-                href="/twitter.html"
-                data-app="/twitter.html"
+                href="#twitter"
+                data-app="twitter"
                 style="--d: 0.48s"
                 title="Abrir Twitter"
               >
@@ -2194,14 +2213,21 @@
 
             <!-- App abierta DENTRO de la tablet (no sale de ciudadano.html) -->
             <div class="app-vista" id="app-vista" aria-hidden="true">
-              <button class="app-volver" id="app-volver" type="button">
-                Volver
-              </button>
               <iframe
                 id="app-frame"
                 title="App del celular"
                 src="about:blank"
               ></iframe>
+              <!-- Barra de inicio estilo iPhone: sube para salir de la app -->
+              <div
+                class="app-inicio"
+                id="app-inicio"
+                role="button"
+                tabindex="0"
+                title="Desliza hacia arriba para salir de la app"
+              >
+                <span class="app-inicio-linea"></span>
+              </div>
             </div>
 
             <!-- Pantalla de bloqueo: desliza hacia arriba para entrar -->
@@ -2237,6 +2263,2635 @@
         </p>
       </div>
     </div>
+
+    <template id="plantilla-nequi">
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Nequi Medellín RP: saldo, movimientos, tarjeta y transferencias."
+    />
+    <title>Nequi | Medellín RP</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      :root {
+        --morado: #2b0033; /* cabecera oscura */
+        --morado-2: #43003f;
+        --magenta: #da0081;
+        --magenta-claro: #ff3dae;
+        --uva: #7a00e6;
+        --lavanda: #efe9f5;
+        --lavanda-2: #f7f4fa;
+        --linea: #e7e1ec;
+        --tinta: #1b0022;
+        --muted: #7c6d88;
+        --verde: #1b7f4b;
+        --rojo: #c62828;
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Emojis ilustrados (set Twemoji) en vez de emojis del sistema */
+      .emo {
+        display: inline-block;
+        width: 1.1em;
+        height: 1.1em;
+        vertical-align: -0.18em;
+      }
+
+      .promo-emoji.emo { width: 30px; height: 30px; }
+      .seccion .emo { width: 20px; height: 20px; }
+      .multas-cabeza .emo { width: 21px; height: 21px; }
+      .tile-icono .emo,
+      .fila-icono .emo,
+      .mov-icono .emo { width: 25px; height: 25px; }
+      .nav-icono .emo { width: 21px; height: 21px; }
+      .operation .emo { width: 19px; height: 19px; margin-right: 5px; }
+      .saludo small .emo,
+      .pie-nequi .emo { width: 15px; height: 15px; }
+
+      body {
+        min-height: 100vh;
+        color: var(--tinta);
+        background:
+          radial-gradient(900px 420px at 50% -160px, rgba(218, 0, 129, 0.16), transparent 62%),
+          radial-gradient(700px 380px at 108% 104%, rgba(122, 0, 230, 0.1), transparent 60%),
+          #efeaf1;
+        font-family:
+          "Inter",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      @keyframes aparecer {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes entrarDerecha {
+        from { opacity: 0; transform: translateX(26px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
+      /* ===== Pantalla de carga estilo app Nequi ===== */
+      .carga-nequi {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        display: grid;
+        place-items: center;
+        background: #ffffff;
+        transition: opacity 0.45s ease, visibility 0.45s ease;
+        animation: cargaSegura 0.01s linear 7s forwards;
+      }
+
+      .carga-nequi.fuera {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      @keyframes cargaSegura {
+        to { opacity: 0; visibility: hidden; pointer-events: none; }
+      }
+
+      .carga-caja {
+        display: grid;
+        justify-items: center;
+        gap: 15px;
+        padding: 26px;
+        text-align: center;
+      }
+
+      .nequi-icono {
+        width: 88px;
+        height: 88px;
+      }
+
+      .marca-nequi {
+        width: 158px;
+        height: 50px;
+      }
+
+      .carga-barra {
+        width: 190px;
+        height: 3px;
+        border-radius: 99px;
+        overflow: hidden;
+        background: #ececec;
+      }
+
+      .carga-barra span {
+        display: block;
+        height: 100%;
+        width: 40%;
+        border-radius: 99px;
+        background: var(--magenta);
+        animation: cargarBarra 1.25s ease-in-out infinite;
+      }
+
+      @keyframes cargarBarra {
+        0% { transform: translateX(-115%); }
+        100% { transform: translateX(255%); }
+      }
+
+      .carga-texto {
+        color: #9a9a9a;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      /* ===== Contenedor tipo app ===== */
+      .app {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        background: #ffffff;
+      }
+
+      .vista {
+        display: none;
+        padding-bottom: 104px;
+      }
+
+      .vista.activa {
+        display: block;
+        animation: aparecer 0.4s ease both;
+      }
+
+      .vista.activa.desde-derecha {
+        animation: entrarDerecha 0.38s ease both;
+      }
+
+      /* ===== Cabecera de inicio (estilo Nequi) ===== */
+      .cabecera {
+        position: relative;
+        overflow: hidden;
+        padding: 28px max(20px, calc((100% - 1080px) / 2)) 32px;
+        color: #fff;
+        background: linear-gradient(160deg, var(--morado) 0%, var(--morado-2) 100%);
+      }
+
+      /* Decoración de cabecera estilo Nequi: burbujas + retícula de puntos */
+      .cabecera::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 150px;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1.4px, transparent 1.5px);
+        background-size: 22px 22px;
+        pointer-events: none;
+      }
+
+      .deco-burbuja {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .deco-burbuja.b1 {
+        width: 230px;
+        height: 230px;
+        top: -95px;
+        right: -60px;
+        background: radial-gradient(circle, rgba(218, 0, 129, 0.55), rgba(218, 0, 129, 0) 70%);
+      }
+
+      .deco-burbuja.b2 {
+        width: 180px;
+        height: 180px;
+        bottom: -75px;
+        left: -55px;
+        background: radial-gradient(circle, rgba(122, 0, 230, 0.45), rgba(122, 0, 230, 0) 70%);
+      }
+
+      .deco-burbuja.b3 {
+        width: 96px;
+        height: 96px;
+        top: 46px;
+        left: 14%;
+        border: 1.5px solid rgba(255, 255, 255, 0.28);
+      }
+
+      .cabecera-top,
+      .saldo-bloque {
+        position: relative;
+        z-index: 1;
+      }
+
+      .avatar-nequi {
+        width: 34px;
+        height: 34px;
+      }
+
+      .avatar-foto {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+      }
+
+      .saldo-total {
+        display: block;
+        margin-top: 7px;
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 16px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .saldo-total b {
+        font-weight: 800;
+      }
+
+      /* Banner promocional estilo Nequi */
+      .promo-nequi {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: -4px;
+        padding: 17px 20px;
+        overflow: hidden;
+        border-radius: 16px;
+        color: #fff;
+        background: linear-gradient(110deg, var(--magenta), var(--uva));
+        box-shadow: 0 14px 32px rgba(218, 0, 129, 0.28);
+      }
+
+      .promo-nequi::after {
+        content: "\1F49C";
+        position: absolute;
+        right: -16px;
+        bottom: -30px;
+        font-size: 104px;
+        opacity: 0.18;
+        transform: rotate(-12deg);
+        pointer-events: none;
+      }
+
+      .promo-emoji {
+        font-size: 27px;
+      }
+
+      .promo-nequi b {
+        display: block;
+        font-size: 16.5px;
+        letter-spacing: -0.01em;
+      }
+
+      .promo-nequi small {
+        display: block;
+        margin-top: 3px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 13px;
+      }
+
+      .cabecera-top {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .avatar-app {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        flex: none;
+        place-items: center;
+        border: 1.5px solid rgba(255, 255, 255, 0.55);
+        border-radius: 12px;
+        font-size: 22px;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .saludo {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .saludo small {
+        display: block;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+      }
+
+      .saludo strong {
+        display: block;
+        overflow: hidden;
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .saldo-bloque {
+        margin-top: 26px;
+        text-align: center;
+      }
+
+      .saldo-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 15px;
+      }
+
+      /* Ojito para ocultar/mostrar el saldo (como la app real) */
+      .btn-ojo {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.14);
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+
+      .btn-ojo:hover {
+        transform: scale(1.08);
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .btn-ojo svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .btn-ojo .ico-ojo-cerrado {
+        display: none;
+      }
+
+      body.saldo-oculto .btn-ojo .ico-ojo {
+        display: none;
+      }
+
+      body.saldo-oculto .btn-ojo .ico-ojo-cerrado {
+        display: block;
+      }
+
+      .saldo-valor {
+        margin-top: 6px;
+        font-size: clamp(40px, 11vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .saldo-actualizado {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 11.5px;
+      }
+
+      .btn-tu-plata {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+        padding: 11px 22px;
+        border: 1.5px solid rgba(255, 255, 255, 0.75);
+        border-radius: 12px;
+        color: #fff;
+        background: transparent;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .btn-tu-plata:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      /* Doble chevron magenta (como la app real) */
+      .onda {
+        position: relative;
+        height: 94px;
+        background: transparent;
+      }
+
+      .onda span {
+        position: absolute;
+        inset: 0;
+        background: var(--magenta);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+
+      .onda::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: -48px;
+        height: 86px;
+        background: var(--morado-2);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+
+      /* ===== Contenido ===== */
+      .contenido {
+        padding: 24px max(16px, calc((100% - 1080px) / 2)) 8px;
+      }
+
+      .seccion {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 28px 2px 14px;
+        color: var(--tinta);
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .seccion::before {
+        content: "";
+        width: 6px;
+        height: 20px;
+        border-radius: 99px;
+        background: linear-gradient(180deg, var(--magenta), var(--uva));
+      }
+
+      /* Tarjeta de multas pendientes */
+      .multas-card {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding: 20px;
+        border: 1px solid #eee7f3;
+        border-radius: var(--radius);
+        text-align: left;
+        color: var(--tinta);
+        background: #fff;
+        font: inherit;
+        cursor: pointer;
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(43, 0, 51, 0.07);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      /* Decoración: anillos magenta escondidos en la tarjeta */
+      .multas-card::after {
+        content: "";
+        position: absolute;
+        right: -70px;
+        top: -70px;
+        width: 190px;
+        height: 190px;
+        border: 26px solid rgba(218, 0, 129, 0.12);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .multas-card::before {
+        content: "";
+        position: absolute;
+        right: 44px;
+        bottom: -54px;
+        width: 110px;
+        height: 110px;
+        border: 16px solid rgba(122, 0, 230, 0.1);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .multas-card > span {
+        position: relative;
+        z-index: 1;
+      }
+
+      .multas-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(43, 0, 51, 0.13);
+      }
+
+      .multas-cabeza {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .multas-cuenta {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+
+      .multas-total {
+        display: block;
+        margin-top: 4px;
+        color: var(--magenta);
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .multas-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 14px;
+        padding: 11px 22px;
+        border-radius: 999px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--magenta-claro), var(--magenta) 55%, var(--uva));
+        font-size: 13.5px;
+        font-weight: 700;
+        box-shadow: 0 8px 18px rgba(218, 0, 129, 0.26);
+      }
+
+      .multas-texto {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .seccion-accion {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        margin-left: auto;
+        place-items: center;
+        border: 1px solid var(--linea);
+        border-radius: 10px;
+        color: var(--tinta);
+        background: #fff;
+        box-shadow: 0 3px 10px rgba(43, 0, 51, 0.06);
+      }
+
+      .seccion-accion svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      /* Filas horizontales */
+      .fila-tiles {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 2px 2px 6px;
+        scrollbar-width: none;
+      }
+
+      .fila-tiles::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tile {
+        flex: 0 0 auto;
+        width: 104px;
+        padding: 0;
+        border: 0;
+        border-radius: 16px;
+        text-align: center;
+        background: transparent;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .tile:hover {
+        transform: translateY(-3px);
+      }
+
+      .tile .tile-icono {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto;
+        place-items: center;
+        border: 1px solid var(--linea);
+        border-radius: 15px;
+        font-size: 22px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(43, 0, 51, 0.05);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .tile:hover .tile-icono {
+        border-color: #cfc3db;
+        box-shadow: 0 8px 18px rgba(43, 0, 51, 0.1);
+      }
+
+      .tile .tile-txt {
+        display: block;
+        margin-top: 8px;
+        color: var(--tinta);
+        font-size: 12.5px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .tile.apagado {
+        cursor: default;
+        opacity: 0.62;
+      }
+
+      .tile.apagado:hover {
+        transform: none;
+      }
+
+      .tile.apagado:hover .tile-icono {
+        border-color: var(--linea);
+        box-shadow: 0 4px 12px rgba(43, 0, 51, 0.05);
+      }
+
+      .tile.favorito .tile-icono {
+        color: #fff;
+        border-color: var(--magenta);
+        background: linear-gradient(135deg, var(--magenta), var(--uva));
+        box-shadow: 0 8px 20px rgba(218, 0, 129, 0.25);
+      }
+
+      .tile.favorito .tile-txt {
+        color: var(--magenta);
+      }
+
+      /* ===== Subvistas ===== */
+      .vista-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 20px max(16px, calc((100% - 1080px) / 2)) 4px;
+        background: #fff;
+      }
+
+      .volver {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1px solid var(--linea);
+        border-radius: 50%;
+        color: var(--tinta);
+        background: #fff;
+        font-size: 18px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .volver:hover {
+        background: var(--lavanda);
+      }
+
+      .vista-titulo {
+        padding: 12px max(20px, calc((100% - 1080px) / 2)) 4px;
+        font-size: 27px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      /* Tu plata */
+      .suma {
+        padding: 18px max(20px, calc((100% - 1080px) / 2)) 6px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .suma strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--tinta);
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .lista-plata {
+        display: grid;
+        gap: 12px;
+        width: min(1080px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 16px 0 4px;
+      }
+
+      .fila-plata {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        padding: 18px;
+        border: 1px solid #eee7f3;
+        border-radius: var(--radius);
+        text-align: left;
+        color: var(--tinta);
+        background: #fff;
+        font: inherit;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(43, 0, 51, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .fila-plata:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(43, 0, 51, 0.12);
+      }
+
+      .fila-plata .fila-icono {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: none;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--lavanda);
+        font-size: 19px;
+      }
+
+      .fila-plata .fila-txt {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .fila-plata .fila-txt b {
+        display: block;
+        font-size: 16.5px;
+        font-weight: 700;
+      }
+
+      .fila-plata .fila-txt small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .fila-plata .fila-valor {
+        color: var(--tinta);
+        font-size: 16px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .fila-plata .fila-flecha {
+        color: var(--muted);
+        font-size: 20px;
+      }
+
+      /* ===== Tarjeta ===== */
+      .tarjeta-zona {
+        perspective: 1100px;
+        width: min(1080px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 18px 0 6px;
+      }
+
+      .tarjeta-nequi {
+        position: relative;
+        max-width: 640px;
+        margin-inline: auto;
+        min-height: 210px;
+        padding: 24px;
+        overflow: hidden;
+        border-radius: 22px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--morado) 0%, #5b0052 52%, var(--magenta) 100%);
+        box-shadow: 0 22px 50px rgba(43, 0, 51, 0.34);
+        transform-style: preserve-3d;
+      }
+
+      .tarjeta-nequi.animar {
+        animation: entrarTarjeta 0.75s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+      }
+
+      @keyframes entrarTarjeta {
+        0% {
+          opacity: 0;
+          transform: perspective(1100px) rotateY(-78deg) translateX(-34px) scale(0.92);
+        }
+        100% {
+          opacity: 1;
+          transform: perspective(1100px) rotateY(0) translateX(0) scale(1);
+        }
+      }
+
+      /* Barrido de luz (animación Nequi) */
+      .tarjeta-nequi .brillo {
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(
+          115deg,
+          transparent 34%,
+          rgba(255, 255, 255, 0.42) 48%,
+          transparent 62%
+        );
+        transform: translateX(-130%);
+        pointer-events: none;
+      }
+
+      .tarjeta-nequi.animar .brillo {
+        animation: barrer 1s 0.4s ease both;
+      }
+
+      @keyframes barrer {
+        to { transform: translateX(130%); }
+      }
+
+      .tarjeta-nequi .anillo {
+        position: absolute;
+        right: -60px;
+        bottom: -96px;
+        width: 240px;
+        height: 240px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 50%;
+      }
+
+      .tarjeta-marca {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .tarjeta-marca .marca-nequi {
+        width: 96px;
+        height: 30px;
+        filter: brightness(0) invert(1);
+      }
+
+      .chip {
+        position: absolute;
+        top: 66px;
+        right: 24px;
+        z-index: 1;
+        width: 44px;
+        height: 33px;
+        border-radius: 7px;
+        background: linear-gradient(135deg, #ffe6a8, #d3b25f);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
+      }
+
+      .chip::before,
+      .chip::after {
+        content: "";
+        position: absolute;
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      .chip::before {
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1.5px;
+        transform: translateY(-50%);
+      }
+
+      .chip::after {
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1.5px;
+        transform: translateX(-50%);
+      }
+
+      .tarjeta-numero {
+        position: relative;
+        z-index: 1;
+        margin-top: 62px;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+      }
+
+      .tarjeta-pie {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 20px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .datos-tarjeta {
+        display: grid;
+        gap: 10px;
+        width: min(640px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 16px 0 4px;
+      }
+
+      .dato {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 15px 18px;
+        border-radius: 14px;
+        background: var(--lavanda);
+        font-size: 14px;
+      }
+
+      .dato span {
+        color: var(--muted);
+      }
+
+      .dato b {
+        color: var(--tinta);
+        font-weight: 700;
+        text-align: right;
+      }
+
+      /* ===== Movimientos ===== */
+      .lista-movs {
+        display: grid;
+        gap: 10px;
+        width: min(1080px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 14px 0;
+      }
+
+      /* Recientes / Anteriores (segmentado estilo Nequi) */
+      .mov-tabs {
+        display: flex;
+        gap: 6px;
+        width: min(1080px, calc(100% - 32px));
+        margin: 14px auto 0;
+        padding: 5px;
+        border-radius: 999px;
+        background: var(--lavanda);
+      }
+
+      .mov-tab {
+        flex: 1;
+        padding: 11px 14px;
+        border: 0;
+        border-radius: 999px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .mov-tab:hover {
+        color: var(--tinta);
+      }
+
+      .mov-tab.activa {
+        color: var(--tinta);
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(43, 0, 51, 0.12);
+      }
+
+      .mov {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 15px 16px;
+        border: 1px solid var(--linea);
+        border-radius: 14px;
+        background: #fff;
+        animation: aparecer 0.35s ease both;
+      }
+
+      .mov-icono {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: none;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--lavanda);
+        font-size: 17px;
+      }
+
+      .mov-txt {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .mov-txt b {
+        display: block;
+        font-size: 14.5px;
+        font-weight: 700;
+      }
+
+      .mov-txt small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mov-valor {
+        font-size: 15px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .mov-valor.positivo { color: var(--verde); }
+      .mov-valor.negativo { color: var(--rojo); }
+
+      .vacio {
+        padding: 46px 24px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .vacio strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--tinta);
+        font-size: 16px;
+      }
+
+      /* ===== Enviar dinero ===== */
+      .ops {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        width: min(1080px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 8px 0 0;
+      }
+
+      .operation {
+        padding: 15px 8px;
+        border: 1px solid #eee7f3;
+        border-radius: 14px;
+        color: var(--tinta);
+        background: #fff;
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(43, 0, 51, 0.05);
+        transition: background 0.2s ease, border-color 0.2s ease,
+          transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .operation:hover,
+      .operation:active {
+        transform: translateY(-2px);
+        border-color: var(--magenta);
+        background: #fbe6f3;
+        box-shadow: 0 10px 22px rgba(218, 0, 129, 0.14);
+      }
+
+      .operation-form {
+        display: none;
+        width: min(640px, calc(100% - 32px));
+        margin-inline: auto;
+        padding: 16px 0;
+      }
+
+      .operation-form.visible {
+        display: block;
+        animation: aparecer 0.3s ease both;
+      }
+
+      .operation-form label {
+        display: block;
+        margin: 12px 2px 0;
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .operation-form input,
+      .operation-form select {
+        width: 100%;
+        margin-top: 7px;
+        padding: 15px;
+        border: 1px solid var(--linea);
+        border-radius: 14px;
+        color: var(--tinta);
+        background: var(--lavanda-2);
+        font: inherit;
+        font-size: 15px;
+        transition: border-color 0.2s ease;
+      }
+
+      .operation-form input:focus,
+      .operation-form select:focus {
+        outline: none;
+        border-color: var(--magenta);
+      }
+
+      .operation-form button {
+        width: 100%;
+        min-height: 52px;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 14px;
+        color: #fff;
+        background: linear-gradient(100deg, var(--magenta), var(--uva));
+        font: inherit;
+        font-size: 15.5px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 14px 32px rgba(218, 0, 129, 0.28);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .operation-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 38px rgba(218, 0, 129, 0.36);
+      }
+
+      .foot {
+        padding: 4px max(18px, calc((100% - 1080px) / 2)) 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      #error {
+        width: min(1080px, calc(100% - 32px));
+        margin: 8px auto 0;
+        padding: 14px 16px;
+        border-left: 3px solid var(--magenta);
+        border-radius: 10px;
+        background: var(--lavanda-2);
+      }
+
+      /* Pie con marca Nequi */
+      .pie-nequi {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+        padding: 22px 0 10px;
+        border-top: 1px solid var(--linea);
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+
+      .pie-nequi .marca-nequi {
+        width: 74px;
+        height: 24px;
+        opacity: 0.7;
+      }
+
+      /* ===== Navegación inferior ===== */
+      .nav-inferior {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px max(14px, calc((100% - 720px) / 2)) calc(10px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.97);
+        border-top: 1px solid var(--linea);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .nav-btn {
+        flex: 0 1 190px;
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+        padding: 8px 4px;
+        border: 0;
+        border-radius: 14px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .nav-btn .nav-icono {
+        font-size: 19px;
+        line-height: 1;
+      }
+
+      .nav-btn:hover {
+        background: var(--lavanda-2);
+      }
+
+      .nav-btn.activa {
+        color: var(--magenta);
+        background: #fdeaf5;
+      }
+
+      .nav-dinero {
+        display: grid;
+        width: 58px;
+        height: 58px;
+        flex: none;
+        place-items: center;
+        border: 0;
+        border-radius: 16px;
+        color: #fff;
+        background: linear-gradient(150deg, var(--magenta-claro), var(--magenta) 55%, var(--uva));
+        font-size: 25px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 12px 28px rgba(218, 0, 129, 0.45);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .nav-dinero:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(218, 0, 129, 0.55);
+      }
+
+      .nav-dinero:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 360px) {
+        .saldo-valor { font-size: 40px; }
+        .vista-titulo { font-size: 24px; }
+        .tile { width: 88px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  
+    <!-- Logotipo oficial de Nequi (mismo SVG de nequi.com.co) -->
+    <svg
+      width="0"
+      height="0"
+      style="position: absolute"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id="gNequi" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ff3dae" />
+          <stop offset="0.55" stop-color="#da0081" />
+          <stop offset="1" stop-color="#7a00e6" />
+        </linearGradient>
+        <symbol id="nequi-n" viewBox="0 0 100 100">
+          <g transform="translate(-1.35 18.32) scale(2.39)">
+            <path
+              fill="currentColor"
+              d="M31.9884 0.283325H28.2195C27.7041 0.283325 27.3014 0.702514 27.3014 1.20232V16.277C27.3014 16.5833 26.8987 16.6962 26.7538 16.4221L17.9918 0.686392C17.8469 0.428429 17.5892 0.283325 17.2831 0.283325H11.0177C10.5023 0.283325 10.0996 0.702514 10.0996 1.20232V25.2896C10.0996 25.8055 10.5184 26.2086 11.0177 26.2086H14.7866C15.302 26.2086 15.7047 25.7894 15.7047 25.2896V9.76345C15.7047 9.45712 16.1074 9.34426 16.2523 9.61834L25.2559 25.8216C25.4008 26.0796 25.6585 26.2247 25.9646 26.2247H31.9562C32.4716 26.2247 32.8743 25.8055 32.8743 25.3057V1.20232C32.8743 0.686392 32.4555 0.283325 31.9562 0.283325H31.9884Z"
+            />
+          </g>
+        </symbol>
+        <symbol id="nequi-app" viewBox="0 0 100 100">
+          <rect x="2" y="2" width="96" height="96" rx="26" fill="url(#gNequi)" />
+          <g transform="translate(-1.35 18.32) scale(2.39)">
+            <path
+              fill="#ffffff"
+              d="M31.9884 0.283325H28.2195C27.7041 0.283325 27.3014 0.702514 27.3014 1.20232V16.277C27.3014 16.5833 26.8987 16.6962 26.7538 16.4221L17.9918 0.686392C17.8469 0.428429 17.5892 0.283325 17.2831 0.283325H11.0177C10.5023 0.283325 10.0996 0.702514 10.0996 1.20232V25.2896C10.0996 25.8055 10.5184 26.2086 11.0177 26.2086H14.7866C15.302 26.2086 15.7047 25.7894 15.7047 25.2896V9.76345C15.7047 9.45712 16.1074 9.34426 16.2523 9.61834L25.2559 25.8216C25.4008 26.0796 25.6585 26.2247 25.9646 26.2247H31.9562C32.4716 26.2247 32.8743 25.8055 32.8743 25.3057V1.20232C32.8743 0.686392 32.4555 0.283325 31.9562 0.283325H31.9884Z"
+            />
+          </g>
+        </symbol>
+        <symbol id="nequi-marca" viewBox="0 0 104 33">
+          <path
+            d="M5.29905 0.283325H0.918073C0.411035 0.283325 0 0.694772 0 1.20232V4.92665C0 5.4342 0.411035 5.84564 0.918073 5.84564H5.29905C5.80609 5.84564 6.21713 5.4342 6.21713 4.92665V1.20232C6.21713 0.694772 5.80609 0.283325 5.29905 0.283325Z"
+            fill="#DA0081"
+          />
+          <path
+            d="M31.9884 0.283325H28.2195C27.7041 0.283325 27.3014 0.702514 27.3014 1.20232V16.277C27.3014 16.5833 26.8987 16.6962 26.7538 16.4221L17.9918 0.686392C17.8469 0.428429 17.5892 0.283325 17.2831 0.283325H11.0177C10.5023 0.283325 10.0996 0.702514 10.0996 1.20232V25.2896C10.0996 25.8055 10.5184 26.2086 11.0177 26.2086H14.7866C15.302 26.2086 15.7047 25.7894 15.7047 25.2896V9.76345C15.7047 9.45712 16.1074 9.34426 16.2523 9.61834L25.2559 25.8216C25.4008 26.0796 25.6585 26.2247 25.9646 26.2247H31.9562C32.4716 26.2247 32.8743 25.8055 32.8743 25.3057V1.20232C32.8743 0.686392 32.4555 0.283325 31.9562 0.283325H31.9884Z"
+            fill="#200020"
+          />
+          <path
+            d="M54.6487 16.809C54.6487 10.0214 50.2355 6.65173 45.3875 6.65173C39.0898 6.65173 35.498 11.021 35.498 16.9219C35.498 23.6289 40.0079 26.8212 45.2425 26.8212C50.4771 26.8212 53.5374 24.1126 54.3588 20.5978C54.4716 20.1464 54.2139 19.7433 53.5374 19.7433H50.5738C50.2355 19.7433 49.9456 19.9207 49.8007 20.2593C49.0598 21.8876 47.8679 22.7421 45.5807 22.7421C42.9876 22.7421 41.2481 21.1138 40.9904 17.8086H53.7307C54.2783 17.8086 54.6487 17.4055 54.6487 16.809ZM41.1998 14.2455C41.7474 11.811 43.1648 10.7308 45.3069 10.7308C47.2236 10.7308 48.8665 11.8432 49.092 14.2455H41.1998Z"
+            fill="#200020"
+          />
+          <path
+            d="M103.082 7.1355H99.297C98.7899 7.1355 98.3789 7.54694 98.3789 8.05449V25.3057C98.3789 25.8133 98.7899 26.2247 99.297 26.2247H103.082C103.589 26.2247 104 25.8133 104 25.3057V8.05449C104 7.54694 103.589 7.1355 103.082 7.1355Z"
+            fill="#200020"
+          />
+          <path
+            d="M74.9767 7.13548H71.2077C70.6923 7.13548 70.2897 7.55467 70.2897 8.05447V8.98958C69.1622 7.66753 67.31 6.74854 64.8779 6.74854C59.4339 6.74854 56.5508 11.6821 56.5508 16.9058C56.5508 21.4685 58.9184 26.5794 64.7651 26.5794C66.859 26.5794 69.0817 25.5798 70.2897 24.161V31.5774C70.2897 32.0934 70.7084 32.4964 71.2077 32.4964H74.9767C75.4921 32.4964 75.8947 32.0772 75.8947 31.5774V8.07059C75.8947 7.55467 75.476 7.1516 74.9767 7.1516V7.13548ZM66.3919 22.5165C63.9115 22.5165 62.172 20.6946 62.172 16.7768C62.172 12.859 63.9115 10.8114 66.3919 10.8114C68.8723 10.8114 70.6118 12.6978 70.6118 16.7768C70.6118 20.8559 68.8723 22.5165 66.3919 22.5165Z"
+            fill="#200020"
+          />
+          <path
+            d="M95.0453 7.1355H91.2763C90.7609 7.1355 90.3583 7.55469 90.3583 8.05449V17.8087C90.3583 20.9526 88.957 21.8716 87.1692 21.8716C85.3813 21.8716 83.9801 20.9526 83.9801 17.8087V8.05449C83.9801 7.53856 83.5613 7.1355 83.062 7.1355H79.2931C78.7777 7.1355 78.375 7.55469 78.375 8.05449V18.2118C78.375 24.2578 81.7091 26.6923 87.1853 26.6923C92.6615 26.6923 95.9956 24.2416 95.9956 18.2118V8.05449C95.9956 7.53856 95.5768 7.1355 95.0775 7.1355H95.0453Z"
+            fill="#200020"
+          />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ===== Pantalla de carga estilo app Nequi ===== -->
+    <div id="carga-nequi" class="carga-nequi" role="status" aria-live="polite">
+      <div class="carga-caja">
+        <svg class="nequi-icono" aria-hidden="true">
+          <use href="#nequi-app" />
+        </svg>
+        <svg class="marca-nequi" role="img" aria-label="Nequi">
+          <use href="#nequi-marca" />
+        </svg>
+        <div class="carga-barra" aria-hidden="true"><span></span></div>
+        <div class="carga-texto">Cargando tu cuenta segura</div>
+      </div>
+    </div>
+
+    <div class="app">
+      <!-- ============ INICIO ============ -->
+      <section class="vista activa" id="vista-inicio">
+        <header class="cabecera">
+          <span class="deco-burbuja b1" aria-hidden="true"></span>
+          <span class="deco-burbuja b2" aria-hidden="true"></span>
+          <span class="deco-burbuja b3" aria-hidden="true"></span>
+          <div class="cabecera-top">
+            <div class="avatar-app" aria-hidden="true">
+              <img
+                class="avatar-foto"
+                src="data:image/png;base64,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"
+                alt="Nequi"
+                onerror="this.style.display='none'"
+              />
+            </div>
+            <div class="saludo">
+              <small
+                >Hola,
+                <img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0VGOTY0NSIgZD0iTTQuODYxIDkuMTQ3Yy45NC0uNjU3IDIuMzU3LS41MzEgMy4yMDEuMTY2bC0uOTY4LTEuNDA3Yy0uNzc5LTEuMTExLS41LTIuMzEzLjYxMi0zLjA5MyAxLjExMi0uNzc3IDQuMjYzIDEuMzEyIDQuMjYzIDEuMzEyLS43ODYtMS4xMjItLjYzOS0yLjU0NC40ODMtMy4zMzEgMS4xMjItLjc4NCAyLjY3LS41MTMgMy40NTYuNjExbDEwLjQyIDE0LjcyTDI1IDMxbC0xMS4wODMtNC4wNDJMNC4yNSAxMi42MjVjLS43OTMtMS4xMjktLjUxOS0yLjY4Ni42MTEtMy40Nzh6Ii8+PHBhdGggZmlsbD0iI0ZGREM1RCIgZD0iTTIuNjk1IDE3LjMzNnMtMS4xMzItMS42NS41MTktMi43ODFjMS42NDktMS4xMzEgMi43OC41MTggMi43OC41MThsNS4yNTEgNy42NThjLjE4MS0uMzAyLjM3OS0uNi42LS44OTRMNC41NTcgMTEuMjFzLTEuMTMxLTEuNjQ5LjUxOS0yLjc4YzEuNjQ5LTEuMTMxIDIuNzguNTE4IDIuNzguNTE4bDYuODU1IDkuOTk3Yy4yNTUtLjIwOC41MTYtLjQxNy43ODUtLjYyMkw3LjU0OSA2LjczMnMtMS4xMzEtMS42NDkuNTE5LTIuNzhjMS42NDktMS4xMzEgMi43OC41MTggMi43OC41MThsNy45NDcgMTEuNTg5Yy4yOTItLjE3OS41ODEtLjMzNC44NzEtLjQ5OEwxMi4yMzggNC43MjlzLTEuMTMxLTEuNjQ5LjUxOC0yLjc4YzEuNjQ5LTEuMTMxIDIuNzguNTE4IDIuNzguNTE4bDcuODU0IDExLjQ1NCAxLjE5NCAxLjc0MmMtNC45NDggMy4zOTQtNS40MTkgOS43NzktMi41OTIgMTMuOTAyLjU2NS44MjUgMS4zOS4yNiAxLjM5LjI2LTMuMzkzLTQuOTQ5LTIuMzU3LTEwLjUxIDIuNTkyLTEzLjkwM0wyNC41MTUgOC42MnMtLjU0NS0xLjkyNCAxLjM3OC0yLjQ3YzEuOTI0LS41NDUgMi40NyAxLjM3OSAyLjQ3IDEuMzc5bDEuNjg1IDUuMDA0Yy42NjggMS45ODQgMS4zNzkgMy45NjEgMi4zMiA1LjgzMSAyLjY1NyA1LjI4IDEuMDcgMTEuODQyLTMuOTQgMTUuMjc5LTUuNDY1IDMuNzQ3LTEyLjkzNiAyLjM1NC0xNi42ODQtMy4xMUwyLjY5NSAxNy4zMzZ6Ii8+PGcgZmlsbD0iIzVEQURFQyI+PHBhdGggZD0iTTEyIDMyLjA0MkM4IDMyLjA0MiAzLjk1OCAyOCAzLjk1OCAyNGMwLS41NTMtLjQwNS0xLS45NTgtMXMtMS4wNDIuNDQ3LTEuMDQyIDFDMS45NTggMzAgNiAzNC4wNDIgMTIgMzQuMDQyYy41NTMgMCAxLS40ODkgMS0xLjA0MnMtLjQ0Ny0uOTU4LTEtLjk1OHoiLz48cGF0aCBkPSJNNyAzNGMtMyAwLTUtMi01LTUgMC0uNTUzLS40NDctMS0xLTFzLTEgLjQ0Ny0xIDFjMCA0IDMgNyA3IDcgLjU1MyAwIDEtLjQ0NyAxLTFzLS40NDctMS0xLTF6TTI0IDJjLS41NTIgMC0xIC40NDgtMSAxcy40NDggMSAxIDFjNCAwIDggMy41ODkgOCA4IDAgLjU1Mi40NDggMSAxIDFzMS0uNDQ4IDEtMWMwLTUuNTE0LTQtMTAtMTAtMTB6Ii8+PHBhdGggZD0iTTI5IC4wNDJjLS41NTIgMC0xIC40MDYtMSAuOTU4cy40NDggMS4wNDIgMSAxLjA0MmMzIDAgNC45NTggMi4yMjUgNC45NTggNC45NTggMCAuNTUyLjQ4OSAxIDEuMDQyIDFzLjk1OC0uNDQ4Ljk1OC0xQzM1Ljk1OCAzLjE2MyAzMyAuMDQyIDI5IC4wNDJ6Ii8+PC9nPjwvc3ZnPg=="
+                  alt=""
+                  onerror="this.remove()"
+              /></small>
+              <strong id="nombre">Ciudadano</strong>
+            </div>
+          </div>
+
+          <div class="saldo-bloque">
+            <div class="saldo-label">
+              Disponible en Nequi
+              <button
+                class="btn-ojo"
+                id="btn-ojo"
+                type="button"
+                aria-label="Mostrar u ocultar el saldo"
+              >
+                <svg
+                  class="ico-ojo"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="ico-ojo-cerrado"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+                  />
+                  <path
+                    d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+                  />
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                  <path d="M1 1l22 22" />
+                </svg>
+              </button>
+            </div>
+            <div class="saldo-valor" id="banco">$ 0</div>
+            <span class="saldo-total">Total <b id="total-cab">$ 0</b></span>
+            <span id="actualizado" class="saldo-actualizado"
+              >Consultando saldo seguro</span
+            >
+            <button class="btn-tu-plata" type="button" data-vista="tu-plata">
+              Tu plata <span aria-hidden="true">⌄</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="onda" aria-hidden="true"><span></span></div>
+
+        <main class="contenido">
+          <!-- Banner estilo Nequi -->
+          <div class="promo-nequi">
+            <img
+              class="promo-emoji emo"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBOEVENiIgZD0iTTM1Ljg4NSAxMS44MzNjMC01LjQ1LTQuNDE4LTkuODY4LTkuODY3LTkuODY4LTMuMzA4IDAtNi4yMjcgMS42MzMtOC4wMTggNC4xMjktMS43OTEtMi40OTYtNC43MS00LjEyOS04LjAxNy00LjEyOS01LjQ1IDAtOS44NjggNC40MTctOS44NjggOS44NjggMCAuNzcyLjA5OCAxLjUyLjI2NiAyLjI0MUMxLjc1MSAyMi41ODcgMTEuMjE2IDMxLjU2OCAxOCAzNC4wMzRjNi43ODMtMi40NjYgMTYuMjQ5LTExLjQ0NyAxNy42MTctMTkuOTU5LjE3LS43MjEuMjY4LTEuNDY5LjI2OC0yLjI0MnoiLz48L3N2Zz4="
+              alt=""
+              aria-hidden="true"
+              onerror="this.remove()"
+            />
+            <span>
+              <b>¡A tu ritmo!</b>
+              <small>Tu plata Nequi del Medellín RP, cuando quieras y donde quieras.</small>
+            </span>
+          </div>
+
+          <!-- Multas pendientes (reemplaza "Tu factura Claro") -->
+          <h2 class="seccion">
+            <img
+              class="emo"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzY2NzU3RiIgZD0iTTMuOTIzIDIyLjkyM2MtLjIxMi41MTEtLjc5OC43NTEtMS4zMDguNTM5LS41MS0uMjEzLS43NTEtLjc5OC0uNTM5LTEuMzA4TDYuNjkzIDkuNjE2Yy4yMTItLjUxLjc5OC0uNzUxIDEuMzA3LS41MzkuNTEuMjEzLjc1MS43OTguNTM5IDEuMzA4TDMuOTIzIDIyLjkyM3oiLz48cGF0aCBmaWxsPSIjNjY3NTdGIiBkPSJNMTMuOTIzIDIyLjE1NGMuMjEyLjUxLS4wMjkgMS4wOTUtLjUzOSAxLjMwOC0uNTEuMjEyLTEuMDk1LS4wMjgtMS4zMDgtLjUzOUw3LjQ2MSAxMC4zODVjLS4yMTItLjUxLjAyOS0xLjA5NS41MzktMS4zMDguNTEtLjIxMiAxLjA5NS4wMjkgMS4zMDguNTM5bDQuNjE1IDEyLjUzOHptMTAuMDAxLjc2OWMtLjIxMy41MTEtLjc5OS43NTEtMS4zMDkuNTM5LS41MS0uMjEzLS43NS0uNzk4LS41MzgtMS4zMDhsNC42MTYtMTIuNTM5Yy4yMTItLjUwOS43OTctLjc1IDEuMzA3LS41MzguNTEuMjEzLjc1Mi43OTguNTM5IDEuMzA4bC00LjYxNSAxMi41Mzh6Ii8+PHBhdGggZmlsbD0iIzY2NzU3RiIgZD0iTTMzLjkyMyAyMi4xNTRjLjIxMi41MS0uMDI4IDEuMDk1LS41MzggMS4zMDgtLjUxLjIxMi0xLjA5Ni0uMDI4LTEuMzA5LS41MzlsLTQuNjE1LTEyLjUzOGMtLjIxMy0uNTEuMDI5LTEuMDk1LjUzOS0xLjMwOC41MS0uMjEyIDEuMDk1LjAyOSAxLjMwNy41MzlsNC42MTYgMTIuNTM4eiIvPjxwYXRoIGZpbGw9IiNGRkFDMzMiIGQ9Ik0xNC44NTcgMjJIMS4xNDNDLjUxMiAyMiAwIDIyLjUxMSAwIDIzLjE0M2MwIDIuNTI0IDMuNTgyIDQuNTcxIDggNC41NzFzOC0yLjA0NyA4LTQuNTcxYzAtLjYzMi0uNTEyLTEuMTQzLTEuMTQzLTEuMTQzek0yNCAzNEgxMmMtLjU1MiAwLTEtLjQ0Ny0xLTEgMC0yLjIwOSAzLjEzNC00IDctNHM3IDEuNzkxIDcgNGMwIC41NTMtLjQ0NyAxLTEgMXptMTAuODU3LTEySDIxLjE0M2MtLjYzMiAwLTEuMTQzLjUxMS0xLjE0MyAxLjE0MyAwIDIuNTI0IDMuNTgxIDQuNTcxIDggNC41NzFzOC0yLjA0NyA4LTQuNTcxYzAtLjYzMi0uNTExLTEuMTQzLTEuMTQzLTEuMTQzeiIvPjxwYXRoIGZpbGw9IiNGRkFDMzMiIGQ9Ik0xOSAzYzAtLjU1Mi0uNDQ3LTEtMS0xLS41NTIgMC0xIC40NDgtMSAxdjI3YzAgLjU1My40NDggMSAxIDEgLjU1MyAwIDEtLjQ0NyAxLTFWM3oiLz48Y2lyY2xlIGZpbGw9IiNGRkFDMzMiIGN4PSIxOCIgY3k9IjQiIHI9IjIiLz48Y2lyY2xlIGZpbGw9IiNGRkFDMzMiIGN4PSI4IiBjeT0iMTAiIHI9IjIiLz48Y2lyY2xlIGZpbGw9IiNGRkFDMzMiIGN4PSIyOCIgY3k9IjEwIiByPSIyIi8+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTI4IDEwYzAgMS4xMDQgMCAwLTEwIDBTOCAxMS4xMDQgOCAxMHMzLTQgMTAtNCAxMCAyLjg5NiAxMCA0eiIvPjwvc3ZnPg=="
+              alt=""
+              onerror="this.remove()"
+            />
+            Multas pendientes
+          </h2>
+          <button
+            class="multas-card"
+            id="multas-card"
+            type="button"
+            onclick="location.href='/ciudadano.html'"
+          >
+            <span class="multas-cabeza"
+              ><img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0NDRDZERCIgZD0iTTMyIDM2bC0yLTItMiAyLTItMi0yIDItMi0yLTIgMi0yLTItMiAyLTItMi0yIDItMi0yLTIgMi0yLTItMiAyVjBsMiAyIDEuOTU4LTJMMTAgMmwyLjA0Mi0yTDE0IDJsMi4wNDItMkwxOCAybDIuMDgzLTJMMjIgMmwyLjEyNS0yTDI2IDJsMS45NTgtMkwzMCAybDItMnoiLz48cGF0aCBmaWxsPSIjOTlBQUI1IiBkPSJNMTkgMTdIOWMtLjU1IDAtMS0uNDUtMS0xcy40NS0xIDEtMWgxMGMuNTUgMCAxIC40NSAxIDFzLS40NSAxLTEgMXptOCAwaC00Yy0uNTUgMC0xLS40NS0xLTFzLjQ1LTEgMS0xaDRjLjU1IDAgMSAuNDUgMSAxcy0uNDUgMS0xIDF6bS04IDRIOWMtLjU1IDAtMS0uNDUtMS0xcy40NS0xIDEtMWgxMGMuNTUgMCAxIC40NSAxIDFzLS40NSAxLTEgMXptOCAwaC00Yy0uNTUgMC0xLS40NS0xLTFzLjQ1LTEgMS0xaDRjLjU1IDAgMSAuNDUgMSAxcy0uNDUgMS0xIDF6bTAgNkg5Yy0uNTUgMC0xLS40NS0xLTFzLjQ1LTEgMS0xaDE4Yy41NSAwIDEgLjQ1IDEgMXMtLjQ1IDEtMSAxem0wIDRoLTRjLS41NSAwLTEtLjQ1LTEtMXMuNDUtMSAxLTFoNGMuNTUgMCAxIC40NSAxIDFzLS40NSAxLTEgMXoiLz48Y2lyY2xlIGZpbGw9IiM5OUFBQjUiIGN4PSIxOCIgY3k9IjgiIHI9IjQiLz48L3N2Zz4="
+                alt=""
+                onerror="this.remove()"
+              />
+              Tu expediente Medellín RP</span
+            >
+            <span class="multas-texto" id="multas-texto">Consultando…</span>
+            <span class="multas-cuenta" id="multas-cuenta" hidden></span>
+            <span class="multas-total" id="multas-total" hidden></span>
+            <span class="multas-btn">Ver y pagar</span>
+          </button>
+
+          <!-- Sugeridos Nequi -->
+          <h2 class="seccion">Sugeridos Nequi</h2>
+          <div class="fila-tiles">
+            <div class="tile apagado">
+              <span class="tile-icono"
+                ><img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBQjhDMiIgZD0iTTE4IDNDMTIuNDc3IDMgOCA3LjQ3NyA4IDEzdjEwaDRWMTNjMC0zLjMxMyAyLjY4Ni02IDYtNnM2IDIuNjg3IDYgNnYxMGg0VjEzYzAtNS41MjMtNC40NzctMTAtMTAtMTB6Ii8+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTMxIDMyYzAgMi4yMDktMS43OTEgNC00IDRIOWMtMi4yMDkgMC00LTEuNzkxLTQtNFYyMGMwLTIuMjA5IDEuNzkxLTQgNC00aDE4YzIuMjA5IDAgNCAxLjc5MSA0IDR2MTJ6Ii8+PC9zdmc+"
+                  alt=""
+                  onerror="this.remove()"
+              /></span>
+              <span class="tile-txt">Próximamente</span>
+            </div>
+            <div class="tile apagado">
+              <span class="tile-icono"
+                ><img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBQjhDMiIgZD0iTTE4IDNDMTIuNDc3IDMgOCA3LjQ3NyA4IDEzdjEwaDRWMTNjMC0zLjMxMyAyLjY4Ni02IDYtNnM2IDIuNjg3IDYgNnYxMGg0VjEzYzAtNS41MjMtNC40NzctMTAtMTAtMTB6Ii8+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTMxIDMyYzAgMi4yMDktMS43OTEgNC00IDRIOWMtMi4yMDkgMC00LTEuNzkxLTQtNFYyMGMwLTIuMjA5IDEuNzkxLTQgNC00aDE4YzIuMjA5IDAgNCAxLjc5MSA0IDR2MTJ6Ii8+PC9zdmc+"
+                  alt=""
+                  onerror="this.remove()"
+              /></span>
+              <span class="tile-txt">Próximamente</span>
+            </div>
+            <div class="tile apagado">
+              <span class="tile-icono"
+                ><img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBQjhDMiIgZD0iTTE4IDNDMTIuNDc3IDMgOCA3LjQ3NyA4IDEzdjEwaDRWMTNjMC0zLjMxMyAyLjY4Ni02IDYtNnM2IDIuNjg3IDYgNnYxMGg0VjEzYzAtNS41MjMtNC40NzctMTAtMTAtMTB6Ii8+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTMxIDMyYzAgMi4yMDktMS43OTEgNC00IDRIOWMtMi4yMDkgMC00LTEuNzkxLTQtNFYyMGMwLTIuMjA5IDEuNzkxLTQgNC00aDE4YzIuMjA5IDAgNCAxLjc5MSA0IDR2MTJ6Ii8+PC9zdmc+"
+                  alt=""
+                  onerror="this.remove()"
+              /></span>
+              <span class="tile-txt">Próximamente</span>
+            </div>
+            <div class="tile apagado">
+              <span class="tile-icono"
+                ><img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBQjhDMiIgZD0iTTE4IDNDMTIuNDc3IDMgOCA3LjQ3NyA4IDEzdjEwaDRWMTNjMC0zLjMxMyAyLjY4Ni02IDYtNnM2IDIuNjg3IDYgNnYxMGg0VjEzYzAtNS41MjMtNC40NzctMTAtMTAtMTB6Ii8+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTMxIDMyYzAgMi4yMDktMS43OTEgNC00IDRIOWMtMi4yMDkgMC00LTEuNzkxLTQtNFYyMGMwLTIuMjA5IDEuNzkxLTQgNC00aDE4YzIuMjA5IDAgNCAxLjc5MSA0IDR2MTJ6Ii8+PC9zdmc+"
+                  alt=""
+                  onerror="this.remove()"
+              /></span>
+              <span class="tile-txt">Próximamente</span>
+            </div>
+          </div>
+
+          <!-- Tus favoritos: solo la tarjeta -->
+          <h2 class="seccion">
+            <img
+              class="emo"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0REMkU0NCIgZD0iTTM1Ljg4NSAxMS44MzNjMC01LjQ1LTQuNDE4LTkuODY4LTkuODY3LTkuODY4LTMuMzA4IDAtNi4yMjcgMS42MzMtOC4wMTggNC4xMjktMS43OTEtMi40OTYtNC43MS00LjEyOS04LjAxNy00LjEyOS01LjQ1IDAtOS44NjggNC40MTctOS44NjggOS44NjggMCAuNzcyLjA5OCAxLjUyLjI2NiAyLjI0MUMxLjc1MSAyMi41ODcgMTEuMjE2IDMxLjU2OCAxOCAzNC4wMzRjNi43ODMtMi40NjYgMTYuMjQ5LTExLjQ0NyAxNy42MTctMTkuOTU5LjE3LS43MjEuMjY4LTEuNDY5LjI2OC0yLjI0MnoiLz48L3N2Zz4="
+              alt=""
+              onerror="this.remove()"
+            />
+            Tus favoritos
+            <span class="seccion-accion" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h6" />
+                <path d="M13 21h5a3 3 0 0 0 3-3v-5" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L13 13l-4 1 1-4z" />
+              </svg>
+            </span>
+          </h2>
+          <div class="fila-tiles">
+            <button
+              class="tile favorito"
+              type="button"
+              data-vista="tarjeta"
+            >
+              <span class="tile-icono"
+                ><img
+                  class="emo"
+                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTQgNUMxLjc5MSA1IDAgNi43OTEgMCA5djE4YzAgMi4yMDkgMS43OTEgNCA0IDRoMjhjMi4yMDkgMCA0LTEuNzkxIDQtNFY5czAtNC00LTRINHoiLz48cGF0aCBmaWxsPSIjMjkyRjMzIiBkPSJNMCAxMGgzNnY1SDB6Ii8+PHBhdGggZmlsbD0iI0Y0RjdGOSIgZD0iTTQgMTloMjh2Nkg0eiIvPjxwYXRoIGZpbGw9IiM4ODk5QTYiIGQ9Ik0xOSAyNGMtMS43MDMgMC0yLjM0MS0xLjIxLTIuNDY5LTEuODAxLS41NDcuMDQxLTEuMDguMzAzLTEuODA1Ljc2NEMxMy45NjEgMjMuNDQ5IDEzLjA5NCAyNCAxMiAyNGMtMS4xOTcgMC0xLjkyNC0uNjc1LTItMi0uMDAzLS4wNTYuMDM4LS4xODguMDIxLS4xODgtMS44NTggMC0zLjIwMiAxLjc2MS0zLjIxNSAxLjc3OS0uMTk1LjI2Ny0uNDk5LjQwOS0uODA2LjQwOS0uMjA2IDAtLjQxMy0uMDYzLS41OTEtLjE5NC0uNDQ1LS4zMjctLjU0Mi0uOTUzLS4yMTUtMS4zOThDNS4yNzEgMjIuMzAzIDcuMTEgMjAgMTAgMjBjMS45MzcgMCAyLjA0OCAxLjM3NSAyLjA3OCAxLjg4OGwuMDA3LjEwOWMuNDg2LS4wMzQuOTkxLS4zNTQgMS41Ny0uNzIzLjk2MS0uNjEgMi4xNTMtMS4zNzEgMy43NS0uOTYyLjg3MS4yMjMgMS4wMDcgMS4wMzEgMS4wNTkgMS4zMzYuMDEzLjA3Ni4wMzIuMTkuMDQ5LjIyNi4wMDcgMCAuMTQ2LjA5MS41NzcuMTMuODIuMDc1IDEuNzIxLS4yNzkgMi42NzUtLjY1My45ODgtLjM4OCAyLjAxLS43ODggMy4xMTEtLjc4OCAzLjM4OSAwIDQuNzY3IDEuNjM1IDQuOTEzIDEuODIxLjM0LjQzNS4yNjQgMS4wNjMtLjE3MSAxLjQwMy0uMTc1LjEzNy0uMzgxLjIwNy0uNTg3LjIxMy0uMzA3LjAwOS0uNjEzLS4xMjMtLjgxNy0uMzg0LS4wMjQtLjAyNy0uOTMtMS4wNTQtMy4zMzctMS4wNTQtLjcyMyAwLTEuNTI4LjMxNS0yLjM4MS42NDktMS4wMDkuMzk2LTIuNDM0Ljc4OS0zLjQ5Ni43ODl6Ii8+PC9zdmc+"
+                  alt=""
+                  onerror="this.remove()"
+              /></span>
+              <span class="tile-txt">Tarjeta</span>
+            </button>
+          </div>
+
+          <div id="error" class="foot" hidden></div>
+
+          <footer class="pie-nequi">
+            <svg class="marca-nequi" role="img" aria-label="Nequi">
+              <use href="#nequi-marca" />
+            </svg>
+            <span
+              >Medellín RP · A tu ritmo
+              <img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0FBOEVENiIgZD0iTTM1Ljg4NSAxMS44MzNjMC01LjQ1LTQuNDE4LTkuODY4LTkuODY3LTkuODY4LTMuMzA4IDAtNi4yMjcgMS42MzMtOC4wMTggNC4xMjktMS43OTEtMi40OTYtNC43MS00LjEyOS04LjAxNy00LjEyOS01LjQ1IDAtOS44NjggNC40MTctOS44NjggOS44NjggMCAuNzcyLjA5OCAxLjUyLjI2NiAyLjI0MUMxLjc1MSAyMi41ODcgMTEuMjE2IDMxLjU2OCAxOCAzNC4wMzRjNi43ODMtMi40NjYgMTYuMjQ5LTExLjQ0NyAxNy42MTctMTkuOTU5LjE3LS43MjEuMjY4LTEuNDY5LjI2OC0yLjI0MnoiLz48L3N2Zz4="
+                alt=""
+                onerror="this.remove()"
+            /></span
+            >
+          </footer>
+        </main>
+      </section>
+
+      <!-- ============ TU PLATA ============ -->
+      <section class="vista" id="vista-tu-plata">
+        <div class="vista-top">
+          <button class="volver" type="button" data-vista="inicio">←</button>
+        </div>
+        <h1 class="vista-titulo">Así está tu plata</h1>
+        <p class="suma">
+          Toda tu plata suma
+          <strong id="total">$ 0</strong>
+        </p>
+
+        <div class="lista-plata">
+          <div class="fila-plata" style="cursor: default">
+            <span class="fila-icono"
+              ><img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzVDOTEzQiIgZD0iTTIgMTFjLTIgMC0yIDItMiAydjIxczAgMiAyIDJoMzJjMiAwIDItMiAyLTJWMTNzMC0yLTItMkgyeiIvPjxwYXRoIGZpbGw9IiNBN0QyOEIiIGQ9Ik0yIDZDMCA2IDAgOCAwIDh2MjBzMCAyIDIgMmgzMmMyIDAgMi0yIDItMlY4czAtMi0yLTJIMnoiLz48Y2lyY2xlIGZpbGw9IiM3N0IyNTUiIGN4PSIyNSIgY3k9IjE4IiByPSI2LjUiLz48cGF0aCBmaWxsPSIjNUM5MTNCIiBkPSJNMzMgMjguNUgzYy0uODI3IDAtMS41LS42NzMtMS41LTEuNVY5YzAtLjgyNy42NzMtMS41IDEuNS0xLjVoMzBjLjgyNyAwIDEuNS42NzMgMS41IDEuNXYxOGMwIC44MjctLjY3MyAxLjUtMS41IDEuNXpNMyA4LjVjLS4yNzUgMC0uNS4yMjQtLjUuNXYxOGMwIC4yNzUuMjI1LjUuNS41aDMwYy4yNzUgMCAuNS0uMjI1LjUtLjVWOWMwLS4yNzYtLjIyNS0uNS0uNS0uNUgzeiIvPjxwYXRoIGZpbGw9IiNGRkU4QjYiIGQ9Ik0xNCA2aDh2MjQuMDYyaC04eiIvPjxwYXRoIGZpbGw9IiNGRkFDMzMiIGQ9Ik0xNCAzMGg4djZoLTh6Ii8+PHBhdGggZmlsbD0iIzVDOTEzQiIgZD0iTTExLjgxIDIwLjAyM2MwLTIuOTc5LTUuNDkzLTIuNzg1LTUuNDkzLTQuNTg0IDAtLjg3MS44MzMtMS4yOTYgMS43OTktMS4yOTYgMS42MjUgMCAxLjkxNCAxLjA0NCAyLjY1IDEuMDQ0LjUyMSAwIC43NzItLjMyOC43NzItLjY5NiAwLS44NTYtMS4yOTYtMS41MDItMi41MzktMS43MjZ2LS44MjVjMC0uNTE1LS40MTctLjkzMi0uOTMyLS45MzJzLS45MzIuNDE4LS45MzIuOTMydi44NTNjLTEuMzU0LjMxLTIuNTIxIDEuMjUtMi41MjEgMi43ODEgMCAyLjg2MiA1LjQ5MyAyLjc0NiA1LjQ5MyA0Ljc1OCAwIC42OTUtLjc1NCAxLjM5MS0xLjk5MiAxLjM5MS0xLjg1NyAwLTIuNDc2LTEuMjU3LTMuMjI5LTEuMjU3LS4zNjggMC0uNjk2LjMwOS0uNjk2Ljc3NSAwIC43NDEgMS4yNCAxLjYzMSAyLjk0NyAxLjg4MWwtLjAwMS4wMDR2LjkzNGMwIC41MTQuNDE4LjkzMi45MzMuOTMyLjUxNC0uMDAxLjkzMS0uNDE5LjkzMS0uOTMydi0uOTM0YzAtLjAxLS4wMDUtLjAxOS0uMDA2LS4wMjggMS41MzUtLjI4NyAyLjgxNi0xLjI4NiAyLjgxNi0zLjA3NXoiLz48L3N2Zz4="
+                alt=""
+                onerror="this.remove()"
+            /></span>
+            <span class="fila-txt">
+              <b>Disponible</b>
+              <small>En Nequi</small>
+            </span>
+            <span class="fila-valor" id="tp-nequi">$ 0</span>
+          </div>
+
+          <div class="fila-plata" style="cursor: default">
+            <span class="fila-icono"
+              ><img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzkzOTU5OCIgZD0iTTE4LjE2MyAxLjg2MmMuMDAzLjk5OC0uODEgMS44MjEtMS44MTggMS44MTQtMS4wMDgtLjAwNi0xLjc5LS44MzktMS43NS0xLjgzNy4wNC0uOTc0Ljg1My0xLjc0MSAxLjgxNy0xLjczNS45NjMuMDA2IDEuNzQ3Ljc4NCAxLjc1MSAxLjc1OHoiLz48cGF0aCBmaWxsPSIjRDFEM0Q0IiBkPSJNMzMuODM4IDE0LjUxN2MyLjc5MiAxNi4xOTUgMy4wMiAxNy41OC0xNC4zMTYgMTcuNDY5bC0zLjM1NS0uMDIxQzEuMDY4IDMxLjg2OS0xLjE3IDMxLjggMS44NjYgMTQuMzE0IDMuMTYyIDYuODUyIDkuNTQ4IDMuMDQ4IDE2LjYxOCAzLjA5M2wyLjQ3Ny4wMTZjNy4wNy4wNDQgMTMuNDUzIDMuOTMgMTQuNzQzIDExLjQwOHoiLz48cGF0aCBmaWxsPSIjRDFEM0Q0IiBkPSJNMjAuMzA0IDEuODc1Yy4wMy45OTktLjc2MyAxLjgyMS0xLjc3IDEuODE0LTEuMDA4LS4wMDYtMS44MTItLjgzOS0xLjc5OC0xLjgzNy4wMTQtLjk3NC44MDctMS43NDEgMS43NzEtMS43MzUuOTYzLjAwNyAxLjc2Ny43ODQgMS43OTcgMS43NTh6Ii8+PHBhdGggZmlsbD0iI0VBNTk2RSIgZD0iTTM0LjM2NCAxNy4yMTljMi45OTUgMTcuMzgyIDMuMjM5IDE4Ljg2NS0xNC43NzggMTguNzVsLTMuNDg3LS4wMjJjLTE1LjY5My0uMS0xOC4wMjEtLjE2Mi0xNC43NjItMTguOTM4QzIuNzE1IDkuMDY3IDkuMzA2IDUuMDM4IDE2LjU4MSA1LjA4NGwyLjU0OS4wMTZjNy4yNzUuMDQ2IDEzLjg2MiA0LjE1OSAxNS4yMzQgMTIuMTE5eiIvPjxwYXRoIGZpbGw9IiNERDJFNDQiIGQ9Ik0xNi4xNCA1Ljk3OXMtNi43MTcgNy43MTgtNC45ODEgOS42NTFjMS44MDkgMi4wMTcgNC45ODEtOS42NTEgNC45ODEtOS42NTF6bTIuMjY0LjAxNHM2LjYwMiA3LjgwMyA0LjgzOSA5LjcxNGMtMS44MzggMS45OTMtNC44MzktOS43MTQtNC44MzktOS43MTR6Ii8+PC9zdmc+"
+                alt=""
+                onerror="this.remove()"
+            /></span>
+            <span class="fila-txt">
+              <b>Mano</b>
+              <small>Disponible en mano</small>
+            </span>
+            <span class="fila-valor" id="billetera">$ 0</span>
+          </div>
+
+          <button class="fila-plata" type="button" data-vista="tarjeta">
+            <span class="fila-icono"
+              ><img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzMxMzczRCIgZD0iTTExIDM2cy00IDAtNC00VjRzMC00IDQtNGgxNHM0IDAgNCA0djI4czAgNC00IDRIMTF6Ii8+PHBhdGggZmlsbD0iIzU1QUNFRSIgZD0iTTkgNWgxOHYyNkg5eiIvPjwvc3ZnPg=="
+                alt=""
+                onerror="this.remove()"
+            /></span>
+            <span class="fila-txt">
+              <b>Tarjeta</b>
+              <small>Nequi · uso digital</small>
+            </span>
+            <span class="fila-valor" id="tarjeta">VISA • ----</span>
+            <span class="fila-flecha" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============ TARJETA ============ -->
+      <section class="vista" id="vista-tarjeta">
+        <div class="vista-top">
+          <button class="volver" type="button" data-vista="inicio">←</button>
+        </div>
+        <h1 class="vista-titulo">Tu tarjeta</h1>
+
+        <div class="tarjeta-zona">
+          <div class="tarjeta-nequi" id="tarjeta-nequi">
+            <span class="brillo" aria-hidden="true"></span>
+            <span class="anillo" aria-hidden="true"></span>
+            <div class="tarjeta-marca">
+              <svg class="marca-nequi" role="img" aria-label="Nequi">
+                <use href="#nequi-marca" />
+              </svg>
+              <span style="font-size: 13px; letter-spacing: 0.14em">MEDELLÍN RP</span>
+            </div>
+            <span class="chip" aria-hidden="true"></span>
+            <div class="tarjeta-numero" id="tarjeta-numero">VISA • ----</div>
+            <div class="tarjeta-pie">
+              <span>Cuenta Nequi</span>
+              <span>Uso digital</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="datos-tarjeta">
+          <div class="dato">
+            <span>Número de tarjeta</span>
+            <b id="tarjeta-dato">VISA • ----</b>
+          </div>
+          <div class="dato">
+            <span>Titular</span>
+            <b id="titular-tarjeta">Ciudadano</b>
+          </div>
+          <div class="dato">
+            <span>Estado</span>
+            <b style="color: var(--verde)">Activa</b>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MOVIMIENTOS ============ -->
+      <section class="vista" id="vista-movimientos">
+        <div class="vista-top">
+          <button class="volver" type="button" data-vista="inicio">←</button>
+          <button id="actualizar" class="volver" type="button" title="Actualizar">
+            ↻
+          </button>
+        </div>
+        <h1 class="vista-titulo">Movimientos</h1>
+
+        <div class="mov-tabs">
+          <button class="mov-tab activa" type="button" data-mov="recientes">
+            Recientes
+          </button>
+          <button class="mov-tab" type="button" data-mov="anteriores">
+            Anteriores
+          </button>
+        </div>
+
+        <div class="lista-movs" id="lista-movimientos"></div>
+      </section>
+
+      <!-- ============ ENVIAR DINERO ============ -->
+      <section class="vista" id="vista-dinero">
+        <div class="vista-top">
+          <button class="volver" type="button" data-vista="inicio">←</button>
+        </div>
+        <h1 class="vista-titulo">Enviar dinero</h1>
+
+        <section id="operacion-panel">
+          <div class="ops">
+            <button class="operation" data-operation="depositar" type="button">
+              <img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0ZERDg4OCIgZD0iTTMxLjg5OCAyMy45MzhDMzEuMyAxNy4zMiAyOCAxNCAyOCAxNGwtNi04aC04bC02IDhzLTEuNDE5IDEuNDMzLTIuNTY3IDQuMjc1QzMuNDQ0IDE4LjkzNSAyIDIwLjc4OSAyIDIzYzAgMS40NDguNjI1IDIuNzQyIDEuNjA5IDMuNjU1QzMuMjMzIDI3LjM1NyAzIDI4LjE0NyAzIDI5YzAgMS45NTggMS4xMzYgMy42MzYgMi43NzUgNC40NTZDNy4wNTggMzUuMzc4IDguNzcyIDM2IDEwIDM2aDE2YzEuMzc5IDAgMy4zNzMtLjc3OSA0LjY3OC0zLjMxQzMyLjYwOSAzMS45OTkgMzQgMzAuMTcgMzQgMjhjMC0xLjY3OC0uODM0LTMuMTU0LTIuMTAyLTQuMDYyek0xOCA2Yy41NSAwIDEuMDU4LS4xNTggMS41LS40MTYuNDQzLjI1OC45NTEuNDE2IDEuNS40MTYgMS42NTcgMCA0LTIuMzQ0IDQtNCAwIDAgMC0yLTItMi0uNzg4IDAtMSAxLTIgMXMtMS0xLTMtMS0yIDEtMyAxLTEuMjExLTEtMi0xYy0yIDAtMiAyLTIgMiAwIDEuNjU2IDIuMzQ0IDQgNCA0IC41NDkgMCAxLjA1Ny0uMTU4IDEuNS0uNDE2LjQ0My4yNTguOTUxLjQxNiAxLjUuNDE2eiIvPjxwYXRoIGZpbGw9IiNCRjY5NTIiIGQ9Ik0yNCA2YzAgLjU1Mi0uNDQ3IDEtMSAxSDEzYy0uNTUyIDAtMS0uNDQ4LTEtMXMuNDQ4LTEgMS0xaDEwYy41NTMgMCAxIC40NDggMSAxeiIvPjxwYXRoIGZpbGw9IiM2Nzc1N0YiIGQ9Ik0yMy45MDEgMjQuNTQyYzAtNC40NzctOC41ODEtNC4xODUtOC41ODEtNi44ODYgMC0xLjMwOCAxLjMwMS0xLjk0NyAyLjgxMS0xLjk0NyAyLjUzOCAwIDIuOTkgMS41NjkgNC4xMzkgMS41NjkuODEzIDAgMS4yMDUtLjQ5MyAxLjIwNS0xLjA0NiAwLTEuMjg0LTIuMDI0LTIuMjU2LTMuOTY1LTIuNTkyVjEyLjRjMC0uNzczLS42NS0xLjQtMS40NTQtMS40LS44MDUgMC0xLjQ1Ni42MjctMS40NTYgMS40djEuMjgzYy0yLjExNi40NjMtMy45MzcgMS44NzUtMy45MzcgNC4xNzYgMCA0LjI5OSA4LjU3OSA0LjEyNSA4LjU3OSA3LjE0NSAwIDEuMDQ3LTEuMTc4IDIuMDkzLTMuMTExIDIuMDkzLTIuOTAxIDAtMy44NjctMS44ODktNS4wNDUtMS44ODktLjU3NCAwLTEuMDg3LjQ2NC0xLjA4NyAxLjE2NCAwIDEuMTEzIDEuOTM4IDIuNDUxIDQuNjAzIDIuODI0bC0uMDAxLjAxdjEuMzk4YzAgLjc3Mi42NTIgMS40IDEuNDU2IDEuNC44MDQgMCAxLjQ1NS0uNjI4IDEuNDU1LTEuNHYtMS4zOThjMC0uMDE3LS4wMDgtLjAzLS4wMDktLjA0NSAyLjM5OC0uNDMgNC4zOTgtMS45MzIgNC4zOTgtNC42MTl6Ii8+PC9zdmc+"
+                alt=""
+                onerror="this.remove()"
+              />
+              Depositar
+            </button>
+            <button class="operation" data-operation="retirar" type="button">
+              <img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzNCODhDMyIgZD0iTTM2IDMyYzAgMi4yMDktMS43OTEgNC00IDRINGMtMi4yMDkgMC00LTEuNzkxLTQtNFY0YzAtMi4yMDkgMS43OTEtNCA0LTRoMjhjMi4yMDkgMCA0IDEuNzkxIDQgNHYyOHoiLz48cGF0aCBmaWxsPSIjQkJEREY1IiBkPSJNMCAxMGgzNnYxN0gweiIvPjxwYXRoIGQ9Ik01LjI5NyAxMy43NGMuMjcyLS43MzYuODk2LTEuMzI5IDEuNzEzLTEuMzI5Ljg0OCAwIDEuNDQuNTYxIDEuNzEyIDEuMzI5bDMuMTM3IDguNzA4Yy4wOTYuMjU2LjEyOC40OC4xMjguNTkzIDAgLjYyNC0uNTEyIDEuMDU2LTEuMTA1IDEuMDU2LS42NzIgMC0xLjAwOC0uMzUyLTEuMTY4LS44MzJsLS40OC0xLjUwNWgtNC40NWwtLjQ4IDEuNDg5Yy0uMTYuNDk2LS40OTcuODQ4LTEuMTUzLjg0OC0uNjQgMC0xLjE4NC0uNDc5LTEuMTg0LTEuMTIgMC0uMjU2LjA4LS40NDguMTEyLS41MjhsMy4yMTgtOC43MDl6bS4xNzcgNS44MWgzLjA0MWwtMS40ODktNC42NDJoLS4wMzJsLTEuNTIgNC42NDJ6bTguOTkxLTQuNzM4SDEyLjcyYy0uNzY4IDAtMS4wODgtLjU2MS0xLjA4OC0xLjEwNCAwLS41NjEuNC0xLjEwNCAxLjA4OC0xLjEwNGg1Ljg5Yy42ODggMCAxLjA4OS41NDQgMS4wODkgMS4xMDQgMCAuNTQ0LS4zMiAxLjEwNC0xLjA4OSAxLjEwNGgtMS43NDV2OC4wMzVjMCAuOC0uNTEyIDEuMjQ4LTEuMiAxLjI0OHMtMS4yMDEtLjQ0OC0xLjIwMS0xLjI0OHYtOC4wMzV6bTcuNTY4LTEuMDcyYy4wOTYtLjU3Ni43Mi0xLjIzMiAxLjU2OC0xLjIzMi44MDEgMCAxLjQyNC41NzYgMS42MDEgMS4xNTJsMS44OSA2LjMzOGguMDMxbDEuODg5LTYuMzM4Yy4xNzYtLjU3Ni44MDEtMS4xNTIgMS42LTEuMTUyLjg1IDAgMS40NzMuNjU2IDEuNTcgMS4yMzJsMS40ODggOC45MzJjLjAxNi4wOTYuMDE2LjE5MS4wMTYuMjcxIDAgLjcwNC0uNTEyIDEuMTUyLTEuMTUyIDEuMTUyLS44MTYgMC0xLjEzNy0uMzY4LTEuMjQ4LTEuMTJsLS45NDUtNi41MTVoLS4wMzFsLTEuOTIyIDYuNzA3Yy0uMTExLjM4NC0uNDE2LjkyOC0xLjI3OS45MjgtLjg2NSAwLTEuMTY5LS41NDQtMS4yODEtLjkyOGwtMS45Mi02LjcwN2gtLjAzM2wtLjk0MyA2LjUxNWMtLjExMy43NTItLjQzMyAxLjEyLTEuMjQ5IDEuMTItLjY0IDAtMS4xNTItLjQ0OC0xLjE1Mi0xLjE1MiAwLS4wOCAwLS4xNzYuMDE3LS4yNzFsMS40ODUtOC45MzJ6IiBmaWxsPSIjMjY5Ii8+PC9zdmc+"
+                alt=""
+                onerror="this.remove()"
+              />
+              Sacar
+            </button>
+            <button class="operation" data-operation="transferir" type="button">
+              <img
+                class="emo"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzNCODhDMyIgZD0iTTAgMzJjMCAyLjIwOSAxLjc5MSA0IDQgNGgyOGMyLjIwOSAwIDQtMS43OTEgNC00VjRjMC0yLjIwOS0xLjc5MS00LTQtNEg0QzEuNzkxIDAgMCAxLjc5MSAwIDR2Mjh6Ii8+PHBhdGggZmlsbD0iI0ZGRiIgZD0iTTI3IDI1VjlIMTF6Ii8+PHBhdGggZmlsbD0iI0ZGRiIgZD0iTTcgMjMuMzQzTDE5LjgxNiAxMC41M2w1LjY1NiA1LjY1N0wxMi42NTcgMjl6Ii8+PC9zdmc+"
+                alt=""
+                onerror="this.remove()"
+              />
+              Transferir
+            </button>
+          </div>
+
+          <form id="operacion-form" class="operation-form">
+            <label for="destino-select">Destinatario</label>
+            <select id="destino" hidden></select>
+            <label for="monto">Monto</label>
+            <input
+              id="monto"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Monto en pesos colombianos"
+              required
+            />
+            <button class="button" type="submit">Confirmar operación</button>
+          </form>
+
+          <div id="operacion-mensaje" class="foot"></div>
+        </section>
+      </section>
+
+      <!-- ============ NAVEGACIÓN ============ -->
+      <nav class="nav-inferior">
+        <button class="nav-btn activa" type="button" data-vista="inicio">
+          <span class="nav-icono"
+            ><img
+              class="emo"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0EwMDQxRSIgZD0iTTkuMzQ0IDE0LjcwMmgtMmMtLjI3NiAwLS41LS4yMjQtLjUtLjV2LTdjMC0uMjc2LjIyNC0uNS41LS41aDJjLjI3NiAwIC41LjIyNC41LjV2N2MwIC4yNzYtLjIyNC41LS41LjV6Ii8+PHBhdGggZmlsbD0iI0ZGRThCNiIgZD0iTTUgMTZMMTggM2wxMyAxM3YxN0g1eiIvPjxwYXRoIGZpbGw9IiNGRkNDNEQiIGQ9Ik0xOCAxNmgxdjE2aC0xeiIvPjxwYXRoIGZpbGw9IiM2Njc1N0YiIGQ9Ik0zMSAxN2MtLjI1NiAwLS41MTItLjA5OC0uNzA3LS4yOTNMMTggNC40MTQgNS43MDcgMTYuNzA3Yy0uMzkxLjM5MS0xLjAyMy4zOTEtMS40MTQgMHMtLjM5MS0xLjAyMyAwLTEuNDE0bDEzLTEzYy4zOTEtLjM5MSAxLjAyMy0uMzkxIDEuNDE0IDBsMTMgMTNjLjM5MS4zOTEuMzkxIDEuMDIzIDAgMS40MTQtLjE5NS4xOTUtLjQ1MS4yOTMtLjcwNy4yOTN6Ii8+PHBhdGggZmlsbD0iIzY2NzU3RiIgZD0iTTE4IDE3Yy0uMjU2IDAtLjUxMi0uMDk4LS43MDctLjI5My0uMzkxLS4zOTEtLjM5MS0xLjAyMyAwLTEuNDE0bDYuNS02LjVjLjM5MS0uMzkxIDEuMDIzLS4zOTEgMS40MTQgMHMuMzkxIDEuMDIzIDAgMS40MTRsLTYuNSA2LjVjLS4xOTUuMTk1LS40NTEuMjkzLS43MDcuMjkzeiIvPjxwYXRoIGZpbGw9IiNDMTY5NEYiIGQ9Ik0xMCAyNmg0djZoLTR6Ii8+PHBhdGggZmlsbD0iIzU1QUNFRSIgZD0iTTEwIDE3aDR2NGgtNHptMTIuNSAwaDR2NGgtNHptMCA5aDR2NGgtNHoiLz48cGF0aCBmaWxsPSIjNUM5MTNCIiBkPSJNMzMuNSAzMy41YzAgLjgyOC0uNjcyIDEuNS0xLjUgMS41SDRjLS44MjggMC0xLjUtLjY3Mi0xLjUtMS41UzMuMTcyIDMyIDQgMzJoMjhjLjgyOCAwIDEuNS42NzIgMS41IDEuNXoiLz48L3N2Zz4="
+              alt=""
+              onerror="this.remove()"
+          /></span>
+          Inicio
+        </button>
+        <button class="nav-btn" type="button" data-vista="movimientos">
+          <span class="nav-icono"
+            ><img
+              class="emo"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0UxRThFRCIgZD0iTTMyLjQxNSA5LjU4NmwtOS05QzIzLjA1NC4yMjUgMjIuNTUzIDAgMjIgMGMtMS4xMDQgMC0xLjk5OS44OTYtMiAyIDAgLjU1Mi4yMjQgMS4wNTMuNTg2IDEuNDE1bC0zLjg1OSAzLjg1OSA5IDkgMy44NTktMy44NTljLjM2Mi4zNjEuODYyLjU4NSAxLjQxNC41ODUgMS4xMDQgMCAyLjAwMS0uODk2IDItMiAwLS41NTItLjIyNC0xLjA1Mi0uNTg1LTEuNDE0eiIvPjxwYXRoIGZpbGw9IiNDQ0Q2REQiIGQ9Ik0yMiAwSDdDNC43OTEgMCAzIDEuNzkxIDMgNHYyOGMwIDIuMjA5IDEuNzkxIDQgNCA0aDIyYzIuMjA5IDAgNC0xLjc5MSA0LTRWMTFoLTljLTEgMC0yLTEtMi0yVjB6Ii8+PHBhdGggZmlsbD0iIzk5QUFCNSIgZD0iTTIyIDBoLTJ2OWMwIDIuMjA5IDEuNzkxIDQgNCA0aDl2LTJoLTljLTEgMC0yLTEtMi0yVjB6bS01IDhjMCAuNTUyLS40NDggMS0xIDFIOGMtLjU1MiAwLTEtLjQ0OC0xLTFzLjQ0OC0xIDEtMWg4Yy41NTIgMCAxIC40NDggMSAxem0wIDRjMCAuNTUyLS40NDggMS0xIDFIOGMtLjU1MiAwLTEtLjQ0OC0xLTFzLjQ0OC0xIDEtMWg4Yy41NTIgMCAxIC40NDggMSAxem0xMiA0YzAgLjU1Mi0uNDQ3IDEtMSAxSDhjLS41NTIgMC0xLS40NDgtMS0xcy40NDgtMSAxLTFoMjBjLjU1MyAwIDEgLjQ0OCAxIDF6bTAgNGMwIC41NTMtLjQ0NyAxLTEgMUg4Yy0uNTUyIDAtMS0uNDQ3LTEtMSAwLS41NTMuNDQ4LTEgMS0xaDIwYy41NTMgMCAxIC40NDcgMSAxem0wIDRjMCAuNTUzLS40NDcgMS0xIDFIOGMtLjU1MiAwLTEtLjQ0Ny0xLTEgMC0uNTUzLjQ0OC0xIDEtMWgyMGMuNTUzIDAgMSAuNDQ3IDEgMXptMCA0YzAgLjU1My0uNDQ3IDEtMSAxSDhjLS41NTIgMC0xLS40NDctMS0xIDAtLjU1My40NDgtMSAxLTFoMjBjLjU1MyAwIDEgLjQ0NyAxIDF6Ii8+PC9zdmc+"
+              alt=""
+              onerror="this.remove()"
+          /></span>
+          Movimientos
+        </button>
+        <button class="nav-dinero" type="button" data-vista="dinero" title="Enviar dinero">
+          $
+        </button>
+      </nav>
+    </div>
+
+    <script>
+      /* Red de seguridad: si algo falla, la carga se oculta igual a los 7 s */
+      setTimeout(function () {
+        var caja = document.getElementById("carga-nequi");
+        if (!caja) return;
+        caja.classList.add("fuera");
+        setTimeout(function () {
+          if (caja.parentNode) caja.remove();
+        }, 650);
+      }, 7000);
+
+      const moneda = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      });
+      let operacionActual = null;
+      const formularioOperacion = document.querySelector("#operacion-form");
+      const destino = document.querySelector("#destino");
+      const mensajeOperacion = document.querySelector("#operacion-mensaje");
+
+      function ocultarCargaNequi() {
+        const caja = document.querySelector("#carga-nequi");
+        if (!caja || caja.classList.contains("fuera")) return;
+        caja.classList.add("fuera");
+        setTimeout(() => {
+          if (caja.parentNode) caja.remove();
+        }, 650);
+      }
+
+      async function cargarUsuarios() {
+        const respuesta = await fetch("/api/nequi/usuarios", {
+          cache: "no-store",
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok)
+          throw new Error(datos.error || "No se pudieron cargar los usuarios.");
+        destino.innerHTML =
+          '<option value="">Selecciona el destinatario</option>';
+        for (const usuario of datos.usuarios) {
+          const opcion = document.createElement("option");
+          opcion.value = usuario.id;
+          opcion.textContent = `${usuario.nombre} (@${usuario.username})`;
+          destino.appendChild(opcion);
+        }
+      }
+
+      document.querySelectorAll("[data-operation]").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          operacionActual = boton.dataset.operation;
+          formularioOperacion.classList.add("visible");
+          destino.hidden = operacionActual !== "transferir";
+          mensajeOperacion.textContent = "";
+          if (operacionActual === "transferir") {
+            try {
+              await cargarUsuarios();
+            } catch (error) {
+              mensajeOperacion.textContent = error.message;
+            }
+          }
+          document.querySelector("#monto").focus();
+        });
+      });
+
+      formularioOperacion.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+        const monto = Number(document.querySelector("#monto").value);
+        const destinoId = destino.value;
+        if (operacionActual === "transferir" && !destinoId) {
+          mensajeOperacion.textContent = "Selecciona el usuario destinatario.";
+          return;
+        }
+        mensajeOperacion.textContent = "Procesando operación...";
+        try {
+          const respuesta = await fetch("/api/nequi/operacion", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tipo: operacionActual,
+              monto,
+              destinoId,
+              destinoNombre:
+                operacionActual === "transferir" &&
+                destino.selectedOptions &&
+                destino.selectedOptions[0]
+                  ? destino.selectedOptions[0].textContent
+                  : undefined,
+            }),
+          });
+          const datos = await respuesta.json();
+          if (!respuesta.ok)
+            throw new Error(datos.error || "No se pudo completar.");
+          mensajeOperacion.textContent =
+            "¡Listo! Tu operación se completó correctamente.";
+          document.querySelector("#monto").value = "";
+          await cargar();
+        } catch (error) {
+          mensajeOperacion.textContent = `Error: ${error.message}`;
+        }
+      });
+
+      async function cargar() {
+        const respuesta = await fetch("/api/nequi", { cache: "no-store" });
+        if (respuesta.status === 401) {
+          location.href = "/iniciar-seccion.html";
+          return;
+        }
+        const datos = await respuesta.json();
+        if (!respuesta.ok) {
+          if (datos.codigo === "CUENTA_NEQUI_INEXISTENTE") {
+            document.querySelector("#operacion-panel").style.display = "none";
+            document.querySelector("#error").hidden = false;
+            document.querySelector("#error").innerHTML =
+              "<strong>No tienes una cuenta Nequi activa.</strong><br />" +
+              "Ejecuta <strong>/saldo</strong> en el servidor principal de Discord y vuelve a entrar a esta página.";
+            return;
+          }
+          if (
+            datos.codigo === "NEQUI_API_NO_CONFIGURADA" ||
+            datos.codigo === "NEQUI_API_INACCESIBLE"
+          ) {
+            document.querySelector("#operacion-panel").style.display = "none";
+            document.querySelector("#error").hidden = false;
+            document.querySelector("#error").innerHTML =
+              "<strong>La web todavía no está conectada al bot.</strong><br />" +
+              `${datos.error}<br />Configura NEQUI_API_URL y NEQUI_API_KEY en Render.`;
+            return;
+          }
+          throw new Error(datos.error || "No se pudo consultar el saldo.");
+        }
+        const s = datos.saldo;
+        document.querySelector("#nombre").textContent = "TU CUENTA";
+        document.querySelector("#billetera").textContent = moneda.format(
+          s.billetera,
+        );
+        document.querySelector("#banco").textContent = moneda.format(s.banco);
+        document.querySelector("#total").textContent = moneda.format(
+          s.billetera + s.banco,
+        );
+        document.querySelector("#tarjeta").textContent = s.numeroTarjeta
+          ? `VISA • ${String(s.numeroTarjeta).slice(-4)}`
+          : "VISA • ----";
+        document.querySelector("#actualizado").textContent = s.actualizadoEn
+          ? `Consultado • ${new Date(s.actualizadoEn).toLocaleString("es-CO")}`
+          : "Consultado ahora";
+      }
+      document
+        .querySelector("#actualizar")
+        .addEventListener("click", () =>
+          cargar().catch(
+            (e) => (document.querySelector("#error").textContent = e.message),
+          ),
+        );
+
+      const inicioCargaNequi = Date.now();
+      cargar()
+        .catch((e) => {
+          document.querySelector("#operacion-panel").style.display = "none";
+          document.querySelector("#error").hidden = false;
+          document.querySelector("#error").innerHTML =
+            "<strong>No se pudo cargar tu cuenta Nequi.</strong><br />" +
+            `${e.message || "Revisa la conexión del servidor."}`;
+        })
+        .finally(() => {
+          const transcurrido = Date.now() - inicioCargaNequi;
+          setTimeout(ocultarCargaNequi, Math.max(0, 1700 - transcurrido));
+          cargarNombre();
+          cargarMultas();
+        });
+
+      /* ==================================================================
+         Capa propia: navegación tipo app, espejo de saldos, movimientos,
+         nombre real y multas pendientes. No modifica la lógica de arriba.
+         ================================================================== */
+
+      function abrirVista(nombre) {
+        document.querySelectorAll(".vista").forEach((v) => {
+          const activa = v.id === "vista-" + nombre;
+          v.classList.toggle("activa", activa);
+          if (activa) {
+            v.classList.remove("desde-derecha");
+            void v.offsetWidth;
+            v.classList.add("desde-derecha");
+          }
+        });
+        document.querySelectorAll(".nav-btn").forEach((b) => {
+          b.classList.toggle("activa", b.dataset.vista === nombre);
+        });
+        if (nombre === "tarjeta") {
+          const tarjeta = document.querySelector("#tarjeta-nequi");
+          tarjeta.classList.remove("animar");
+          void tarjeta.offsetWidth;
+          tarjeta.classList.add("animar");
+          const numero =
+            document.querySelector("#tarjeta").textContent || "VISA • ----";
+          document.querySelector("#tarjeta-numero").textContent = numero;
+          document.querySelector("#tarjeta-dato").textContent = numero;
+        }
+        if (nombre === "movimientos") {
+          refrescarMovimientos().finally(() => pintarMovimientos());
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      document.querySelectorAll("[data-vista]").forEach((el) => {
+        el.addEventListener("click", () => abrirVista(el.dataset.vista));
+      });
+
+      /* Ocultar / mostrar saldo con el ojito (como la app real) */
+      let saldoOculto = false;
+      let saldosReales = { banco: "$ 0", total: "$ 0" };
+      const TEXTO_OCULTO = "$ ••••••";
+
+      function aplicarMascara() {
+        const b = document.querySelector("#banco");
+        const t = document.querySelector("#total");
+        if (b && !b.textContent.includes("••")) saldosReales.banco = b.textContent;
+        if (t && !t.textContent.includes("••")) saldosReales.total = t.textContent;
+        if (!saldoOculto) return;
+        if (b && b.textContent !== TEXTO_OCULTO) b.textContent = TEXTO_OCULTO;
+        if (t && t.textContent !== TEXTO_OCULTO) t.textContent = TEXTO_OCULTO;
+      }
+
+      (function () {
+        const btn = document.querySelector("#btn-ojo");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          saldoOculto = !saldoOculto;
+          document.body.classList.toggle("saldo-oculto", saldoOculto);
+          const b = document.querySelector("#banco");
+          const t = document.querySelector("#total");
+          if (saldoOculto) {
+            aplicarMascara();
+          } else {
+            if (b) b.textContent = saldosReales.banco;
+            if (t) t.textContent = saldosReales.total;
+          }
+        });
+      })();
+
+      /* Espejo: #banco (lo pone el script original) -> pantallas secundarias */
+      function espejoSaldos() {
+        aplicarMascara();
+        const banco = document.querySelector("#banco");
+        if (!banco) return;
+        const tp = document.querySelector("#tp-nequi");
+        if (tp) tp.textContent = banco.textContent;
+        const tc = document.querySelector("#total-cab");
+        const tot = document.querySelector("#total");
+        if (tc && tot) tc.textContent = tot.textContent;
+        const tt = document.querySelector("#tarjeta-numero");
+        const tr = document.querySelector("#tarjeta");
+        if (tt && tr) tt.textContent = tr.textContent;
+        const td = document.querySelector("#tarjeta-dato");
+        if (td && tr) td.textContent = tr.textContent;
+      }
+
+      const nodoBanco = document.querySelector("#banco");
+      if (nodoBanco) {
+        new MutationObserver(espejoSaldos).observe(nodoBanco, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
+      const nodoTotal = document.querySelector("#total");
+      if (nodoTotal) {
+        new MutationObserver(espejoSaldos).observe(nodoTotal, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
+      espejoSaldos();
+
+      /* Nombre real del ciudadano */
+      async function cargarNombre() {
+        try {
+          const r = await fetch("/api/usuario", { cache: "no-store" });
+          if (!r.ok) return;
+          const d = await r.json();
+          const u = d.usuario || {};
+          usuarioId = u.id || u.discordId || u.discord_id || null;
+          const nombre = u.cedula?.nombre || u.nombre || "Ciudadano";
+          const n = document.querySelector("#nombre");
+          if (n) n.textContent = nombre;
+          const t = document.querySelector("#titular-tarjeta");
+          if (t) t.textContent = nombre;
+          await refrescarMovimientos();
+          pintarMovimientos();
+        } catch (e) {
+          /* sin sesión o sin red: se queda el texto por defecto */
+        }
+      }
+
+      /* Multas pendientes (reemplaza "Tu factura Claro") */
+      async function cargarMultas() {
+        const caja = document.querySelector("#multas-card");
+        const texto = document.querySelector("#multas-texto");
+        const cuenta = document.querySelector("#multas-cuenta");
+        const totalEl = document.querySelector("#multas-total");
+        if (!caja || !texto) return;
+        try {
+          const r = await fetch("/api/expediente", { cache: "no-store" });
+          if (!r.ok) throw new Error("sin acceso");
+          const d = await r.json();
+          const multas = d?.expediente?.multas || [];
+          const pendientes = multas.filter(
+            (m) => String(m.estado || "pendiente").toLowerCase() !== "pagada",
+          );
+          const total = pendientes.reduce(
+            (suma, m) =>
+              suma +
+              Number(
+                m.saldoPendiente ?? m.totalMulta ?? m.total ?? m.valor ?? 0,
+              ),
+            0,
+          );
+          if (!pendientes.length) {
+            texto.textContent = "No tienes multas pendientes. ¡Todo en orden!";
+            cuenta.hidden = true;
+            totalEl.hidden = true;
+            caja.querySelector(".multas-btn").style.display = "none";
+            return;
+          }
+          texto.textContent = "Tienes comparendos sin pagar en tu expediente.";
+          cuenta.hidden = false;
+          totalEl.hidden = false;
+          caja.querySelector(".multas-btn").style.display = "";
+          cuenta.textContent =
+            pendientes.length +
+            (pendientes.length === 1
+              ? " multa pendiente"
+              : " multas pendientes");
+          totalEl.textContent = moneda.format(total);
+        } catch (e) {
+          texto.textContent = "No se pudieron consultar tus multas ahora.";
+          cuenta.hidden = true;
+          totalEl.hidden = true;
+        }
+      }
+
+      /* ---------------- Movimientos (guardados por usuario) ---------------- */
+      const CLAVE_MOV_BASE = "movimientos-nequi-medellin-rp";
+      let usuarioId = null;
+
+      function claveMovimientos() {
+        return usuarioId
+          ? CLAVE_MOV_BASE + "::" + usuarioId
+          : CLAVE_MOV_BASE + "::sin-sesion";
+      }
+
+      function leerMovimientos() {
+        try {
+          const datos = JSON.parse(
+            localStorage.getItem(claveMovimientos()) || "[]",
+          );
+          return Array.isArray(datos) ? datos : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function guardarMovimiento(mov) {
+        try {
+          const lista = leerMovimientos();
+          lista.unshift(mov);
+          localStorage.setItem(
+            claveMovimientos(),
+            JSON.stringify(lista.slice(0, 100)),
+          );
+        } catch (e) {
+          /* modo privado / almacenamiento lleno */
+        }
+      }
+
+      /* El historial viejo era compartido por navegador (se mezclaban cuentas):
+         se borra para que cada quien solo vea lo suyo desde ahora. */
+      try {
+        localStorage.removeItem(CLAVE_MOV_BASE);
+      } catch (e) {
+        /* sin permiso */
+      }
+
+      const ETIQUETAS = {
+        depositar: { texto: "Depósito", icono: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0ZERDg4OCIgZD0iTTMxLjg5OCAyMy45MzhDMzEuMyAxNy4zMiAyOCAxNCAyOCAxNGwtNi04aC04bC02IDhzLTEuNDE5IDEuNDMzLTIuNTY3IDQuMjc1QzMuNDQ0IDE4LjkzNSAyIDIwLjc4OSAyIDIzYzAgMS40NDguNjI1IDIuNzQyIDEuNjA5IDMuNjU1QzMuMjMzIDI3LjM1NyAzIDI4LjE0NyAzIDI5YzAgMS45NTggMS4xMzYgMy42MzYgMi43NzUgNC40NTZDNy4wNTggMzUuMzc4IDguNzcyIDM2IDEwIDM2aDE2YzEuMzc5IDAgMy4zNzMtLjc3OSA0LjY3OC0zLjMxQzMyLjYwOSAzMS45OTkgMzQgMzAuMTcgMzQgMjhjMC0xLjY3OC0uODM0LTMuMTU0LTIuMTAyLTQuMDYyek0xOCA2Yy41NSAwIDEuMDU4LS4xNTggMS41LS40MTYuNDQzLjI1OC45NTEuNDE2IDEuNS40MTYgMS42NTcgMCA0LTIuMzQ0IDQtNCAwIDAgMC0yLTItMi0uNzg4IDAtMSAxLTIgMXMtMS0xLTMtMS0yIDEtMyAxLTEuMjExLTEtMi0xYy0yIDAtMiAyLTIgMiAwIDEuNjU2IDIuMzQ0IDQgNCA0IC41NDkgMCAxLjA1Ny0uMTU4IDEuNS0uNDE2LjQ0My4yNTguOTUxLjQxNiAxLjUuNDE2eiIvPjxwYXRoIGZpbGw9IiNCRjY5NTIiIGQ9Ik0yNCA2YzAgLjU1Mi0uNDQ3IDEtMSAxSDEzYy0uNTUyIDAtMS0uNDQ4LTEtMXMuNDQ4LTEgMS0xaDEwYy41NTMgMCAxIC40NDggMSAxeiIvPjxwYXRoIGZpbGw9IiM2Nzc1N0YiIGQ9Ik0yMy45MDEgMjQuNTQyYzAtNC40NzctOC41ODEtNC4xODUtOC41ODEtNi44ODYgMC0xLjMwOCAxLjMwMS0xLjk0NyAyLjgxMS0xLjk0NyAyLjUzOCAwIDIuOTkgMS41NjkgNC4xMzkgMS41NjkuODEzIDAgMS4yMDUtLjQ5MyAxLjIwNS0xLjA0NiAwLTEuMjg0LTIuMDI0LTIuMjU2LTMuOTY1LTIuNTkyVjEyLjRjMC0uNzczLS42NS0xLjQtMS40NTQtMS40LS44MDUgMC0xLjQ1Ni42MjctMS40NTYgMS40djEuMjgzYy0yLjExNi40NjMtMy45MzcgMS44NzUtMy45MzcgNC4xNzYgMCA0LjI5OSA4LjU3OSA0LjEyNSA4LjU3OSA3LjE0NSAwIDEuMDQ3LTEuMTc4IDIuMDkzLTMuMTExIDIuMDkzLTIuOTAxIDAtMy44NjctMS44ODktNS4wNDUtMS44ODktLjU3NCAwLTEuMDg3LjQ2NC0xLjA4NyAxLjE2NCAwIDEuMTEzIDEuOTM4IDIuNDUxIDQuNjAzIDIuODI0bC0uMDAxLjAxdjEuMzk4YzAgLjc3Mi42NTIgMS40IDEuNDU2IDEuNC44MDQgMCAxLjQ1NS0uNjI4IDEuNDU1LTEuNHYtMS4zOThjMC0uMDE3LS4wMDgtLjAzLS4wMDktLjA0NSAyLjM5OC0uNDMgNC4zOTgtMS45MzIgNC4zOTgtNC42MTl6Ii8+PC9zdmc+", signo: 1 },
+        retirar: { texto: "Retiro", icono: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzNCODhDMyIgZD0iTTM2IDMyYzAgMi4yMDktMS43OTEgNC00IDRINGMtMi4yMDkgMC00LTEuNzkxLTQtNFY0YzAtMi4yMDkgMS43OTEtNCA0LTRoMjhjMi4yMDkgMCA0IDEuNzkxIDQgNHYyOHoiLz48cGF0aCBmaWxsPSIjQkJEREY1IiBkPSJNMCAxMGgzNnYxN0gweiIvPjxwYXRoIGQ9Ik01LjI5NyAxMy43NGMuMjcyLS43MzYuODk2LTEuMzI5IDEuNzEzLTEuMzI5Ljg0OCAwIDEuNDQuNTYxIDEuNzEyIDEuMzI5bDMuMTM3IDguNzA4Yy4wOTYuMjU2LjEyOC40OC4xMjguNTkzIDAgLjYyNC0uNTEyIDEuMDU2LTEuMTA1IDEuMDU2LS42NzIgMC0xLjAwOC0uMzUyLTEuMTY4LS44MzJsLS40OC0xLjUwNWgtNC40NWwtLjQ4IDEuNDg5Yy0uMTYuNDk2LS40OTcuODQ4LTEuMTUzLjg0OC0uNjQgMC0xLjE4NC0uNDc5LTEuMTg0LTEuMTIgMC0uMjU2LjA4LS40NDguMTEyLS41MjhsMy4yMTgtOC43MDl6bS4xNzcgNS44MWgzLjA0MWwtMS40ODktNC42NDJoLS4wMzJsLTEuNTIgNC42NDJ6bTguOTkxLTQuNzM4SDEyLjcyYy0uNzY4IDAtMS4wODgtLjU2MS0xLjA4OC0xLjEwNCAwLS41NjEuNC0xLjEwNCAxLjA4OC0xLjEwNGg1Ljg5Yy42ODggMCAxLjA4OS41NDQgMS4wODkgMS4xMDQgMCAuNTQ0LS4zMiAxLjEwNC0xLjA4OSAxLjEwNGgtMS43NDV2OC4wMzVjMCAuOC0uNTEyIDEuMjQ4LTEuMiAxLjI0OHMtMS4yMDEtLjQ0OC0xLjIwMS0xLjI0OHYtOC4wMzV6bTcuNTY4LTEuMDcyYy4wOTYtLjU3Ni43Mi0xLjIzMiAxLjU2OC0xLjIzMi44MDEgMCAxLjQyNC41NzYgMS42MDEgMS4xNTJsMS44OSA2LjMzOGguMDMxbDEuODg5LTYuMzM4Yy4xNzYtLjU3Ni44MDEtMS4xNTIgMS42LTEuMTUyLjg1IDAgMS40NzMuNjU2IDEuNTcgMS4yMzJsMS40ODggOC45MzJjLjAxNi4wOTYuMDE2LjE5MS4wMTYuMjcxIDAgLjcwNC0uNTEyIDEuMTUyLTEuMTUyIDEuMTUyLS44MTYgMC0xLjEzNy0uMzY4LTEuMjQ4LTEuMTJsLS45NDUtNi41MTVoLS4wMzFsLTEuOTIyIDYuNzA3Yy0uMTExLjM4NC0uNDE2LjkyOC0xLjI3OS45MjgtLjg2NSAwLTEuMTY5LS41NDQtMS4yODEtLjkyOGwtMS45Mi02LjcwN2gtLjAzM2wtLjk0MyA2LjUxNWMtLjExMy43NTItLjQzMyAxLjEyLTEuMjQ5IDEuMTItLjY0IDAtMS4xNTItLjQ0OC0xLjE1Mi0xLjE1MiAwLS4wOCAwLS4xNzYuMDE3LS4yNzFsMS40ODUtOC45MzJ6IiBmaWxsPSIjMjY5Ii8+PC9zdmc+", signo: -1 },
+        transferir: {
+          texto: "Transferencia",
+          icono: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzNCODhDMyIgZD0iTTAgMzJjMCAyLjIwOSAxLjc5MSA0IDQgNGgyOGMyLjIwOSAwIDQtMS43OTEgNC00VjRjMC0yLjIwOS0xLjc5MS00LTQtNEg0QzEuNzkxIDAgMCAxLjc5MSAwIDR2Mjh6Ii8+PHBhdGggZmlsbD0iI0ZGRiIgZD0iTTI3IDI1VjlIMTF6Ii8+PHBhdGggZmlsbD0iI0ZGRiIgZD0iTTcgMjMuMzQzTDE5LjgxNiAxMC41M2w1LjY1NiA1LjY1N0wxMi42NTcgMjl6Ii8+PC9zdmc+",
+          signo: -1,
+        },
+      };
+      /* Lo que otro usuario te transfiere: entra como "Recibido" (+). */
+      ETIQUETAS.recibido = { ...ETIQUETAS.depositar, texto: "Recibido" };
+
+      /* Historial: la fuente principal es MySQL (traído por el servidor);
+         localStorage queda como respaldo cuando no hay sesión/red. */
+      let movsServidor = null; // null = todavía no se consulta
+      let movVista = "recientes"; // recientes | anteriores
+
+      async function refrescarMovimientos() {
+        try {
+          const r = await fetch("/api/nequi/movimientos?limite=200", {
+            cache: "no-store",
+          });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const d = await r.json();
+          if (d && Array.isArray(d.movimientos)) movsServidor = d.movimientos;
+        } catch (e) {
+          /* sin sesión o sin red: se sigue con lo guardado en el navegador */
+        }
+        return movsServidor;
+      }
+
+      function obtenerMovimientos() {
+        if (Array.isArray(movsServidor)) {
+          return movsServidor.map((m) => ({
+            tipo: m.tipo,
+            monto: m.monto,
+            destino: m.destinoNombre || "",
+            fecha: m.creadoEn || null,
+          }));
+        }
+        return leerMovimientos();
+      }
+
+      function pintarMovimientos() {
+        const contenedor = document.querySelector("#lista-movimientos");
+        if (!contenedor) return;
+        const todos = obtenerMovimientos();
+        const recientes = todos.slice(0, 10);
+        const anteriores = todos.slice(10);
+        const lista = movVista === "anteriores" ? anteriores : recientes;
+        contenedor.textContent = "";
+
+        if (!todos.length) {
+          const vacio = document.createElement("div");
+          vacio.className = "vacio";
+          vacio.innerHTML =
+            "<strong>Aún no hay movimientos</strong>" +
+            "Cuando hagas un depósito, retiro o transferencia desde el botón <b>$</b>, aparecerá aquí.";
+          contenedor.appendChild(vacio);
+          return;
+        }
+        if (!lista.length) {
+          const vacio = document.createElement("div");
+          vacio.className = "vacio";
+          vacio.innerHTML =
+            movVista === "anteriores"
+              ? "<strong>No tienes movimientos anteriores</strong>" +
+                "Todos tus movimientos más recientes están en la pestaña <b>Recientes</b>."
+              : "<strong>Todo al día</strong>" +
+                "Aquí solo aparecen tus 10 movimientos más recientes. El resto está en <b>Anteriores</b>.";
+          contenedor.appendChild(vacio);
+          return;
+        }
+
+        lista.forEach((mov, i) => {
+          const meta = ETIQUETAS[mov.tipo] || {
+            texto: "Movimiento",
+            icono: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iIzVDOTEzQiIgZD0iTTIgMTFjLTIgMC0yIDItMiAydjIxczAgMiAyIDJoMzJjMiAwIDItMiAyLTJWMTNzMC0yLTItMkgyeiIvPjxwYXRoIGZpbGw9IiNBN0QyOEIiIGQ9Ik0yIDZDMCA2IDAgOCAwIDh2MjBzMCAyIDIgMmgzMmMyIDAgMi0yIDItMlY4czAtMi0yLTJIMnoiLz48Y2lyY2xlIGZpbGw9IiM3N0IyNTUiIGN4PSIyNSIgY3k9IjE4IiByPSI2LjUiLz48cGF0aCBmaWxsPSIjNUM5MTNCIiBkPSJNMzMgMjguNUgzYy0uODI3IDAtMS41LS42NzMtMS41LTEuNVY5YzAtLjgyNy42NzMtMS41IDEuNS0xLjVoMzBjLjgyNyAwIDEuNS42NzMgMS41IDEuNXYxOGMwIC44MjctLjY3MyAxLjUtMS41IDEuNXpNMyA4LjVjLS4yNzUgMC0uNS4yMjQtLjUuNXYxOGMwIC4yNzUuMjI1LjUuNS41aDMwYy4yNzUgMCAuNS0uMjI1LjUtLjVWOWMwLS4yNzYtLjIyNS0uNS0uNS0uNUgzeiIvPjxwYXRoIGZpbGw9IiNGRkU4QjYiIGQ9Ik0xNCA2aDh2MjQuMDYyaC04eiIvPjxwYXRoIGZpbGw9IiNGRkFDMzMiIGQ9Ik0xNCAzMGg4djZoLTh6Ii8+PHBhdGggZmlsbD0iIzVDOTEzQiIgZD0iTTExLjgxIDIwLjAyM2MwLTIuOTc5LTUuNDkzLTIuNzg1LTUuNDkzLTQuNTg0IDAtLjg3MS44MzMtMS4yOTYgMS43OTktMS4yOTYgMS42MjUgMCAxLjkxNCAxLjA0NCAyLjY1IDEuMDQ0LjUyMSAwIC43NzItLjMyOC43NzItLjY5NiAwLS44NTYtMS4yOTYtMS41MDItMi41MzktMS43MjZ2LS44MjVjMC0uNTE1LS40MTctLjkzMi0uOTMyLS45MzJzLS45MzIuNDE4LS45MzIuOTMydi44NTNjLTEuMzU0LjMxLTIuNTIxIDEuMjUtMi41MjEgMi43ODEgMCAyLjg2MiA1LjQ5MyAyLjc0NiA1LjQ5MyA0Ljc1OCAwIC42OTUtLjc1NCAxLjM5MS0xLjk5MiAxLjM5MS0xLjg1NyAwLTIuNDc2LTEuMjU3LTMuMjI5LTEuMjU3LS4zNjggMC0uNjk2LjMwOS0uNjk2Ljc3NSAwIC43NDEgMS4yNCAxLjYzMSAyLjk0NyAxLjg4MWwtLjAwMS4wMDR2LjkzNGMwIC41MTQuNDE4LjkzMi45MzMuOTMyLjUxNC0uMDAxLjkzMS0uNDE5LjkzMS0uOTMydi0uOTM0YzAtLjAxLS4wMDUtLjAxOS0uMDA2LS4wMjggMS41MzUtLjI4NyAyLjgxNi0xLjI4NiAyLjgxNi0zLjA3NXoiLz48L3N2Zz4=",
+            signo: -1,
+          };
+          const iconoHtml = meta.icono
+            ? `<img class="emo" src="${meta.icono}" alt="" onerror="this.remove()">`
+            : "•";
+          const fila = document.createElement("div");
+          fila.className = "mov";
+          fila.style.animationDelay = Math.min(i * 0.04, 0.4) + "s";
+          const fecha = mov.fecha ? new Date(mov.fecha) : new Date();
+          const esRecibido = mov.tipo === "recibido";
+          const destinoTxt = mov.destino
+            ? esRecibido
+              ? ` de ${mov.destino}`
+              : ` → ${mov.destino}`
+            : "";
+          fila.innerHTML =
+            `<span class="mov-icono">${iconoHtml}</span>` +
+            `<span class="mov-txt"><b>${meta.texto}${destinoTxt}</b>` +
+            `<small>${fecha.toLocaleString("es-CO")}</small></span>` +
+            `<span class="mov-valor ${meta.signo > 0 ? "positivo" : "negativo"}">` +
+            `${meta.signo > 0 ? "+" : "−"} ${moneda.format(Number(mov.monto) || 0)}</span>`;
+          contenedor.appendChild(fila);
+        });
+      }
+
+      /* Pestañas Recientes / Anteriores */
+      document.querySelectorAll(".mov-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          movVista = btn.dataset.mov === "anteriores" ? "anteriores" : "recientes";
+          document
+            .querySelectorAll(".mov-tab")
+            .forEach((b) => b.classList.toggle("activa", b === btn));
+          pintarMovimientos();
+        });
+      });
+
+      /* Captura los datos de la operación ANTES de que el script original
+         limpie el formulario, y la registra cuando confirma el éxito. */
+      let operacionPendiente = null;
+
+      formularioOperacion.addEventListener("submit", () => {
+        const monto = Number(document.querySelector("#monto").value);
+        let destinoTexto = "";
+        if (
+          operacionActual === "transferir" &&
+          destino &&
+          destino.selectedOptions &&
+          destino.selectedOptions[0]
+        ) {
+          destinoTexto = destino.selectedOptions[0].textContent;
+        }
+        operacionPendiente = {
+          tipo: operacionActual || "transferir",
+          monto,
+          destino: destinoTexto,
+        };
+      });
+
+      if (mensajeOperacion) {
+        new MutationObserver(() => {
+          const texto = mensajeOperacion.textContent || "";
+          if (texto.includes("se completó correctamente") && operacionPendiente) {
+            guardarMovimiento({
+              ...operacionPendiente,
+              fecha: new Date().toISOString(),
+            });
+            operacionPendiente = null;
+            refrescarMovimientos().finally(() => pintarMovimientos());
+          }
+        }).observe(mensajeOperacion, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
+    </script>
+  
+</template>
+<template id="plantilla-twitter">
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Twitter Medellín RP</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
+  <style>
+/* Tema Medellín RP (igual al login) — sirve para twitter.html, twitter-perfil.html y twitter-buscar.html */
+:root{
+  --bg:#0a0a0a;--panel:rgba(20,20,20,.72);--panel2:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.18);
+  --text:#fff;--muted:#a1a1a1;--accent:#d4d4d4;--cyan:#74e6ff;--gold:#fff;
+  --danger:#ef7777;--red:#ef7777;--ink:#fff;--shadow:0 30px 100px rgba(0,0,0,.6)
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--text);background:var(--bg);font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.06),transparent 40%),radial-gradient(circle at 80% 80%,rgba(255,255,255,.04),transparent 40%);background-size:200% 200%;animation:fondoMover 20s ease infinite}
+a{color:inherit}
+@keyframes fondoMover{0%,100%{background-position:0 0}50%{background-position:100% 100%}}
+@keyframes appear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes searchIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+/* ===== Layout ===== */
+.page{width:min(1420px,calc(100% - 32px));margin:0 auto;padding:22px 0 60px;animation:enter .8s ease both}
+.page:has(>.top){width:min(900px,calc(100% - 28px))}
+.topbar,.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0 20px;color:var(--muted);font-size:13px}
+.top{margin-bottom:0}
+.topbar a,.top a{color:var(--muted);text-decoration:none;font-weight:700;transition:color .2s}
+.topbar a:hover,.top a:hover{color:#fff}
+.brand,.top strong{color:#fff;font-weight:900;letter-spacing:-.01em}
+.brand::after,.top strong::after{content:" ❄️"}
+.app{display:grid;grid-template-columns:230px minmax(420px,680px) 280px;gap:18px;align-items:start}
+
+/* ===== Paneles de vidrio ===== */
+.side,.right,.feed,.onboarding,.box,.profile,.posts{
+  border:1px solid var(--line);border-radius:22px;background:var(--panel);
+  box-shadow:0 22px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px)
+}
+.side,.right{padding:18px;position:sticky;top:18px}
+.feed{min-width:0;overflow:hidden}
+.posts{margin-top:16px;overflow:hidden}
+.profile-posts{padding:0}
+
+/* ===== Lateral ===== */
+.profile-mini{display:flex;align-items:center;gap:11px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.profile-mini b{display:block;font-size:14px}
+.profile-mini small{color:var(--muted);font-size:11px}
+.avatar{width:45px;height:45px;border-radius:50%;object-fit:cover;border:2px solid var(--line2);background:#111;transition:transform .18s,border-color .18s}
+.author .avatar,.author img{width:44px;height:44px}
+.profile-row .avatar,.profile .avatar{width:78px;height:78px;border:3px solid rgba(255,255,255,.35)}
+.welcome .avatar{width:68px;height:68px}
+.nav{display:grid;gap:8px;margin-top:18px}
+.nav button{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid transparent;border-radius:14px;color:var(--accent);background:transparent;text-align:left;font:inherit;font-weight:700;cursor:pointer;transition:all .3s ease}
+.nav button:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12);transform:translateX(3px)}
+.nav button.active{border-color:#fff;color:#0a0a0a;background:#fff}
+.side-note{margin-top:24px;color:#777;font-size:11px;line-height:1.5}
+
+/* ===== Cabecera del feed ===== */
+.feed-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,rgba(255,255,255,.08),rgba(0,0,0,.25))}
+.feed-head h1{margin:0;font-size:23px;letter-spacing:-.04em}
+.feed-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.head{position:relative;overflow:hidden;padding:24px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,rgba(0,0,0,.55),rgba(255,255,255,.05))}
+.head::after{content:"✦";position:absolute;right:28px;top:15px;font-size:70px;color:rgba(255,255,255,.07);transform:rotate(18deg)}
+.head h1,h1{margin:0;letter-spacing:-.04em}
+.head h1{font-size:28px}
+.head p{margin:7px 0 0;color:#b3b3b3}
+.query{display:inline-block;margin-top:15px;padding:8px 14px;border:1px solid rgba(116,230,255,.35);border-radius:999px;color:var(--cyan);background:rgba(76,164,255,.12);font-weight:800}
+
+/* ===== Campos ===== */
+input,textarea{width:100%;padding:12px 13px;border:1px solid var(--line2);border-radius:12px;color:#fff;background:rgba(0,0,0,.35);font:inherit;transition:border-color .2s,background .2s}
+input:focus,textarea:focus{outline:none;border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.5);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+input::placeholder,textarea::placeholder{color:#777}
+.search{width:min(260px,42%);border-radius:999px}
+.compose{display:flex;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.compose textarea{flex:1;min-height:48px;max-height:120px;resize:vertical}
+.settings-form,.onboarding form{display:grid;gap:10px}
+.settings-form label,.onboarding label{display:grid;gap:6px;color:var(--accent);font-size:12px;font-weight:700}
+.hint,.file-note{color:var(--muted);font-size:11px;line-height:1.5}
+.comment-form{display:flex;gap:8px;margin-top:12px}
+.comment-form input{flex:1;min-width:0;padding:10px 12px;border-radius:10px}
+
+/* ===== Botones ===== */
+.btn,.comment-form button,.follow-btn{border:1px solid #fff;border-radius:12px;padding:10px 15px;color:#0a0a0a;background:#fff;font-weight:800;cursor:pointer;transition:all .3s ease}
+.btn:hover,.comment-form button:hover,.follow-btn:hover{transform:translateY(-2px);background:#e5e5e5;box-shadow:0 12px 30px rgba(255,255,255,.15)}
+.btn:active{transform:scale(.97)}
+.btn.secondary,.follow-btn.following{color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15)}
+.btn.secondary:hover,.follow-btn.following:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);box-shadow:none}
+.btn.gold{color:#0a0a0a;background:#fff}
+.btn.danger{color:#ffb5b5;background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)}
+.btn:disabled,.pager button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.follow-btn{margin-top:15px}
+.back,.back-search,.back-profile{display:inline-flex;align-items:center;gap:7px;margin:0 0 16px;padding:10px 14px;border:1px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;background:rgba(255,255,255,.05);text-decoration:none;font-weight:700;font-size:12px;transition:all .3s ease}
+.back:hover,.back-search:hover,.back-profile:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.back-profile{margin:18px 20px 0}
+
+/* ===== Publicaciones ===== */
+.post,.result{position:relative;padding:20px;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;animation:appear .3s ease both;transition:transform .2s,background .2s,border-color .2s}
+.post:hover,.result:hover{background:rgba(255,255,255,.04);transform:translateY(-2px)}
+.result:hover{border-left:3px solid #fff}
+.post-top,.author{display:flex;gap:11px;align-items:center;cursor:default}
+.post-top strong,.author b{display:block}
+.post-top small,.author small{color:var(--muted);font-size:11px}
+.post-title,.title{margin:15px 0 6px;font-size:18px}
+.post-description,.desc{margin:0;color:#c9c9c9;white-space:pre-wrap;line-height:1.55;font-size:14px}
+.post-image,.photo{display:block;max-width:100%;width:100%;max-height:430px;margin:15px 0 0;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
+.post-actions,.actions{display:flex;align-items:center;gap:10px;margin-top:15px;cursor:default;color:var(--muted);font-size:12px;font-weight:700}
+.post-actions button,.actions button,.like{padding:8px 12px;border:1px solid var(--line);border-radius:10px;color:var(--accent);background:rgba(255,255,255,.04);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s ease}
+.post-actions button:hover,.actions button:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff}
+.post-actions button.liked,.actions button.liked,.like{border-color:rgba(239,119,119,.5);color:#ff9b9b;background:rgba(239,119,119,.1)}
+.verified-icon{width:18px!important;height:18px!important;vertical-align:middle;border:0!important}
+.avatar-link{display:block;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer}
+.avatar-link:hover .avatar,.avatar-link:hover img{border-color:#fff;transform:scale(1.06)}
+.comment-profile{cursor:pointer}
+
+/* Menús ⋯ */
+.post-menu,.menu,.menu-search{position:absolute;top:16px;right:16px}
+.dots,.dots-search{width:34px;height:34px;border:1px solid transparent;border-radius:50%;color:var(--accent);background:transparent;font-size:20px;cursor:pointer}
+.dots:hover,.dots-search:hover{border-color:var(--line2);color:#fff;background:rgba(255,255,255,.08)}
+.post-menu-list,.menu-list,.menu-search>div{position:absolute;right:0;top:38px;z-index:4;min-width:160px;padding:6px;border:1px solid var(--line2);border-radius:14px;background:rgba(18,18,18,.97);box-shadow:0 15px 38px rgba(0,0,0,.6)}
+.post-menu-list button,.menu-list button,.menu-search [data-delete]{display:block;width:100%;padding:10px;border:0;border-radius:9px;color:#ffadad;background:transparent;text-align:left;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.post-menu-list button:hover,.menu-list button:hover,.menu-search [data-delete]:hover{background:rgba(239,119,119,.12)}
+
+/* ===== Comentarios ===== */
+.comments{margin-top:13px;padding-top:13px;border-top:1px solid var(--line);cursor:default}
+.comment-list{padding:0}
+#comments-embed{margin-top:15px;padding-top:10px;border-top:1px solid var(--line)}
+.comment{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);color:#c9c9c9;font-size:12px}
+.comment img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.comment b{color:#fff}
+.comment-body{flex:1}
+.comment-menu{border:0;padding:5px 10px;border-radius:8px;color:#ffadad;background:transparent;font-size:18px;cursor:pointer}
+.comment-menu:hover{background:rgba(239,119,119,.12)}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0}
+.pager button{padding:8px 12px;border:1px solid var(--line2);border-radius:10px;color:#fff;background:rgba(255,255,255,.06);font-size:11px;font-weight:800;cursor:pointer;transition:background .2s}
+.pager button:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.status{color:var(--muted);font-size:12px}
+
+/* ===== Perfil ===== */
+.profile{padding:24px;background:linear-gradient(135deg,rgba(0,0,0,.55),rgba(255,255,255,.06)),var(--panel)}
+.profile-row{display:flex;align-items:center;gap:16px}
+.profile h1{margin:0 0 5px;font-size:29px}
+.profile p{margin:0;color:#b3b3b3;font-size:13px}
+.profile-view{padding:22px;border-bottom:1px solid var(--line)}
+.profile-cover{padding:22px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(255,255,255,.07))}
+.profile-cover h2{margin:10px 0 6px}
+.profile-cover p{margin:0;color:#b3b3b3;font-size:12px}
+.profile-stats{display:flex;flex-wrap:wrap;gap:14px 24px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--accent);font-size:13px}
+.profile-stats span{min-width:140px;padding:10px 17px;text-align:center;border:1px solid var(--line2);border-radius:999px;background:rgba(255,255,255,.04)}
+.profile-stats b{color:#fff}
+.follow-lists{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.follow-list{padding:12px;border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:12px}
+.follow-list b{display:block;margin-bottom:7px;color:#fff}
+
+/* ===== Onboarding ===== */
+.onboarding{width:min(620px,100%);margin:55px auto;padding:34px}
+.onboarding h1{margin:0 0 8px;font-size:34px}
+.onboarding p{color:var(--muted);line-height:1.6}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.eyebrow::before{content:"";width:30px;height:1px;background:var(--accent)}
+.welcome{display:flex;align-items:center;gap:16px;margin:22px 0;padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.25)}
+
+/* ===== Varios ===== */
+.empty,.loading{padding:60px 24px;text-align:center;color:var(--muted)}
+.toast{position:fixed;right:22px;bottom:22px;z-index:120;max-width:360px;padding:13px 16px;border:1px solid var(--line2);border-radius:14px;color:#fff;background:rgba(20,20,20,.95);backdrop-filter:blur(20px);box-shadow:0 18px 45px rgba(0,0,0,.7);animation:appear .2s ease}
+
+/* ===== Modales ===== */
+.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)}
+.modal-card{width:min(580px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid var(--line2);border-radius:22px;background:rgba(20,20,20,.95);box-shadow:0 30px 100px rgba(0,0,0,.8);animation:pop .25s cubic-bezier(.23,1,.32,1)}
+.detail-card{width:min(680px,100%)}
+.comments-card{width:min(620px,100%)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px;padding:0;border:0}
+.modal-head h2{margin:0}
+.detail{padding:0}
+.detail-card .post,.modal-card .post{border:0;cursor:default}
+.detail-card .post:hover,.modal-card .post:hover{transform:none;background:transparent}
+.close{width:34px;height:34px;border:1px solid var(--line2);border-radius:50%;color:#fff;background:rgba(255,255,255,.06);font-size:20px;cursor:pointer;transition:background .2s}
+.close:hover{background:rgba(255,255,255,.16)}
+.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:5px}
+
+/* ===== Botón de seleccionar archivo ===== */
+input[type=file]{padding:8px;border:1px dashed rgba(255,255,255,.3);border-radius:14px;background:rgba(255,255,255,.04);color:var(--muted);font-size:12px;cursor:pointer;transition:all .3s ease}
+input[type=file]:hover{border-color:#fff;background:rgba(255,255,255,.09)}
+input[type=file]:focus{border-style:solid}
+input[type=file]::file-selector-button{margin-right:12px;padding:10px 16px;border:1px solid #fff;border-radius:10px;color:#0a0a0a;background:#fff;font:inherit;font-weight:800;cursor:pointer;transition:all .3s ease}
+input[type=file]::file-selector-button:hover{background:#e5e5e5;transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,255,255,.18)}
+input[type=file]::-webkit-file-upload-button{margin-right:12px;padding:10px 16px;border:1px solid #fff;border-radius:10px;color:#0a0a0a;background:#fff;font:inherit;font-weight:800;cursor:pointer}
+
+/* ===== Responsive ===== */
+@media(max-width:1080px){.app{grid-template-columns:190px minmax(0,1fr)}.right{display:none}}
+@media(max-width:700px){
+  .page{width:min(100% - 18px,680px);padding-top:10px}
+  .app{display:block}
+  .side{position:static;margin-bottom:12px}
+  .side-note{display:none}
+  .nav{display:flex;flex-wrap:wrap}
+  .nav button{flex:1;justify-content:center}
+  .feed-head{align-items:flex-start;flex-direction:column}
+  .search{width:100%;max-width:none}
+  .compose{padding:14px;flex-direction:column}
+  .compose .btn{align-self:flex-end}
+  .onboarding{margin:25px auto;padding:24px}
+  .top{align-items:flex-start;flex-direction:column}
+  .profile-row{align-items:flex-start;flex-direction:column}
+  .follow-lists{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+</style>
+
+  <div class="page">
+    <div class="topbar"><span class="brand">「ME:RP」 Medellín RP · Twitter ciudadano</span></div>
+    <section id="onboarding" class="onboarding" hidden>
+      <div class="eyebrow">Red social de la comunidad</div>
+      <h1>Bienvenido a Twitter Medellín RP</h1>
+      <p>Crea tu cuenta para publicar, comentar y compartir con los demás ciudadanos del servidor.</p>
+      <div class="welcome"><img id="welcome-avatar" class="avatar" src="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png" alt="Avatar por defecto"><div><b id="welcome-user">Bienvenido</b><small class="hint">El nombre es obligatorio. La imagen es opcional.</small></div></div>
+      <form id="create-account-form">
+        <label>Nombre público<input name="nombre" maxlength="80" required placeholder="Ejemplo: Medellín Noticias"></label>
+        <label>Foto de perfil (opcional)<input name="avatar" type="file" accept="image/*"></label>
+        <span class="file-note">Si no eliges una imagen se usará el avatar predeterminado.</span>
+        <button class="btn" type="submit">Crear mi cuenta</button>
+        <div id="create-status" class="hint"></div>
+      </form>
+    </section>
+    <main id="app" class="app" hidden>
+      <aside class="side">
+        <div class="profile-mini"><img id="mini-avatar" class="avatar" alt="Tu avatar"><div><b id="mini-name">—</b><small>Mi cuenta ciudadana</small></div></div>
+        <nav class="nav"><button class="active" data-view="inicio">⌂ Inicio</button><button data-view="perfil">♙ Mi perfil</button><button id="new-post-side">＋ Publicar</button></nav>
+        <p class="side-note">Comparte historias, novedades y momentos de Medellín RP con respeto a la comunidad.</p>
+      </aside>
+      <section class="feed">
+        <div class="feed-head"><div><h1 id="view-title">Inicio</h1><p id="view-subtitle">Las 10 publicaciones más recientes</p></div><input id="search" class="search" placeholder="Buscar una publicación..." aria-label="Buscar publicación"></div>
+        <div id="feed-compose" class="compose"><img id="compose-avatar" class="avatar" alt="Tu avatar"><textarea id="quick-text" placeholder="¿Qué está pasando en Medellín RP?" maxlength="2000"></textarea><button id="quick-publish" class="btn" type="button">Publicar</button></div>
+        <div id="posts" class="profile-posts"><div class="loading">Cargando publicaciones...</div></div>
+      </section>
+      <aside class="right">
+        <section><h3>⚙️ Configuración</h3><form id="settings-form" class="settings-form"><label>Nombre<input name="nombre" maxlength="80" required></label><label>Foto de perfil<input name="avatar" type="file" accept="image/*"></label><span class="hint">Puedes cambiar tu nombre o foto cada 10 días.</span><button class="btn secondary" type="submit">Guardar cambios</button><div id="settings-status" class="hint"></div></form></section>
+        <section><h3>ℹ️ Reglas rápidas</h3><p class="hint">Publica contenido relacionado con la comunidad. No compartas datos privados ni contenido ofensivo.</p></section>
+      </aside>
+    </main>
+  </div>
+  <div id="post-modal" class="modal" hidden><div class="modal-card"><div class="modal-head"><h2>＋ Nueva publicación</h2><button class="close" data-close="post-modal" type="button">×</button></div><form id="post-form" class="settings-form"><label>Nombre de la publicación<input name="nombre" maxlength="80" required placeholder="Título o nombre"></label><label>Descripción<textarea name="descripcion" maxlength="2000" required placeholder="Escribe el contenido..."></textarea></label><label>Foto opcional<input name="imagen" type="file" accept="image/*"></label><span class="hint">Puedes publicar sin foto.</span><div class="form-actions"><button class="btn secondary" data-close="post-modal" type="button">Cancelar</button><button class="btn" type="submit">Publicar</button></div><div id="post-status" class="hint"></div></form></div></div>
+  <div id="detail-modal" class="modal" hidden><div class="modal-card detail-card"><div class="modal-head"><h2>Publicación</h2><button class="close" data-close="detail-modal" type="button">×</button></div><div id="detail-content"></div></div></div>
+  <div id="comments-modal" class="modal" hidden><div class="modal-card comments-card"><div class="modal-head"><h2>💬 Comentarios</h2><button class="close" data-close="comments-modal" type="button">×</button></div><div id="comments-list" class="comment-list"></div></div></div>
+  <div id="profile-modal" class="modal" hidden><div class="modal-card"><div class="modal-head"><h2>♙ Mi perfil</h2><button class="close" data-close="profile-modal" type="button">×</button></div><div id="profile-content"></div></div></div>
+  <div id="toast" class="toast" hidden></div>
+<script>
+const VERIFIED_ICON="https://cdn-icons-png.flaticon.com/512/6711/6711626.png";const DEFAULT_AVATAR="https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
+let account=null, posts=[], showing="inicio";
+const $=(s)=>document.querySelector(s);
+const esc=(v)=>String(v??"").replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+ const date=(v)=>new Date(v).toLocaleString("es-CO",{dateStyle:"medium",timeStyle:"short",timeZone:"America/Bogota"});
+function toast(text){const e=$("#toast");e.textContent=text;e.hidden=false;setTimeout(()=>e.hidden=true,3200)}
+ function imgData(file,options={}){return new Promise((resolve,reject)=>{if(!file||!file.size){resolve("");return}const r=new FileReader();r.onload=()=>{const image=new Image();image.onload=()=>{const maxDimension=Number(options.maxDimension||1600);const square=Boolean(options.square);let sourceWidth=image.naturalWidth,sourceHeight=image.naturalHeight;let cropX=0,cropY=0,cropWidth=sourceWidth,cropHeight=sourceHeight;if(square){const lado=Math.min(sourceWidth,sourceHeight);cropX=(sourceWidth-lado)/2;cropY=(sourceHeight-lado)/2;cropWidth=lado;cropHeight=lado}const escala=Math.min(1,maxDimension/Math.max(cropWidth,cropHeight));const width=Math.max(1,Math.round(cropWidth*escala));const height=Math.max(1,Math.round(cropHeight*escala));const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const context=canvas.getContext("2d");context.fillStyle="#ffffff";context.fillRect(0,0,width,height);context.drawImage(image,cropX,cropY,cropWidth,cropHeight,0,0,width,height);let quality=.86,result=canvas.toDataURL("image/jpeg",quality);while(result.length>2350000&&quality>.45){quality-=.06;result=canvas.toDataURL("image/jpeg",quality)}if(result.length>2500000)reject(new Error("No se pudo comprimir la imagen. Prueba con otra imagen."));else resolve(result)};image.onerror=()=>reject(new Error("El archivo seleccionado no es una imagen válida."));image.src=r.result};r.onerror=()=>reject(new Error("No se pudo leer la imagen."));r.readAsDataURL(file)})}
+async function api(url,options={}){const r=await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})},cache:"no-store"});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"No se pudo completar la solicitud.");return d}
+function renderPost(p,modal=false){const avatar=p.autor_avatar||DEFAULT_AVATAR;const propio=!modal&&((p.propia===true||Number(p.propia)===1)||(account&&(String(p.cuenta_id)===String(account.id)||String(p.autor_discord_id)===String(account.discord_id))));return `<article class="post" data-post="${p.id}" data-open-post="${p.id}">${propio?`<div class="post-menu"><button class="dots" data-dots="${p.id}" type="button">⋯</button><div class="post-menu-list" id="menu-${p.id}" hidden><button data-delete="${p.id}" type="button">🗑️ Eliminar publicación</button></div></div>`:""}<div class="post-top"><button class="avatar-link" data-profile="${esc(p.autor_discord_id)}" type="button"><img class="avatar" src="${esc(avatar)}" alt=""></button><div><strong>${esc(p.autor_nombre)} ${Number(p.autor_verificado)?`<img class="verified-icon" src="${VERIFIED_ICON}" alt="Verificado">`:""}</strong><small>@${esc(p.autor_discord_id)} · ${date(p.creado_en)}</small></div></div><h2 class="post-title">${esc(p.nombre)}</h2><p class="post-description">${esc(p.descripcion)}</p>${p.imagen_url?`<img class="post-image" src="${esc(p.imagen_url)}" alt="Imagen de ${esc(p.nombre)}" loading="lazy">`:""}<div class="post-actions"><button class="like-btn ${p.liked?"liked":""}" data-like="${p.id}">${p.liked?"♥":"♡"} ${Number(p.likes||0)}</button><button data-comments="${p.id}">▢ ${Number(p.comentarios||0)} comentarios</button></div></article>`}
+function render(){const list=posts;$("#posts").innerHTML=list.length?list.map(renderPost).join(""):"<div class=empty>No hay publicaciones que mostrar.</div>";}
+async function loadFeed(){const d=await api("/api/twitter/feed");account=d.cuenta;posts=d.publicaciones||[];$("#mini-name").textContent=account.nombre;$("#mini-avatar").src=account.avatar_url||DEFAULT_AVATAR;$("#compose-avatar").src=account.avatar_url||DEFAULT_AVATAR;$("#settings-form [name=nombre]").value=account.nombre;render()}
+async function showProfile(){showing="perfil";$("#view-title").textContent="Mi perfil";$("#view-subtitle").textContent="Tus publicaciones y actividad";$("#feed-compose").hidden=true;$("[data-view=perfil]").classList.add("active");$("#posts").innerHTML='<div class="loading">Cargando tu perfil y publicaciones...</div>';try{const d=await api("/api/twitter/perfil/"+encodeURIComponent(account.discord_id));posts=d.publicaciones||[];const verificado=Number(d.cuenta.verificado)===1;$("#posts").innerHTML=`<div class="profile-view"><div class="profile-cover"><img class="avatar" src="${esc(d.cuenta.avatar_url)}" alt=""><h2>${esc(d.cuenta.nombre)} ${verificado?`<img class="verified-icon" src="${VERIFIED_ICON}" alt="Cuenta verificada">`:""}</h2><p>Cuenta Twitter ciudadana · Desde ${date(d.cuenta.creado_en)}</p><div class="profile-stats"><span><b>${Number(d.cuenta.seguidores||0)}</b> seguidores</span><span><b>${Number(d.cuenta.siguiendo||0)}</b> siguiendo</span></div></div></div>`+(d.publicaciones?.length?d.publicaciones.map(renderPost).join(""):"<div class=empty>Aún no tienes publicaciones.</div>")}catch(e){toast(e.message)}}
+ async function showHome(){showing="inicio";$("#view-title").textContent="Inicio";$("#view-subtitle").textContent="Las 10 publicaciones más recientes";$("#feed-compose").hidden=false;$("[data-view=perfil]").classList.remove("active");$("#posts").innerHTML='<div class="loading">Cargando publicaciones...</div>';try{await loadFeed()}catch(e){toast(e.message)}}
+async function createAccount(e){e.preventDefault();const s=$("#create-status");s.textContent="Creando cuenta...";try{const f=new FormData(e.target);const imagen=await imgData(f.get("avatar"),{square:true,maxDimension:640});const avatar=imagen||DEFAULT_AVATAR;const d=await api("/api/twitter/cuenta",{method:"POST",body:JSON.stringify({nombre:f.get("nombre"),avatarUrl:avatar})});account=d.cuenta;$("#onboarding").hidden=true;$("#app").hidden=false;await loadFeed();toast("Cuenta creada correctamente. También quedó registrada en Discord.")}catch(err){s.textContent="❌ "+err.message}}
+async function publish(e){e.preventDefault();const s=$("#post-status");s.textContent="Publicando...";try{const f=new FormData(e.target);const imagen=await imgData(f.get("imagen"));await api("/api/twitter/publicaciones",{method:"POST",body:JSON.stringify({nombre:f.get("nombre"),descripcion:f.get("descripcion"),imagenUrl:imagen})});e.target.reset();$("#post-modal").hidden=true;await loadFeed();toast("Publicación creada")}catch(err){s.textContent="❌ "+err.message}}
+async function settings(e){e.preventDefault();const s=$("#settings-status");s.textContent="Guardando...";try{const f=new FormData(e.target);const file=f.get("avatar");const avatar=file?.size?await imgData(file,{square:true,maxDimension:640}):undefined;const d=await api("/api/twitter/cuenta",{method:"PUT",body:JSON.stringify({nombre:f.get("nombre"),...(avatar!==undefined?{avatarUrl:avatar}:{})})});account=d.cuenta;$("#mini-name").textContent=account.nombre;$("#mini-avatar").src=account.avatar_url;$("#compose-avatar").src=account.avatar_url;s.textContent="✅ Perfil actualizado"}catch(err){s.textContent="❌ "+err.message}}
+async function toggleLike(id,button){if(button.disabled)return;const post=posts.find((p)=>String(p.id)===String(id));const anterior=post?Boolean(post.liked):button.classList.contains("liked");const nuevo=!anterior;const anteriorLikes=post?Number(post.likes||0):0;const nuevoLikes=Math.max(0,anteriorLikes+(nuevo?1:-1));if(post){post.liked=nuevo;post.likes=nuevoLikes}document.querySelectorAll(`[data-like="${id}"]`).forEach((b)=>{b.classList.toggle("liked",nuevo);b.innerHTML=`${nuevo?"♥":"♡"} ${nuevoLikes}`});button.disabled=true;try{const d=await api(`/api/twitter/publicaciones/${id}/like`,{method:"POST"});if(post){post.liked=Boolean(d.liked);post.likes=Number(d.likes||0)}document.querySelectorAll(`[data-like="${id}"]`).forEach((b)=>{b.classList.toggle("liked",Boolean(d.liked));b.innerHTML=`${d.liked?"♥":"♡"} ${d.likes}`})}catch(e){if(post){post.liked=anterior;post.likes=anteriorLikes}document.querySelectorAll(`[data-like="${id}"]`).forEach((b)=>{b.classList.toggle("liked",anterior);b.innerHTML=`${anterior?"♥":"♡"} ${anteriorLikes}`});toast(e.message)}finally{button.disabled=false}}
+const commentPages={},commentDrafts={};
+async function comments(id,open=true){const modal=$("#comments-modal");if(!open){modal.hidden=true;return}modal.hidden=false;const box=$("#comments-list");box.innerHTML="<div class=hint>Cargando comentarios...</div>";try{const d=await api(`/api/twitter/publicaciones/${id}/comentarios`);const serverComments=d.comentarios||[];const all=[...serverComments,...(commentDrafts[id]||[]).filter(d=>!serverComments.some(c=>c.texto===d.texto))];const page=commentPages[id]||1,total=Math.max(1,Math.ceil(all.length/5)),safe=Math.min(page,total);commentPages[id]=safe;const visible=all.slice((safe-1)*5,safe*5);box.innerHTML=(visible.length?visible.map(c=>`<div class="comment"><button class="avatar-link comment-avatar" data-profile="${esc(c.discord_id)}" type="button"><img src="${esc(c.avatar_url||DEFAULT_AVATAR)}" alt=""></button><div class="comment-body"><b>${esc(c.nombre)}</b><br>${esc(c.texto)}</div>${account&&String(c.cuenta_id)===String(account.id)&&c.id&&!String(c.id).startsWith("draft-")?`<button class="comment-menu" data-delete-comment="${c.id}" data-comment-post="${id}" type="button">⋯</button>`:""}</div>`).join(""):"<div class=hint>Aún no hay comentarios.</div>")+`<div class=pager><button data-comment-page="${id}" data-page="${safe-1}" ${safe<=1?"disabled":""}>← Anteriores</button><span class=status>Página ${safe} de ${total}</span><button data-comment-page="${id}" data-page="${safe+1}" ${safe>=total?"disabled":""}>Siguientes →</button></div><form class=comment-form data-comment-form="${id}"><input name="texto" maxlength="600" required placeholder="Agrega tu comentario..."><button class="btn" type="submit">Comentar</button></form>`}catch(e){box.innerHTML=`<div class=hint>${esc(e.message)}</div>`}}
+async function deletePost(id){if(!confirm("¿Seguro que deseas eliminar esta publicación? Esta acción no se puede deshacer."))return;try{await api(`/api/twitter/publicaciones/${id}`,{method:"DELETE"});$("#detail-modal").hidden=true;await loadFeed();if(showing==="perfil")await showProfile();toast("Publicación eliminada correctamente")}catch(e){toast(e.message)}}
+function openDetail(id){const p=posts.find(x=>String(x.id)===String(id));if(!p)return;$("#detail-content").innerHTML=renderPost(p,true);$("#detail-modal").hidden=false}
+async function deleteComment(id,postId){if(!confirm("¿Eliminar este comentario?"))return;try{await api(`/api/twitter/comentarios/${id}`,{method:"DELETE"});commentPages[postId]=1;await comments(postId,true)}catch(e){toast(e.message)}}
+document.addEventListener("submit",e=>{const form=e.target.closest("[data-comment-form]");if(!form)return;e.preventDefault();const id=form.dataset.commentForm,texto=new FormData(form).get("texto"),draft={id:`draft-${Date.now()}`,cuenta_id:account.id,nombre:account.nombre,discord_id:account.discord_id,avatar_url:account.avatar_url,texto};commentDrafts[id]=[...(commentDrafts[id]||[]),draft];form.reset();commentPages[id]=1;comments(id,true);(async()=>{try{await api(`/api/twitter/publicaciones/${id}/comentarios`,{method:"POST",body:JSON.stringify({texto})});commentDrafts[id]=(commentDrafts[id]||[]).filter(x=>x.id!==draft.id);await comments(id,true)}catch(err){commentDrafts[id]=(commentDrafts[id]||[]).filter(x=>x.id!==draft.id);await comments(id,true);toast(err.message)}})()});
+$("#create-account-form").addEventListener("submit",createAccount);$("#post-form").addEventListener("submit",publish);$("#settings-form").addEventListener("submit",settings);$("#search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=e.target.value.trim();if(q)location.href=`/twitter-buscar.html?q=${encodeURIComponent(q)}`}});$("#new-post-side").addEventListener("click",()=>$("#post-modal").hidden=false);$("#quick-publish").addEventListener("click",()=>{$("#post-modal").hidden=false});$("[data-view=inicio]").addEventListener("click",showHome);$("[data-view=perfil]").addEventListener("click",showProfile);document.addEventListener("click",e=>{const close=e.target.closest("[data-close]");if(close){$("#"+close.dataset.close).hidden=true;return}const profile=e.target.closest("[data-profile]");if(profile){e.stopPropagation();location.href=`/twitter-perfil.html?id=${encodeURIComponent(profile.dataset.profile)}`;return}const like=e.target.closest("[data-like]");if(like){e.stopPropagation();toggleLike(like.dataset.like,like);return}const cm=e.target.closest("[data-comments]");if(cm){e.stopPropagation();comments(cm.dataset.comments,true);return}const pg=e.target.closest("[data-comment-page]");if(pg&&!pg.disabled){e.stopPropagation();commentPages[pg.dataset.commentPage]=Number(pg.dataset.page);comments(pg.dataset.commentPage,true);return}const dc=e.target.closest("[data-delete-comment]");if(dc){e.stopPropagation();deleteComment(dc.dataset.deleteComment,dc.dataset.commentPost);return}const del=e.target.closest("[data-delete]");if(del){e.stopPropagation();deletePost(del.dataset.delete);return}const dots=e.target.closest("[data-dots]");if(dots){e.stopPropagation();const menu=$("#menu-"+dots.dataset.dots);if(menu)menu.hidden=!menu.hidden;return}const post=e.target.closest("[data-open-post]");if(post&&!e.target.closest("button")&&!e.target.closest("input")&&!e.target.closest("textarea"))openDetail(post.dataset.openPost)});
+(async()=>{try{const d=await api("/api/twitter/me");if(!d.cuenta){$("#onboarding").hidden=false;const u=await api("/api/usuario");$("#welcome-user").textContent="Bienvenido, "+(u.usuario?.nombre||u.usuario?.username||"ciudadano")}else{$("#app").hidden=false;await loadFeed()}}catch(e){if(e.message.includes("iniciar sesión"))location.href="/index.html";else{$("#onboarding").hidden=false;$("#create-status").textContent="❌ "+e.message}}})();
+</script>
+
+
+</template>
 
     <script>
       /* ===== Nieve de Navidad (igual que iniciar-sesion / dashboard) ===== */
@@ -2340,8 +4995,10 @@
         vistaApp.classList.remove("abierta");
         vistaApp.setAttribute("aria-hidden", "true");
         window.setTimeout(() => {
-          if (!vistaApp.classList.contains("abierta"))
+          if (!vistaApp.classList.contains("abierta")) {
+            frameApp.srcdoc = "";
             frameApp.src = "about:blank";
+          }
         }, 330);
       }
       document.querySelectorAll("[data-app]").forEach((enlace) => {
@@ -2349,14 +5006,53 @@
           evento.preventDefault();
           const destino = enlace.getAttribute("data-app");
           if (!vistaApp || !frameApp || !destino) return;
-          frameApp.src = destino;
+          const plantilla = document.querySelector(
+            `#plantilla-${destino}`,
+          );
+          if (!plantilla) return;
+          frameApp.srcdoc =
+            "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\">" +
+            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+            "</head><body>" +
+            plantilla.innerHTML +
+            "</body></html>";
           vistaApp.classList.add("abierta");
           vistaApp.setAttribute("aria-hidden", "false");
         });
       });
-      document
-        .querySelector("#app-volver")
-        .addEventListener("click", cerrarApp);
+
+      /* Barra de inicio: desliza hacia arriba (o toca) para salir de la app */
+      const barraInicio = document.querySelector("#app-inicio");
+      if (barraInicio) {
+        let inicioBarra = null;
+        barraInicio.addEventListener("pointerdown", (evento) => {
+          inicioBarra = evento.clientY;
+          barraInicio.classList.add("subiendo");
+          try {
+            barraInicio.setPointerCapture(evento.pointerId);
+          } catch (error) {
+            /* sin captura disponible */
+          }
+        });
+        barraInicio.addEventListener("pointerup", (evento) => {
+          if (inicioBarra === null) return;
+          const delta = evento.clientY - inicioBarra;
+          inicioBarra = null;
+          barraInicio.classList.remove("subiendo");
+          // subir el dedo/arrastre hacia arriba (o toque corto) sale de la app
+          if (delta < -30 || Math.abs(delta) < 10) cerrarApp();
+        });
+        barraInicio.addEventListener("pointercancel", () => {
+          inicioBarra = null;
+          barraInicio.classList.remove("subiendo");
+        });
+        barraInicio.addEventListener("keydown", (evento) => {
+          if (evento.key === "Enter" || evento.key === " ") {
+            evento.preventDefault();
+            cerrarApp();
+          }
+        });
+      }
       document
         .querySelector("#abrir-celular")
         .addEventListener("click", abrirCelular);
