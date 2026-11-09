@@ -581,7 +581,7 @@
 
       .celular {
         position: relative;
-        width: 176px;
+        width: 262px;
         aspect-ratio: 9 / 19.5;
         padding: 5px;
         border-radius: 34px;
@@ -653,7 +653,7 @@
         max-width: 74px;
         border-radius: 999px;
         background: #000;
-        z-index: 3;
+        z-index: 8;
       }
 
       .celular .inicio {
@@ -711,6 +711,129 @@
         transform: translateY(0) scale(0.98);
       }
 
+      /* ===== Pantalla de bloqueo (reloj real y desliza para entrar) ===== */
+      .bloqueo {
+        position: absolute;
+        inset: 0;
+        z-index: 7;
+        display: grid;
+        place-items: center;
+        background: rgba(4, 6, 10, 0.55);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: inherit;
+        cursor: grab;
+        user-select: none;
+        touch-action: none;
+        transition:
+          transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.45s ease;
+      }
+
+      .bloqueo.abierto {
+        transform: translateY(-102%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .bloqueo::after {
+        content: "";
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 34%;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      .bloqueo-contenido {
+        text-align: center;
+        padding: 0 24px;
+      }
+
+      .bloqueo-hora {
+        display: block;
+        font-size: clamp(56px, 9vw, 104px);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: #fff;
+        text-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+      }
+
+      .bloqueo-fecha {
+        display: block;
+        margin-top: 24px;
+        font-size: 16px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.88);
+        text-transform: capitalize;
+      }
+
+      .bloqueo-pista {
+        display: block;
+        margin-top: 46px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      /* ===== App (Nequi/Twitter) abierta dentro de la tablet ===== */
+      .app-vista {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        background: #050507;
+        opacity: 0;
+        transform: scale(0.94);
+        pointer-events: none;
+        transition:
+          opacity 0.3s ease,
+          transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .app-vista.abierta {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+
+      .app-vista iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #fff;
+      }
+
+      .app-volver {
+        position: absolute;
+        top: 46px;
+        left: 14px;
+        z-index: 2;
+        padding: 6px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(8, 8, 10, 0.8);
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 800;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+        transition: all 0.2s ease;
+      }
+
+      .app-volver:hover {
+        background: #fff;
+        color: #000;
+        border-color: #fff;
+      }
+
       /* ===== Modal del celular ===== */
       .celular-modal {
         position: fixed;
@@ -727,13 +850,55 @@
 
       .celular-modal-escena {
         position: relative;
-        animation: soloAparecer 0.3s ease both;
+        animation: abrirEscena 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      /* animación de cierre (la agrega el JS con .cerrando) */
+      .celular-modal.cerrando {
+        animation: desaparecer 0.22s ease both;
+        pointer-events: none;
+      }
+
+      .celular-modal.cerrando .celular-modal-escena {
+        animation: cerrarEscena 0.22s ease both;
+      }
+
+      @keyframes abrirEscena {
+        from {
+          opacity: 0;
+          transform: translateY(28px) scale(0.94);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes cerrarEscena {
+        from {
+          opacity: 1;
+          transform: none;
+        }
+        to {
+          opacity: 0;
+          transform: translateY(16px) scale(0.95);
+        }
+      }
+
+      @keyframes desaparecer {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
       }
 
       .celular-grande {
-        width: min(372px, 88vw);
-        padding: 9px;
-        border-radius: 54px;
+        width: min(1140px, 94vw);
+        height: min(740px, 80vh);
+        padding: 14px;
+        border-radius: 42px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow:
           0 50px 110px rgba(0, 0, 0, 0.8),
@@ -741,7 +906,7 @@
       }
 
       .celular-grande .pantalla {
-        border-radius: 46px;
+        border-radius: 30px;
       }
 
       .celular-grande:hover {
@@ -752,9 +917,12 @@
       }
 
       .celular-grande .isla {
-        top: 14px;
-        height: 24px;
-        max-width: 110px;
+        top: 9px;
+        width: 11px;
+        height: 11px;
+        max-width: 11px;
+        background: #101014;
+        box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.3);
       }
 
       .celular-grande .inicio {
@@ -798,7 +966,7 @@
         top: 16px;
         left: 0;
         right: 0;
-        z-index: 2;
+        z-index: 8;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -817,8 +985,8 @@
       /* logos de Nequi / Twitter que aparecen si hay notificaciones */
       .logo-notif {
         display: inline-block;
-        width: 13px;
-        height: 13px;
+        width: 11px;
+        height: 11px;
         margin-left: 4px;
         padding: 1px;
         box-sizing: border-box;
@@ -831,8 +999,8 @@
       }
 
       .celular-mini .logo-notif {
-        width: 10px;
-        height: 10px;
+        width: 9px;
+        height: 9px;
         margin-left: 2px;
         vertical-align: -1px;
       }
@@ -859,11 +1027,19 @@
         padding: 14px 18px 0;
       }
 
+      /* tablet: apps agrupadas arriba a la izquierda, sin estirarse */
+      .celular-grande .apps {
+        grid-template-columns: repeat(auto-fit, 66px);
+        justify-content: start;
+        gap: 24px 22px;
+        padding: 26px 34px 0;
+      }
+
       .app {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 7px;
+        gap: 8px;
         text-decoration: none;
         color: #fff;
         transition: transform 0.22s ease;
@@ -886,11 +1062,11 @@
         position: relative;
         display: grid;
         place-items: center;
-        width: 46px;
-        height: 46px;
+        width: 66px;
+        height: 66px;
         border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 13px;
-        font-size: 21px;
+        border-radius: 18px;
+        font-size: 28px;
         font-weight: 900;
         color: #fff;
         background: linear-gradient(150deg, #232327 0%, #0a0a0c 60%, #000 100%);
@@ -907,7 +1083,7 @@
         display: block;
         width: 100%;
         height: 100%;
-        padding: 6px;
+        padding: 14px;
         box-sizing: border-box;
         object-fit: contain;
         border-radius: inherit;
@@ -966,7 +1142,7 @@
       }
 
       .app span.nombre {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
         text-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
       }
@@ -1106,7 +1282,7 @@
         display: flex;
         flex-direction: column;
         gap: 9px;
-        padding: 52px 13px 66px;
+        padding: 52px 13px 116px;
         background:
           radial-gradient(
             circle at 50% -10%,
@@ -1147,7 +1323,7 @@
 
       .shade-reloj .fecha {
         display: block;
-        margin-top: 5px;
+        margin-top: 12px;
         color: rgba(255, 255, 255, 0.78);
         font-size: 12.5px;
         font-weight: 700;
@@ -1156,7 +1332,7 @@
 
       .shade-head {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         gap: 8px;
         margin-top: 4px;
@@ -1169,7 +1345,12 @@
       }
 
       .borrar-todas {
-        padding: 6px 11px;
+        position: absolute;
+        left: 50%;
+        bottom: 76px;
+        transform: translateX(-50%);
+        z-index: 2;
+        padding: 6px 13px;
         border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 999px;
         color: #fff;
@@ -1976,6 +2157,7 @@
               <a
                 class="app"
                 href="/nequi.html"
+                data-app="/nequi.html"
                 style="--d: 0.34s"
                 title="Abrir Nequi"
               >
@@ -1990,6 +2172,7 @@
               <a
                 class="app"
                 href="/twitter.html"
+                data-app="/twitter.html"
                 style="--d: 0.48s"
                 title="Abrir Twitter"
               >
@@ -2009,6 +2192,27 @@
             <div class="dock"></div>
             <div class="pista-hogar"></div>
 
+            <!-- App abierta DENTRO de la tablet (no sale de ciudadano.html) -->
+            <div class="app-vista" id="app-vista" aria-hidden="true">
+              <button class="app-volver" id="app-volver" type="button">
+                Volver
+              </button>
+              <iframe
+                id="app-frame"
+                title="App del celular"
+                src="about:blank"
+              ></iframe>
+            </div>
+
+            <!-- Pantalla de bloqueo: desliza hacia arriba para entrar -->
+            <div class="bloqueo" id="bloqueo" aria-hidden="true">
+              <div class="bloqueo-contenido">
+                <span class="bloqueo-hora" id="bloqueo-hora">12:00</span>
+                <span class="bloqueo-fecha" id="bloqueo-fecha">—</span>
+                <span class="bloqueo-pista">Desliza hacia arriba para abrir</span>
+              </div>
+            </div>
+
             <!-- Centro de notificaciones (bajar con el ratón/dedo desde arriba) -->
             <div class="shade" id="shade" aria-hidden="true">
               <div class="shade-reloj">
@@ -2016,18 +2220,14 @@
                 <span class="fecha" id="shade-fecha">—</span>
               </div>
               <div class="shade-head">
-                <b>🔔 Notificaciones</b>
-                <button
-                  class="borrar-todas"
-                  id="borrar-todas"
-                  type="button"
-                >
-                  🗑 Eliminar todas
-                </button>
+                <b>Notificaciones</b>
               </div>
               <div class="lista-notifs" id="lista-notifs"></div>
+              <button class="borrar-todas" id="borrar-todas" type="button">
+                Eliminar todas
+              </button>
               <button class="shade-cerrar" id="shade-cerrar" type="button">
-                ⌃ Cerrar
+                Cerrar
               </button>
             </div>
           </div>
@@ -2081,20 +2281,82 @@
       const registrosPorPagina = 10;
       const productosPorPagina = 5;
 
-      /* ===== Abrir / cerrar celular ===== */
+      /* ===== Abrir / cerrar celular (animado) ===== */
       const modalCelular = document.querySelector("#celular-modal");
       function abrirCelular() {
         if (!modalCelular) return;
+        modalCelular.classList.remove("cerrando");
         modalCelular.hidden = false;
         document.body.style.overflow = "hidden";
+        cerrarApp();
+        bloquearPantalla();
         cargarNotificaciones();
       }
       function cerrarCelular() {
-        if (!modalCelular || modalCelular.hidden) return;
-        modalCelular.hidden = true;
-        document.body.style.overflow = "";
+        if (
+          !modalCelular ||
+          modalCelular.hidden ||
+          modalCelular.classList.contains("cerrando")
+        )
+          return;
         cerrarShade();
+        modalCelular.classList.add("cerrando");
+        window.setTimeout(() => {
+          modalCelular.hidden = true;
+          modalCelular.classList.remove("cerrando");
+          document.body.style.overflow = "";
+          bloquearPantalla();
+        }, 230);
       }
+
+      /* ===== Pantalla de bloqueo: desliza hacia arriba para entrar ===== */
+      const bloqueo = document.querySelector("#bloqueo");
+      function bloquearPantalla() {
+        if (bloqueo) bloqueo.classList.remove("abierto");
+      }
+      function desbloquearPantalla() {
+        if (bloqueo) bloqueo.classList.add("abierto");
+      }
+      if (bloqueo) {
+        let inicioBloqueo = null;
+        bloqueo.addEventListener("pointerdown", (evento) => {
+          inicioBloqueo = evento.clientY;
+        });
+        bloqueo.addEventListener("pointerup", (evento) => {
+          if (inicioBloqueo === null) return;
+          const delta = evento.clientY - inicioBloqueo;
+          inicioBloqueo = null;
+          // subir el dedo/arrastre hacia arriba (o toque corto) desbloquea
+          if (delta < -36 || Math.abs(delta) < 12) desbloquearPantalla();
+        });
+        bloqueo.addEventListener("pointercancel", () => (inicioBloqueo = null));
+      }
+
+      /* ===== Apps (Nequi/Twitter) abiertas DENTRO de la tablet ===== */
+      const vistaApp = document.querySelector("#app-vista");
+      const frameApp = document.querySelector("#app-frame");
+      function cerrarApp() {
+        if (!vistaApp || !frameApp) return;
+        vistaApp.classList.remove("abierta");
+        vistaApp.setAttribute("aria-hidden", "true");
+        window.setTimeout(() => {
+          if (!vistaApp.classList.contains("abierta"))
+            frameApp.src = "about:blank";
+        }, 330);
+      }
+      document.querySelectorAll("[data-app]").forEach((enlace) => {
+        enlace.addEventListener("click", (evento) => {
+          evento.preventDefault();
+          const destino = enlace.getAttribute("data-app");
+          if (!vistaApp || !frameApp || !destino) return;
+          frameApp.src = destino;
+          vistaApp.classList.add("abierta");
+          vistaApp.setAttribute("aria-hidden", "false");
+        });
+      });
+      document
+        .querySelector("#app-volver")
+        .addEventListener("click", cerrarApp);
       document
         .querySelector("#abrir-celular")
         .addEventListener("click", abrirCelular);
@@ -2105,25 +2367,36 @@
         if (evento.target.id === "celular-modal") cerrarCelular();
       });
 
-      /* ===== Reloj real del equipo (hora/fecha del PC) ===== */
+      /* ===== Reloj real del equipo (hora/fecha del PC, formato12h) ===== */
       const dosDigitos = (n) => String(n).padStart(2, "0");
+      function hora12(ahora, conSegundos) {
+        let horas = ahora.getHours() % 12;
+        if (horas === 0) horas = 12;
+        const sufijo = ahora.getHours() < 12 ? "a. m." : "p. m.";
+        const base = `${horas}:${dosDigitos(ahora.getMinutes())}`;
+        const seg = conSegundos ? `:${dosDigitos(ahora.getSeconds())}` : "";
+        return `${base}${seg} ${sufijo}`;
+      }
       function actualizarRelojes() {
         const ahora = new Date();
-        const hora = `${dosDigitos(ahora.getHours())}:${dosDigitos(ahora.getMinutes())}`;
+        const hora = hora12(ahora, false);
         document
           .querySelectorAll(".hora")
           .forEach((el) => (el.textContent = hora));
         const grande = document.querySelector("#shade-hora");
-        if (grande)
-          grande.textContent = `${hora}:${dosDigitos(ahora.getSeconds())}`;
+        if (grande) grande.textContent = hora12(ahora, true);
         const fecha = document.querySelector("#shade-fecha");
-        if (fecha)
-          fecha.textContent = ahora.toLocaleDateString("es-CO", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
+        const fechaLarga = ahora.toLocaleDateString("es-CO", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+        if (fecha) fecha.textContent = fechaLarga;
+        const bloqueoHora = document.querySelector("#bloqueo-hora");
+        if (bloqueoHora) bloqueoHora.textContent = hora;
+        const bloqueoFecha = document.querySelector("#bloqueo-fecha");
+        if (bloqueoFecha) bloqueoFecha.textContent = fechaLarga;
       }
       actualizarRelojes();
       setInterval(actualizarRelojes, 1000);
@@ -2151,7 +2424,7 @@
           const contenedor = document.querySelector("#lista-notifs");
           if (contenedor && !cacheNotificaciones.length) {
             contenedor.innerHTML =
-              '<p class="sin-notifs">🔕 No se pudieron cargar las notificaciones.<br>Revisa que el servidor esté en línea.</p>';
+              '<p class="sin-notifs">No se pudieron cargar las notificaciones.<br>Revisa que el servidor esté en línea.</p>';
           }
         }
       }
@@ -2211,14 +2484,13 @@
         if (!contenedor) return;
         if (!lista.length) {
           contenedor.innerHTML =
-            '<p class="sin-notifs">🔕 No tienes notificaciones.<br>Se avisará aquí cuando te den plata o haya publicaciones nuevas.</p>';
+            '<p class="sin-notifs">No tienes notificaciones.<br>Se avisará aquí cuando te den plata o haya publicaciones nuevas.</p>';
           return;
         }
         contenedor.innerHTML = lista
           .map(
             (notificacion, indice) => `
             <article class="notif" style="--d: ${(indice * 0.07).toFixed(2)}s">
-              <span class="ico">${escaparNotificacion(notificacion.icono || "🔔")}</span>
               <div class="cuerpo">
                 <b>${escaparNotificacion(notificacion.titulo || "Notificación")}</b>
                 <p>${escaparNotificacion(notificacion.texto || "")}</p>
