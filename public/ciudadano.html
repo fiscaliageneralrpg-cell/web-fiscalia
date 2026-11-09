@@ -820,7 +820,10 @@
         width: 15px;
         height: 15px;
         margin-left: 5px;
-        object-fit: cover;
+        padding: 1px;
+        box-sizing: border-box;
+        object-fit: contain;
+        background: #fff;
         border: 1px solid rgba(255, 255, 255, 0.4);
         border-radius: 4px;
         vertical-align: -3px;
@@ -904,26 +907,21 @@
         display: block;
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        padding: 7px;
+        box-sizing: border-box;
+        object-fit: contain;
         border-radius: inherit;
       }
 
-      /* letra de respaldo si la imagen no carga */
-      .app .icono .letra {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        color: #fff;
+      /* fondo del ícono: Nequi blanco, Twitter/X negro */
+      .app .icono.nequi {
+        background: #fff;
+        border-color: rgba(0, 0, 0, 0.16);
       }
 
-      .app .icono.nequi .letra {
-        color: #74e6ff;
-        font-style: italic;
-      }
-
-      .app .icono.twitter .letra {
-        color: #fff;
+      .app .icono.twitter {
+        background: #000;
+        border-color: rgba(255, 255, 255, 0.3);
       }
 
       @keyframes resplandorCian {
@@ -1982,7 +1980,6 @@
                 title="Abrir Nequi"
               >
                 <span class="icono nequi"
-                  ><span class="letra">N</span
                   ><img
                     src="/photos/logo-nequi.png"
                     alt="Nequi"
@@ -1997,7 +1994,6 @@
                 title="Abrir Twitter"
               >
                 <span class="icono twitter"
-                  ><span class="letra">𝕏</span
                   ><img
                     src="/photos/logo-x.png"
                     alt="Twitter / X"
