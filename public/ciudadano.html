@@ -809,48 +809,61 @@
         background: #fff;
       }
 
-      /* Barra de inicio estilo iPhone (sube para salir de la app) */
+      /* Barra de inicio estilo iPhone: solo desliza hacia arriba para salir.
+         Muy baja y delgada, y SOLO la ralla captura el toque (el resto pasa
+         hacia la app), así ya no te sales sin querer al tocar un botón. */
       .app-inicio {
         position: absolute;
         left: 0;
         right: 0;
         bottom: 0;
         z-index: 3;
-        height: 46px;
+        height: 26px;
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 9px;
-        cursor: grab;
-        touch-action: none;
+        padding-bottom: 6px;
+        pointer-events: none;
         user-select: none;
         -webkit-user-select: none;
+        touch-action: none;
         background: linear-gradient(
           180deg,
           rgba(0, 0, 0, 0) 0%,
-          rgba(0, 0, 0, 0.28) 100%
+          rgba(0, 0, 0, 0.2) 100%
         );
-        opacity: 0.9;
-        transition: opacity 0.2s ease;
-      }
-
-      .app-inicio:active {
-        cursor: grabbing;
-        opacity: 1;
       }
 
       .app-inicio-linea {
+        position: relative;
         display: block;
-        width: 148px;
+        width: 150px;
         height: 5px;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.92);
         box-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+        cursor: grab;
+        pointer-events: auto;
+        touch-action: none;
         transition: transform 0.2s ease;
       }
 
+      .app-inicio-linea:active {
+        cursor: grabbing;
+      }
+
+      /* área de toque invisible: más grande que la ralla visible */
+      .app-inicio-linea::before {
+        content: "";
+        position: absolute;
+        left: -70px;
+        right: -70px;
+        top: -12px;
+        bottom: -14px;
+      }
+
       .app-inicio.subiendo .app-inicio-linea {
-        transform: translateY(-14px);
+        transform: translateY(-10px);
       }
 
       /* ===== Modal del celular ===== */
@@ -1048,9 +1061,9 @@
 
       /* tablet: apps agrupadas arriba a la izquierda, sin estirarse */
       .celular-grande .apps {
-        grid-template-columns: repeat(auto-fit, 66px);
+        grid-template-columns: repeat(auto-fit, 54px);
         justify-content: start;
-        gap: 24px 22px;
+        gap: 22px 20px;
         padding: 26px 34px 0;
       }
 
@@ -1081,11 +1094,11 @@
         position: relative;
         display: grid;
         place-items: center;
-        width: 66px;
-        height: 66px;
+        width: 54px;
+        height: 54px;
         border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 18px;
-        font-size: 28px;
+        border-radius: 14px;
+        font-size: 23px;
         font-weight: 900;
         color: #fff;
         background: linear-gradient(150deg, #232327 0%, #0a0a0c 60%, #000 100%);
@@ -1102,7 +1115,7 @@
         display: block;
         width: 100%;
         height: 100%;
-        padding: 14px;
+        padding: 11px;
         box-sizing: border-box;
         object-fit: contain;
         border-radius: inherit;
@@ -1154,14 +1167,8 @@
         }
       }
 
-      .app .icono img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
       .app span.nombre {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         text-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
       }
@@ -2265,7 +2272,6 @@
     </div>
 
     <template id="plantilla-nequi">
-
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
@@ -2366,52 +2372,15 @@
         to { opacity: 0; visibility: hidden; pointer-events: none; }
       }
 
-      .carga-caja {
-        display: grid;
-        justify-items: center;
-        gap: 15px;
-        padding: 26px;
-        text-align: center;
-      }
-
-      .nequi-icono {
-        width: 88px;
-        height: 88px;
-      }
-
       .marca-nequi {
         width: 158px;
         height: 50px;
       }
 
-      .carga-barra {
-        width: 190px;
-        height: 3px;
-        border-radius: 99px;
-        overflow: hidden;
-        background: #ececec;
-      }
-
-      .carga-barra span {
-        display: block;
-        height: 100%;
-        width: 40%;
-        border-radius: 99px;
-        background: var(--magenta);
-        animation: cargarBarra 1.25s ease-in-out infinite;
-      }
-
-      @keyframes cargarBarra {
-        0% { transform: translateX(-115%); }
-        100% { transform: translateX(255%); }
-      }
-
-      .carga-texto {
-        color: #9a9a9a;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
+      .carga-gif {
+        max-width: 80%;
+        max-height: 80%;
+        object-fit: contain;
       }
 
       /* ===== Contenedor tipo app ===== */
@@ -3558,6 +3527,301 @@
           transition-duration: 0.01ms !important;
         }
       }
+
+      /* ==========================================================
+         NEQUI REAL — estilo nequi.com.co (el que se pidió)
+         Cabecera oscura con polígonos rosa/negro, balance centrado
+         en blanco, tarjetas blancas con sombra y navegación tipo
+         píldora blanca con FAB rosa.
+         ========================================================== */
+      :root {
+        --dark: #200020;
+        --pink: #ca3085;
+        --lilac: #ece6f5;
+        --tinta: #200020;
+        --muted: #4a3a4a;
+        --magenta: #ca3085;
+        --magenta-claro: #e0559d;
+        --uva: #200020;
+        --radius: 10px;
+      }
+
+      body {
+        font-family: "Poppins", "Segoe UI", Roboto, Arial, sans-serif;
+        background: #e9e9ee;
+        color: #200020;
+      }
+
+      .app {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      /* ---------- Cabecera con polígonos (como la app real) ---------- */
+      .cabecera {
+        position: relative;
+        height: 320px;
+        padding: 0;
+        overflow: hidden;
+        background: #fff
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 310' preserveAspectRatio='none'%3E%3Cpolygon fill='%23ca3085' points='95,269 155,302 318,262 318,200 95,200'/%3E%3Cpolygon fill='%23200020' points='0,0 420,0 420,238 306,286 0,211'/%3E%3C/svg%3E")
+          top center / 100% 100% no-repeat;
+      }
+
+      .cabecera::after {
+        display: none;
+      }
+
+      .deco-burbuja,
+      .deco-burbuja.b1,
+      .deco-burbuja.b2,
+      .deco-burbuja.b3 {
+        display: none;
+      }
+
+      .cabecera-top,
+      .saldo-bloque {
+        position: absolute;
+        z-index: 2;
+        color: #fff;
+      }
+
+      .cabecera-top {
+        top: 0;
+        left: 0;
+        right: 0;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 14px;
+      }
+
+      .avatar-app {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.18);
+        overflow: hidden;
+      }
+
+      .avatar-app .avatar-foto {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .saludo small {
+        display: block;
+        font-size: 14px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .saludo strong {
+        font-size: 20px;
+        font-weight: 500;
+        color: #fff;
+      }
+
+      .saldo-bloque {
+        top: 88px;
+        left: 0;
+        right: 0;
+        display: block;
+        margin-top: 0;
+        text-align: center;
+        padding: 0 14px;
+      }
+
+      .saldo-label {
+        justify-content: center;
+        gap: 10px;
+        font-size: 17px;
+        color: #fff;
+      }
+
+      .btn-ojo {
+        background: transparent;
+      }
+
+      .btn-ojo .ico-ojo,
+      .btn-ojo .ico-ojo-cerrado {
+        width: 24px;
+        height: 24px;
+      }
+
+      .saldo-valor {
+        margin-top: 6px;
+        font-size: 36px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .saldo-total {
+        margin-top: 4px;
+        font-size: 16px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.95);
+      }
+
+      .saldo-actualizado {
+        margin-top: 4px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .btn-tu-plata {
+        margin-top: 12px;
+        gap: 8px;
+        padding: 5px 12px;
+        border: 1px solid #fff;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 400;
+        background: transparent;
+        color: #fff;
+      }
+
+      /* ---------- Contenido tipo app real ---------- */
+      .onda {
+        display: none;
+      }
+
+      .contenido {
+        padding: 14px 14px 8px;
+        background: #fff;
+      }
+
+      .seccion {
+        gap: 8px;
+        margin: 22px 0 12px;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: var(--muted);
+      }
+
+      .fila-tiles {
+        gap: 16px;
+        padding: 12px 0 6px;
+      }
+
+      .tile {
+        flex: 0 0 96px;
+        width: 96px;
+        border-radius: 6px;
+      }
+
+      .tile .tile-icono {
+        width: 96px;
+        height: 80px;
+        border: 0;
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      }
+
+      .tile .tile-icono .emo {
+        width: 46px;
+        height: 46px;
+      }
+
+      .tile .tile-txt {
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--tinta);
+      }
+
+      .promo-nequi {
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(202, 48, 133, 0.28);
+      }
+
+      .multas-card {
+        border-radius: 10px;
+        border: 1px solid #f1e9f4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .vista {
+        padding-bottom: 130px;
+      }
+
+      /* ---------- Navegación: píldora blanca + FAB rosa ---------- */
+      .nav-inferior {
+        bottom: 14px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        gap: 12px;
+        width: 100%;
+        padding: 0 14px;
+        background: transparent;
+        border: 0;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+
+      .nav-pill {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        background: #fff;
+        border-radius: 10px;
+        padding: 6px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+      }
+
+      .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 4px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--tinta);
+        font-size: 15px;
+        font-weight: 400;
+      }
+
+      .nav-btn.activa {
+        background: var(--lilac);
+        font-weight: 600;
+      }
+
+      .nav-btn .nav-icono {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+      }
+
+      .nav-btn .nav-icono .emo {
+        width: 26px;
+        height: 26px;
+      }
+
+      .nav-dinero {
+        width: 84px;
+        height: 84px;
+        border: 0;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: var(--pink);
+        color: #fff;
+        font-size: 42px;
+        font-weight: 300;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+        cursor: pointer;
+      }
     </style>
   
     <!-- Logotipo oficial de Nequi (mismo SVG de nequi.com.co) -->
@@ -3620,18 +3884,9 @@
       </defs>
     </svg>
 
-    <!-- ===== Pantalla de carga estilo app Nequi ===== -->
+    <!-- ===== Pantalla de carga: solo el GIF de Nequi ===== -->
     <div id="carga-nequi" class="carga-nequi" role="status" aria-live="polite">
-      <div class="carga-caja">
-        <svg class="nequi-icono" aria-hidden="true">
-          <use href="#nequi-app" />
-        </svg>
-        <svg class="marca-nequi" role="img" aria-label="Nequi">
-          <use href="#nequi-marca" />
-        </svg>
-        <div class="carga-barra" aria-hidden="true"><span></span></div>
-        <div class="carga-texto">Cargando tu cuenta segura</div>
-      </div>
+      <img class="carga-gif" src="photos/nequi-cargando.png" alt="Cargando Nequi" />
     </div>
 
     <div class="app">
@@ -3643,12 +3898,7 @@
           <span class="deco-burbuja b3" aria-hidden="true"></span>
           <div class="cabecera-top">
             <div class="avatar-app" aria-hidden="true">
-              <img
-                class="avatar-foto"
-                src="data:image/png;base64,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"
-                alt="Nequi"
-                onerror="this.style.display='none'"
-              />
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.8-4.5 4.2-6.5 8.5-6.5s7.700 2 8.500 6.500z"/></svg>
             </div>
             <div class="saludo">
               <small
@@ -3832,13 +4082,7 @@
               type="button"
               data-vista="tarjeta"
             >
-              <span class="tile-icono"
-                ><img
-                  class="emo"
-                  src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0ZGQUMzMyIgZD0iTTQgNUMxLjc5MSA1IDAgNi43OTEgMCA5djE4YzAgMi4yMDkgMS43OTEgNCA0IDRoMjhjMi4yMDkgMCA0LTEuNzkxIDQtNFY5czAtNC00LTRINHoiLz48cGF0aCBmaWxsPSIjMjkyRjMzIiBkPSJNMCAxMGgzNnY1SDB6Ii8+PHBhdGggZmlsbD0iI0Y0RjdGOSIgZD0iTTQgMTloMjh2Nkg0eiIvPjxwYXRoIGZpbGw9IiM4ODk5QTYiIGQ9Ik0xOSAyNGMtMS43MDMgMC0yLjM0MS0xLjIxLTIuNDY5LTEuODAxLS41NDcuMDQxLTEuMDguMzAzLTEuODA1Ljc2NEMxMy45NjEgMjMuNDQ5IDEzLjA5NCAyNCAxMiAyNGMtMS4xOTcgMC0xLjkyNC0uNjc1LTItMi0uMDAzLS4wNTYuMDM4LS4xODguMDIxLS4xODgtMS44NTggMC0zLjIwMiAxLjc2MS0zLjIxNSAxLjc3OS0uMTk1LjI2Ny0uNDk5LjQwOS0uODA2LjQwOS0uMjA2IDAtLjQxMy0uMDYzLS41OTEtLjE5NC0uNDQ1LS4zMjctLjU0Mi0uOTUzLS4yMTUtMS4zOThDNS4yNzEgMjIuMzAzIDcuMTEgMjAgMTAgMjBjMS45MzcgMCAyLjA0OCAxLjM3NSAyLjA3OCAxLjg4OGwuMDA3LjEwOWMuNDg2LS4wMzQuOTkxLS4zNTQgMS41Ny0uNzIzLjk2MS0uNjEgMi4xNTMtMS4zNzEgMy43NS0uOTYyLjg3MS4yMjMgMS4wMDcgMS4wMzEgMS4wNTkgMS4zMzYuMDEzLjA3Ni4wMzIuMTkuMDQ5LjIyNi4wMDcgMCAuMTQ2LjA5MS41NzcuMTMuODIuMDc1IDEuNzIxLS4yNzkgMi42NzUtLjY1My45ODgtLjM4OCAyLjAxLS43ODggMy4xMTEtLjc4OCAzLjM4OSAwIDQuNzY3IDEuNjM1IDQuOTEzIDEuODIxLjM0LjQzNS4yNjQgMS4wNjMtLjE3MSAxLjQwMy0uMTc1LjEzNy0uMzgxLjIwNy0uNTg3LjIxMy0uMzA3LjAwOS0uNjEzLS4xMjMtLjgxNy0uMzg0LS4wMjQtLjAyNy0uOTMtMS4wNTQtMy4zMzctMS4wNTQtLjcyMyAwLTEuNTI4LjMxNS0yLjM4MS42NDktMS4wMDkuMzk2LTIuNDM0Ljc4OS0zLjQ5Ni43ODl6Ii8+PC9zdmc+"
-                  alt=""
-                  onerror="this.remove()"
-              /></span>
+              <span class="tile-icono"><svg width="46" height="60" viewBox="0 0 46 60" fill="#ece6f5" stroke="#200020" stroke-width="2.5" aria-hidden="true"><rect x="6" y="4" width="34" height="52" rx="6"/><rect x="26" y="12" width="7" height="11" rx="3" fill="none" stroke="#ca3085" stroke-width="2"/><path d="M13 30v18" stroke="#ca3085" stroke-width="2"/></svg></span>
               <span class="tile-txt">Tarjeta</span>
             </button>
           </div>
@@ -4045,26 +4289,16 @@
 
       <!-- ============ NAVEGACIÓN ============ -->
       <nav class="nav-inferior">
-        <button class="nav-btn activa" type="button" data-vista="inicio">
-          <span class="nav-icono"
-            ><img
-              class="emo"
-              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0EwMDQxRSIgZD0iTTkuMzQ0IDE0LjcwMmgtMmMtLjI3NiAwLS41LS4yMjQtLjUtLjV2LTdjMC0uMjc2LjIyNC0uNS41LS41aDJjLjI3NiAwIC41LjIyNC41LjV2N2MwIC4yNzYtLjIyNC41LS41LjV6Ii8+PHBhdGggZmlsbD0iI0ZGRThCNiIgZD0iTTUgMTZMMTggM2wxMyAxM3YxN0g1eiIvPjxwYXRoIGZpbGw9IiNGRkNDNEQiIGQ9Ik0xOCAxNmgxdjE2aC0xeiIvPjxwYXRoIGZpbGw9IiM2Njc1N0YiIGQ9Ik0zMSAxN2MtLjI1NiAwLS41MTItLjA5OC0uNzA3LS4yOTNMMTggNC40MTQgNS43MDcgMTYuNzA3Yy0uMzkxLjM5MS0xLjAyMy4zOTEtMS40MTQgMHMtLjM5MS0xLjAyMyAwLTEuNDE0bDEzLTEzYy4zOTEtLjM5MSAxLjAyMy0uMzkxIDEuNDE0IDBsMTMgMTNjLjM5MS4zOTEuMzkxIDEuMDIzIDAgMS40MTQtLjE5NS4xOTUtLjQ1MS4yOTMtLjcwNy4yOTN6Ii8+PHBhdGggZmlsbD0iIzY2NzU3RiIgZD0iTTE4IDE3Yy0uMjU2IDAtLjUxMi0uMDk4LS43MDctLjI5My0uMzkxLS4zOTEtLjM5MS0xLjAyMyAwLTEuNDE0bDYuNS02LjVjLjM5MS0uMzkxIDEuMDIzLS4zOTEgMS40MTQgMHMuMzkxIDEuMDIzIDAgMS40MTRsLTYuNSA2LjVjLS4xOTUuMTk1LS40NTEuMjkzLS43MDcuMjkzeiIvPjxwYXRoIGZpbGw9IiNDMTY5NEYiIGQ9Ik0xMCAyNmg0djZoLTR6Ii8+PHBhdGggZmlsbD0iIzU1QUNFRSIgZD0iTTEwIDE3aDR2NGgtNHptMTIuNSAwaDR2NGgtNHptMCA5aDR2NGgtNHoiLz48cGF0aCBmaWxsPSIjNUM5MTNCIiBkPSJNMzMuNSAzMy41YzAgLjgyOC0uNjcyIDEuNS0xLjUgMS41SDRjLS44MjggMC0xLjUtLjY3Mi0xLjUtMS41UzMuMTcyIDMyIDQgMzJoMjhjLjgyOCAwIDEuNS42NzIgMS41IDEuNXoiLz48L3N2Zz4="
-              alt=""
-              onerror="this.remove()"
-          /></span>
+        <div class="nav-pill">
+          <button class="nav-btn activa" type="button" data-vista="inicio">
+          <span class="nav-icono"><svg width="28" height="28" viewBox="0 0 24 24" fill="#200020" aria-hidden="true"><path d="M12 3L3 11v10h6v-6h6v6h6V11z"/></svg></span>
           Inicio
         </button>
         <button class="nav-btn" type="button" data-vista="movimientos">
-          <span class="nav-icono"
-            ><img
-              class="emo"
-              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI0UxRThFRCIgZD0iTTMyLjQxNSA5LjU4NmwtOS05QzIzLjA1NC4yMjUgMjIuNTUzIDAgMjIgMGMtMS4xMDQgMC0xLjk5OS44OTYtMiAyIDAgLjU1Mi4yMjQgMS4wNTMuNTg2IDEuNDE1bC0zLjg1OSAzLjg1OSA5IDkgMy44NTktMy44NTljLjM2Mi4zNjEuODYyLjU4NSAxLjQxNC41ODUgMS4xMDQgMCAyLjAwMS0uODk2IDItMiAwLS41NTItLjIyNC0xLjA1Mi0uNTg1LTEuNDE0eiIvPjxwYXRoIGZpbGw9IiNDQ0Q2REQiIGQ9Ik0yMiAwSDdDNC43OTEgMCAzIDEuNzkxIDMgNHYyOGMwIDIuMjA5IDEuNzkxIDQgNCA0aDIyYzIuMjA5IDAgNC0xLjc5MSA0LTRWMTFoLTljLTEgMC0yLTEtMi0yVjB6Ii8+PHBhdGggZmlsbD0iIzk5QUFCNSIgZD0iTTIyIDBoLTJ2OWMwIDIuMjA5IDEuNzkxIDQgNCA0aDl2LTJoLTljLTEgMC0yLTEtMi0yVjB6bS01IDhjMCAuNTUyLS40NDggMS0xIDFIOGMtLjU1MiAwLTEtLjQ0OC0xLTFzLjQ0OC0xIDEtMWg4Yy41NTIgMCAxIC40NDggMSAxem0wIDRjMCAuNTUyLS40NDggMS0xIDFIOGMtLjU1MiAwLTEtLjQ0OC0xLTFzLjQ0OC0xIDEtMWg4Yy41NTIgMCAxIC40NDggMSAxem0xMiA0YzAgLjU1Mi0uNDQ3IDEtMSAxSDhjLS41NTIgMC0xLS40NDgtMS0xcy40NDgtMSAxLTFoMjBjLjU1MyAwIDEgLjQ0OCAxIDF6bTAgNGMwIC41NTMtLjQ0NyAxLTEgMUg4Yy0uNTUyIDAtMS0uNDQ3LTEtMSAwLS41NTMuNDQ4LTEgMS0xaDIwYy41NTMgMCAxIC40NDcgMSAxem0wIDRjMCAuNTUzLS40NDcgMS0xIDFIOGMtLjU1MiAwLTEtLjQ0Ny0xLTEgMC0uNTUzLjQ0OC0xIDEtMWgyMGMuNTUzIDAgMSAuNDQ3IDEgMXptMCA0YzAgLjU1My0uNDQ3IDEtMSAxSDhjLS41NTIgMC0xLS40NDctMS0xIDAtLjU1My40NDgtMSAxLTFoMjBjLjU1MyAwIDEgLjQ0NyAxIDF6Ii8+PC9zdmc+"
-              alt=""
-              onerror="this.remove()"
-          /></span>
+          <span class="nav-icono"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#200020" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span>
           Movimientos
         </button>
+        </div>
         <button class="nav-dinero" type="button" data-vista="dinero" title="Enviar dinero">
           $
         </button>
@@ -4609,8 +4843,7 @@
         });
       }
     </script>
-  
-</template>
+  </template>
 <template id="plantilla-twitter">
 
   <meta charset="utf-8">
@@ -5039,8 +5272,9 @@ $("#create-account-form").addEventListener("submit",createAccount);$("#post-form
           const delta = evento.clientY - inicioBarra;
           inicioBarra = null;
           barraInicio.classList.remove("subiendo");
-          // subir el dedo/arrastre hacia arriba (o toque corto) sale de la app
-          if (delta < -30 || Math.abs(delta) < 10) cerrarApp();
+          // SOLO el arrastre hacia arriba sale de la app: los toques normales
+          // (como pulsar Transacciones en Nequi) ya no cierran nada
+          if (delta < -32) cerrarApp();
         });
         barraInicio.addEventListener("pointercancel", () => {
           inicioBarra = null;
