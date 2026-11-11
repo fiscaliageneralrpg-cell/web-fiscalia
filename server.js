@@ -27,10 +27,10 @@ if (faltantes.length > 0) {
   process.exit(1);
 }
 
-const ROL_WHITELIST_APROBADA = "1561032118962880570";
-const ROL_WHITELIST_PENDIENTE = "1561032118962880569";
+const ROL_WHITELIST_APROBADA = "1500316176960716940";
+const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
 const ROL_VERIFICADO = "1561032118962880570";
-const ROL_NO_VERIFICADO = "1561032118962880570";
+const ROL_NO_VERIFICADO = "1561032118962880569";
 const CANAL_WHITELIST = "1565815040077205674";
 const ROL_STAFF_WHITELIST = "1561032119013351437";
 const ROL_FUNDACION = "1561032119029989388";
@@ -55,21 +55,172 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
+/* ===================== SESIONES EN MYSQL ===================== */
+// La sesion se guarda en MySQL (tabla web_sesiones) y NO en memoria, para
+// que un reinicio o despliegue en Render no cierre el login de nadie: si el
+// usuario no le da a "Cerrar sesion", la sesion sigue abierta la proxima
+// vez que entre. Si MySQL no responde, la web no se cuelga: se espera como
+// mucho 4 segundos y se reintenta solo cada 15 segundos.
+class AlmacenSesionesWeb extends session.Store {
+  constructor() {
+    super();
+    this.esquema = null;
+    this.falloHasta = 0;
+    this.sinLeer = new Set();
+  }
+
+  asegurarEsquema() {
+    if (!this.esquema) {
+      this.esquema = pool
+        .execute(`
+          CREATE TABLE IF NOT EXISTS web_sesiones (
+            sid VARCHAR(128) NOT NULL PRIMARY KEY,
+            sesion MEDIUMTEXT NOT NULL,
+            expira BIGINT NOT NULL,
+            INDEX idx_web_sesiones_expira (expira)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `)
+        .catch((error) => {
+          this.esquema = null; // se vuelve a intentar en la proxima peticion
+          throw error;
+        });
+    }
+    return this.esquema;
+  }
+
+  ejecutar(sql, params) {
+    let reloj;
+    const tope = new Promise((_, rechazar) => {
+      reloj = setTimeout(
+        () => rechazar(new Error("MySQL no respondio a tiempo (sesion)")),
+        4000
+      );
+    });
+    const consulta = this.asegurarEsquema().then(() => pool.execute(sql, params));
+    consulta.catch(() => {}); // si gana el tope, el rechazo posterior queda atendido
+    return Promise.race([consulta, tope]).finally(() => clearTimeout(reloj));
+  }
+
+  marcarFallo() {
+    this.falloHasta = Date.now() + 15000;
+  }
+
+  apuntarSinLectura(sid) {
+    // Sin lectura previa no se permite escribir, para no pisar la sesion
+    // real con una vacia mientras MySQL este caido.
+    if (this.sinLeer.size > 5000) {
+      this.sinLeer.delete(this.sinLeer.values().next().value);
+    }
+    this.sinLeer.add(sid);
+  }
+
+  get(sid, callback) {
+    if (Date.now() < this.falloHasta) {
+      this.apuntarSinLectura(sid);
+      return callback(null, null);
+    }
+    this.ejecutar("SELECT sesion, expira FROM web_sesiones WHERE sid = ?", [sid])
+      .then(([filas]) => {
+        this.falloHasta = 0;
+        const fila = filas[0];
+        if (!fila) return callback(null, null);
+        if (Number(fila.expira) < Date.now()) {
+          this.ejecutar("DELETE FROM web_sesiones WHERE sid = ?", [sid]).catch(() => {});
+          return callback(null, null);
+        }
+        let sesion;
+        try {
+          sesion = JSON.parse(fila.sesion);
+        } catch (error) {
+          return callback(null, null);
+        }
+        if (sesion.cookie && typeof sesion.cookie.expires === "string") {
+          sesion.cookie.expires = new Date(sesion.cookie.expires);
+        }
+        this.sinLeer.delete(sid);
+        return callback(null, sesion);
+      })
+      .catch((error) => {
+        this.marcarFallo();
+        console.error("[SESION] No se pudo leer la sesion desde MySQL:", error.message);
+        this.apuntarSinLectura(sid);
+        return callback(null, null);
+      });
+  }
+
+  guardar(sid, sesion, callback) {
+    if (this.sinLeer.has(sid)) return callback(null);
+    let expira = Date.now() + 1000 * 60 * 60 * 24 * 30;
+    if (sesion.cookie && sesion.cookie.expires) {
+      const marca = new Date(sesion.cookie.expires).getTime();
+      if (Number.isFinite(marca)) expira = marca;
+    }
+    const texto = JSON.stringify(sesion);
+    this.ejecutar(
+      `INSERT INTO web_sesiones (sid, sesion, expira) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE sesion = VALUES(sesion), expira = VALUES(expira)`,
+      [sid, texto, expira]
+    )
+      .then(() => callback(null))
+      .catch((error) => {
+        this.marcarFallo();
+        console.error("[SESION] No se pudo guardar la sesion en MySQL:", error.message);
+        callback(null); // la peticion sigue aunque la sesion quede en pausa
+      });
+  }
+
+  set(sid, sesion, callback) {
+    this.guardar(sid, sesion, callback);
+  }
+
+  touch(sid, sesion, callback) {
+    this.guardar(sid, sesion, callback);
+  }
+
+  destroy(sid, callback) {
+    this.sinLeer.delete(sid);
+    this.ejecutar("DELETE FROM web_sesiones WHERE sid = ?", [sid])
+      .then(() => callback(null))
+      .catch((error) => {
+        console.error("[SESION] No se pudo cerrar la sesion en MySQL:", error.message);
+        callback(null);
+      });
+  }
+}
+
 app.use(
   session({
+    store: new AlmacenSesionesWeb(),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     proxy: true,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24,
+      // 30 dias y se renueva en cada visita: la sesion queda abierta hasta
+      // que el usuario le da a "Cerrar sesion".
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     },
   })
 );
 
+// Si la sesion sigue abierta, la pagina de login NO se muestra: se va
+// directo al panel. Recien al cerrar sesion vuelve a pedir iniciar sesion.
+function irAlPanelSiHaySesion(req, res, next) {
+  const paginasDeLogin = ["/iniciar-sesion.html", "/iniciar-seccion.html"];
+  if (!paginasDeLogin.includes(req.path) || !req.session || !req.session.usuario) {
+    return next();
+  }
+  const destino = req.session.usuario.cedulaRegistrada
+    ? "/dashboard-user.html"
+    : "/cargando";
+  return res.redirect(destino);
+}
+
+app.use(irAlPanelSiHaySesion);
 app.use(express.static(path.join(__dirname, "public")));
 
 // Carpeta photos/ en la raíz del repo (civil.png, encuesta.png, capturas).
@@ -297,6 +448,11 @@ app.get("/cargando", async (req, res) => {
 /* ===================== DISCORD OAUTH2 ===================== */
 
 app.get("/auth/discord", (req, res) => {
+  // Si ya tiene la sesion abierta, no hace falta volver a pasar por Discord:
+  // se va directo al panel (lo mismo que hace la pagina de login).
+  if (req.session && req.session.usuario) {
+    return res.redirect(req.session.usuario.cedulaRegistrada ? "/dashboard-user.html" : "/cargando");
+  }
   const parametros = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID,
     redirect_uri: process.env.DISCORD_REDIRECT_URI,
@@ -1043,6 +1199,269 @@ async function registrarMovimiento(fila) {
     console.error("[NEQUI MOVIMIENTOS]", error.message);
   }
 }
+
+// ===== NOTIFICACIONES DEL CELULAR (MySQL en vez de localStorage) =====
+let notificacionesSchemaPromise;
+
+async function asegurarEsquemaNotificaciones() {
+  if (!notificacionesSchemaPromise) {
+    notificacionesSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS celular_notificaciones (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          discord_id VARCHAR(32) NOT NULL,
+          clave VARCHAR(90) NOT NULL,
+          icono VARCHAR(16) NOT NULL DEFAULT '🔔',
+          titulo VARCHAR(140) NOT NULL,
+          texto VARCHAR(400) NOT NULL DEFAULT '',
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          leido_en DATETIME NULL,
+          UNIQUE KEY uniq_notif_usuario (discord_id, clave),
+          INDEX idx_notif_lista (discord_id, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS celular_notif_cursor (
+          discord_id VARCHAR(32) NOT NULL PRIMARY KEY,
+          mov_cursor BIGINT NOT NULL DEFAULT 0,
+          tw_cursor BIGINT NOT NULL DEFAULT 0,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    })().catch((error) => {
+      notificacionesSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return notificacionesSchemaPromise;
+}
+
+// Guarda una notificación ignorando duplicados (clave única por usuario).
+async function insertarNotificacionCelular(fila) {
+  try {
+    await pool.execute(
+      `INSERT INTO celular_notificaciones
+         (discord_id, clave, icono, titulo, texto, leido_en)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = id`,
+      [
+        String(fila.discordId || ""),
+        String(fila.clave || "").slice(0, 90),
+        String(fila.icono || "🔔").slice(0, 16),
+        String(fila.titulo || "").slice(0, 140),
+        String(fila.texto || "").slice(0, 400),
+        fila.leido ? new Date() : null,
+      ],
+    );
+  } catch (error) {
+    console.error("[CELULAR NOTIFICACIONES]", error.message);
+  }
+}
+
+// Compara los movimientos de Nequi y las publicaciones de las cuentas que
+// sigues contra el cursor del usuario y crea SOLO las notificaciones nuevas.
+async function sincronizarNotificacionesCelular(discordId) {
+  await asegurarEsquemaNotificaciones();
+  await asegurarEsquemaMovimientos();
+
+  const [filasCursor] = await pool.execute(
+    "SELECT mov_cursor, tw_cursor FROM celular_notif_cursor WHERE discord_id = ?",
+    [discordId],
+  );
+  const [filaMov] = await pool.execute(
+    "SELECT IFNULL(MAX(id), 0) AS maximo FROM nequi_movimientos WHERE discord_id = ?",
+    [discordId],
+  );
+  const [filaTw] = await pool.execute(
+    "SELECT IFNULL(MAX(id), 0) AS maximo FROM twitter_publicaciones",
+    [],
+  );
+  const maxMov = Number(filaMov?.[0]?.maximo) || 0;
+  const maxTw = Number(filaTw?.[0]?.maximo) || 0;
+
+  // Primera visita: solo marcamos el punto de partida (sin avisos viejos).
+  if (!filasCursor.length) {
+    await pool.execute(
+      `INSERT INTO celular_notif_cursor (discord_id, mov_cursor, tw_cursor)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE mov_cursor = VALUES(mov_cursor),
+                                tw_cursor = VALUES(tw_cursor)`,
+      [discordId, maxMov, maxTw],
+    );
+    return;
+  }
+
+  const movCursor = Number(filasCursor[0].mov_cursor) || 0;
+  const twCursor = Number(filasCursor[0].tw_cursor) || 0;
+
+  // 💰 Nequi: dinero que te dieron (o movimientos nuevos).
+  if (maxMov > movCursor) {
+    try {
+      const [movimientos] = await pool.execute(
+        `SELECT id, tipo, monto, destino_nombre
+           FROM nequi_movimientos
+          WHERE discord_id = ? AND id > ? AND id <= ?
+          ORDER BY id ASC
+          LIMIT 20`,
+        [discordId, movCursor, maxMov],
+      );
+      for (const movimiento of movimientos) {
+        const recibido = /recib|entrada|dep[oó]sito|recarga/i.test(
+          String(movimiento.tipo || ""),
+        );
+        const monto = Number(movimiento.monto) || 0;
+        await insertarNotificacionCelular({
+          discordId,
+          clave: `mov:${movimiento.id}`,
+          icono: recibido ? "💰" : "💸",
+          titulo: recibido ? "Te dieron plata" : "Movimiento Nequi",
+          texto: `${recibido ? "Recibiste" : "Movimiento de"} ${monto.toLocaleString("es-CO")} $${movimiento.destino_nombre ? ` · ${movimiento.destino_nombre}` : ""}`,
+        });
+      }
+    } catch (error) {
+      console.error("[CELULAR NEQUI]", error.message);
+    }
+  }
+
+  // 🐦 Twitter: publicaciones nuevas de las cuentas que sigues.
+  if (maxTw > twCursor) {
+    try {
+      const [cuentas] = await pool.execute(
+        "SELECT id FROM twitter_cuentas WHERE discord_id = ? LIMIT 1",
+        [discordId],
+      );
+      if (cuentas.length) {
+        const miCuentaId = Number(cuentas[0].id) || 0;
+        const [seguidas] = await pool.execute(
+          "SELECT seguido_id FROM twitter_seguidores WHERE seguidor_id = ? LIMIT 500",
+          [miCuentaId],
+        );
+        const ids = seguidas
+          .map((fila) => Number(fila.seguido_id))
+          .filter((id) => id && id !== miCuentaId);
+        if (ids.length) {
+          const marcas = ids.map(() => "?").join(",");
+          const [publicaciones] = await pool.execute(
+            `SELECT p.id, p.descripcion, p.nombre, c.nombre AS autor_nombre
+               FROM twitter_publicaciones p
+               INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+              WHERE p.id > ? AND p.id <= ? AND p.cuenta_id IN (${marcas})
+              ORDER BY p.id ASC
+              LIMIT 20`,
+            [twCursor, maxTw, ...ids],
+          );
+          for (const publicacion of publicaciones) {
+            await insertarNotificacionCelular({
+              discordId,
+              clave: `tw:${publicacion.id}`,
+              icono: "🐦",
+              titulo: `Nueva publicación de ${publicacion.autor_nombre || "una cuenta que sigues"}`,
+              texto: String(
+                publicacion.descripcion ||
+                  publicacion.nombre ||
+                  "Publicó algo nuevo en Twitter Medellín RP.",
+              ).slice(0, 180),
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[CELULAR TWITTER]", error.message);
+    }
+  }
+
+  await pool.execute(
+    "UPDATE celular_notif_cursor SET mov_cursor = ?, tw_cursor = ? WHERE discord_id = ?",
+    [Math.max(maxMov, movCursor), Math.max(maxTw, twCursor), discordId],
+  );
+}
+
+// 🔔 Bandeja de notificaciones del celular (lee y sincroniza desde MySQL).
+app.get("/api/celular/notificaciones", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await sincronizarNotificacionesCelular(discordId);
+    const [filas] = await pool.execute(
+      `SELECT id, icono, titulo, texto, creado_en
+         FROM celular_notificaciones
+        WHERE discord_id = ?
+        ORDER BY id DESC
+        LIMIT 30`,
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      origen: "mysql-celular_notificaciones",
+      notificaciones: filas.map((fila) => ({
+        id: Number(fila.id),
+        icono: fila.icono,
+        titulo: fila.titulo,
+        texto: fila.texto,
+        fecha: fila.creado_en
+          ? new Date(fila.creado_en).toISOString()
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("[API CELULAR NOTIFICACIONES]", error.message);
+    return res.status(500).json({
+      codigo: "NOTIFICACIONES_NO_DISPONIBLES",
+      error: "No se pudieron leer las notificaciones desde MySQL.",
+    });
+  }
+});
+
+// ✕ Elimina una notificación concreta (solo puede borrar las suyas).
+app.delete("/api/celular/notificaciones/:id", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  const notificacionId = Number(req.params.id);
+  if (!Number.isFinite(notificacionId) || notificacionId <= 0) {
+    return res
+      .status(400)
+      .json({ error: "Identificador de notificación inválido." });
+  }
+  try {
+    await asegurarEsquemaNotificaciones();
+    const [resultado] = await pool.execute(
+      "DELETE FROM celular_notificaciones WHERE id = ? AND discord_id = ?",
+      [notificacionId, discordId],
+    );
+    return res.json({
+      correcto: true,
+      eliminadas: Number(resultado.affectedRows) || 0,
+    });
+  } catch (error) {
+    console.error("[API CELULAR BORRAR]", error.message);
+    return res
+      .status(500)
+      .json({ error: "No se pudo eliminar la notificación." });
+  }
+});
+
+// 🗑 Vacía la bandeja completa del usuario con sesión iniciada.
+app.delete("/api/celular/notificaciones", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await asegurarEsquemaNotificaciones();
+    const [resultado] = await pool.execute(
+      "DELETE FROM celular_notificaciones WHERE discord_id = ?",
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      eliminadas: Number(resultado.affectedRows) || 0,
+    });
+  } catch (error) {
+    console.error("[API CELULAR VACIAR]", error.message);
+    return res
+      .status(500)
+      .json({ error: "No se pudo vaciar la bandeja de notificaciones." });
+  }
+});
 
 // LECTURA DEL SALDO: SOLO MySQL. El bot escribe aqui cada 1 segundo lo que
 // lee de data/saldo.json, asi que la web ya no depende de la API del bot
