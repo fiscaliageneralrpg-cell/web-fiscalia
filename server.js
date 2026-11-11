@@ -122,6 +122,10 @@ class AlmacenSesionesWeb extends session.Store {
     this.ejecutar("SELECT sesion, expira FROM web_sesiones WHERE sid = ?", [sid])
       .then(([filas]) => {
         this.falloHasta = 0;
+        // Lectura exitosa = MySQL responde: se levanta la proteccion para que
+        // este sid si se pueda guardar despues (si no, un fallo previo dejaria
+        // el login sin persistir para siempre).
+        this.sinLeer.delete(sid);
         const fila = filas[0];
         if (!fila) return callback(null, null);
         if (Number(fila.expira) < Date.now()) {
@@ -137,7 +141,6 @@ class AlmacenSesionesWeb extends session.Store {
         if (sesion.cookie && typeof sesion.cookie.expires === "string") {
           sesion.cookie.expires = new Date(sesion.cookie.expires);
         }
-        this.sinLeer.delete(sid);
         return callback(null, sesion);
       })
       .catch((error) => {
