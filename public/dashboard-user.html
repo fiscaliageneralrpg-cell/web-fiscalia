@@ -814,8 +814,15 @@
       (async () => {
         try {
           const r = await fetch("/api/usuario", { cache: "no-store" });
-          if (!r.ok) {
+          // Solo sin sesion (401) se vuelve al login. Si MySQL esta caido el
+          // servidor responde 503 y aqui se debe quedarse en el panel, para
+          // no entrar en un bucle login <-> panel.
+          if (r.status === 401) {
             location.href = "/iniciar-sesion.html";
+            return;
+          }
+          if (!r.ok) {
+            console.warn("[PANEL] /api/usuario respondio", r.status, "- se mantiene la sesion.");
             return;
           }
           const d = await r.json();
