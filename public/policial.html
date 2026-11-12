@@ -12,6 +12,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-grad
 @keyframes fondoMover{0%,100%{background-position:0 0}50%{background-position:100% 100%}}
 @keyframes aparecer{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 @keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pulso{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes latido{0%{box-shadow:0 0 0 0 rgba(47,191,134,.45)}70%{box-shadow:0 0 0 14px rgba(47,191,134,0)}100%{box-shadow:0 0 0 0 rgba(47,191,134,0)}}
 
 /* Iconos propios (SVG dibujados, heredan el color del texto) */
 .ic{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.25em;flex:none}
@@ -27,6 +29,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-grad
 .topbar nav a:hover{color:#fff;background:rgba(255,255,255,.1)}
 main{flex:1;width:min(1100px,calc(100% - 28px));margin:26px auto}
 .view{display:none}.view.on{display:block;animation:aparecer .7s ease both}
+[hidden]{display:none!important}
 
 .glass{border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:var(--shadow);backdrop-filter:blur(20px)}
 
@@ -84,11 +87,80 @@ td.empty{color:#707070}
 .actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:24px 0 6px}
 .msg{text-align:center;color:var(--muted);margin-top:8px;min-height:18px}
 
-/* Radio */
-.soon{margin-top:16px;text-align:center;padding:80px 20px}
-.soon .ic{width:64px;height:64px;color:var(--accent);animation:flotar 4.5s ease-in-out infinite}
-.soon h3{margin:16px 0 8px;font-size:32px;font-weight:900;letter-spacing:-.04em}
-.soon p{color:var(--muted);font-size:15px}
+/* Radio: carpeta de canales */
+.carpeta{margin-top:16px}
+.pestania{display:inline-flex;align-items:center;gap:10px;padding:11px 26px;border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;background:linear-gradient(180deg,rgba(47,191,134,.24),rgba(47,191,134,.08));color:var(--g);font-weight:900;letter-spacing:.14em;font-size:12px;position:relative;top:1px;text-transform:uppercase}
+.pestania .ic{width:18px;height:18px}
+.carpeta-cuerpo{border:1px solid var(--line);border-top:0;border-radius:0 22px 22px 22px;background:var(--panel);backdrop-filter:blur(20px);box-shadow:var(--shadow);padding:22px}
+.carpeta-cuerpo > p{color:var(--muted);margin-bottom:16px;font-size:13px;line-height:1.6}
+.canales{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px}
+.canal-card{display:grid;gap:10px;align-content:start;text-align:left;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;background:rgba(255,255,255,.05);color:#fff;font:inherit;cursor:pointer;transition:all .3s}
+.canal-card:hover{transform:translateY(-4px);border-color:rgba(47,191,134,.55);background:rgba(47,191,134,.1);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.cc-top{display:flex;align-items:center;gap:12px}
+.cc-ic{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:rgba(47,191,134,.15);border:1px solid rgba(47,191,134,.4);color:var(--g);flex:none}
+.cc-ic .ic{width:21px;height:21px}
+.cc-txt b{display:block;font-size:14px;letter-spacing:-.01em}
+.cc-txt small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.cc-estado{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--g)}
+.cc-estado i{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g);animation:pulso 1.6s infinite}
+.cc-entrar{font-size:10px;font-weight:800;letter-spacing:.14em;color:#fff;opacity:.65}
+
+/* Radio: canal activo */
+.canal-activo{display:grid;gap:16px;margin-top:16px}
+.canal-hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 22px}
+.canal-hd h3{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:800}
+.canal-hd h3 > span{display:block}
+.canal-hd h3 small{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-top:3px;letter-spacing:.02em}
+.chip-live{display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;border:1px solid rgba(47,191,134,.45);background:rgba(47,191,134,.12);color:var(--g);font-size:11px;font-weight:800;letter-spacing:.05em}
+.chip-live .punto{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g);animation:pulso 1.6s infinite}
+.canal-cuerpo{padding:20px 22px}
+.sec-tit{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--accent);margin-bottom:14px}
+.sec-tit .ic{color:var(--g);width:17px;height:17px}
+.conectados{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.oficial{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.04);transition:all .3s}
+.oficial .oa{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:rgba(47,191,134,.16);border:1px solid rgba(47,191,134,.4);color:var(--g);flex:none}
+.oficial b{display:block;font-size:13px;letter-spacing:-.01em}
+.oficial small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.oficial.tu{border-color:rgba(47,191,134,.5);background:rgba(47,191,134,.08)}
+.oficial.hablando{border-color:rgba(47,191,134,.85);box-shadow:0 0 18px rgba(47,191,134,.3)}
+.oficial.hablando .oa{animation:latido 1.3s infinite}
+.oficial.hablando small{color:var(--g);font-weight:800}
+.barra{display:flex;align-items:stretch;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.mic-btn{position:relative;display:grid;justify-items:center;gap:7px;min-width:250px;padding:18px 30px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font:inherit;font-weight:800;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;transition:all .18s}
+.mic-btn .ic{width:34px;height:34px}
+.mic-btn span{font-size:14px}
+.mic-btn small{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.mic-btn:hover{border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.12)}
+.mic-btn.on{border-color:rgba(47,191,134,.95);background:rgba(47,191,134,.22);color:#d5fff2;box-shadow:0 0 38px rgba(47,191,134,.5);transform:scale(1.03)}
+.mic-btn.on small{color:#9ff0d2}
+.mic-btn.on::after{content:"";position:absolute;inset:-7px;border-radius:26px;border:2px solid rgba(47,191,134,.65);animation:latido 1.3s infinite;pointer-events:none}
+.barra .b{align-self:center}
+
+/* Boton Volver (reemplaza el menu de arriba INICIO/DASHBOARD/RADIO) */
+.volver{display:none;align-items:center;gap:9px;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:10px 22px;background:rgba(255,255,255,.07);color:#fff;font:inherit;font-weight:800;font-size:12px;letter-spacing:.05em;cursor:pointer;transition:all .25s}
+.volver:hover{border-color:rgba(47,191,134,.6);background:rgba(47,191,134,.15);color:#c9ffe9;transform:translateX(-5px);box-shadow:0 12px 30px rgba(47,191,134,.18)}
+.volver.on{display:inline-flex;animation:deslizar .4s ease backwards}
+@keyframes deslizar{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* Animaciones de entrada (stagger) */
+.canal-card{animation:aparecer .55s ease backwards}
+.oficial{animation:aparecer .45s ease backwards}
+.menu button{animation:aparecer .5s ease backwards}
+.menu button:nth-child(2){animation-delay:.06s}
+.menu button:nth-child(3){animation-delay:.12s}
+.menu button:nth-child(4){animation-delay:.18s}
+.hello h1{animation:aparecer .6s .08s backwards}
+.hello p{animation:aparecer .6s .16s backwards}
+.pestania{animation:aparecer .5s ease backwards}
+.carpeta-cuerpo{animation:aparecer .6s .1s backwards}
+.view.on .side{animation:aparecer .55s .05s backwards}
+.view.on .sections{animation:aparecer .55s .12s backwards}
+.view.on .sec{animation:aparecer .5s ease backwards}
+.view.on .sec:nth-child(1){animation-delay:.16s}
+.view.on .sec:nth-child(2){animation-delay:.22s}
+.view.on .sec:nth-child(3){animation-delay:.28s}
+.view.on .sec:nth-child(4){animation-delay:.34s}
+.view.on .sec:nth-child(5){animation-delay:.4s}
 
 footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;color:#7d7d7d;border-top:1px solid var(--line)}
 
@@ -99,6 +171,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 .card.wide{width:min(900px,100%)}
 .card h2{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:20px;font-weight:800;letter-spacing:-.02em}
 .card p{margin-bottom:14px;color:var(--muted)}
+.card form{display:grid;gap:10px}
 .card input:not([type=checkbox]):not([type=file]){padding:11px 14px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font:inherit}
 .card img{display:block;width:100%;border:1px solid var(--line);border-radius:12px}
 /* Cerrar: X dibujada con CSS */
@@ -115,7 +188,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 .evid input{color:var(--muted)}
 .item{border-left:3px solid var(--g);background:rgba(255,255,255,.05);border-radius:10px;padding:11px 13px;margin-top:9px;line-height:1.7}
 .item .ic{width:15px;height:15px;color:var(--muted)}
-@media(max-width:760px){.welcome,.db{grid-template-columns:1fr}.topbar{flex-direction:column;gap:8px;padding:12px}.search,.search input{width:100%}}
+@media(max-width:760px){.welcome,.db{grid-template-columns:1fr}.topbar{flex-direction:column;gap:8px;padding:12px}.search,.search input{width:100%}.mic-btn{min-width:100%}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -138,19 +211,19 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></symbol>
+  <symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M16 8l4 4-4 4M20 12H9"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.8 12.2-3.8 13 0"/><circle cx="17.5" cy="9.5" r="2.6"/><path d="M17.5 13.5c2.6.2 4.3 1.7 4.7 4"/></symbol>
 </svg>
 
 <header class="topbar">
   <div class="logo">
     <img class="logo-img" src="https://cdn.discordapp.com/attachments/1537889409494556763/1570216558054346863/image-removebg-preview_4.png?ex=6af649a0&is=6af4f820&hm=52bd5bd52a292c2ddf9c4068596c2f9ff254236cef779b6edf60efef417c719c&" alt="Logo Policía" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
     <span class="logo-fb"><svg class="ic"><use href="#i-shield"/></svg></span>
-    <span>POLICÍA NACIONAL DE COLOMBIA<small>Medellín RP · ER:LC</small></span>
+    <span>FUERZA PÚBLICA DE COLOMBIA<small>Medellín RP · ER:LC</small></span>
   </div>
-  <nav>
-    <a data-go="inicio">INICIO</a>
-    <a href="/dashboard-user.html">DASHBOARD</a>
-    <a data-go="radio">RADIO</a>
-  </nav>
+  <button class="volver" id="volver-top" type="button"><svg class="ic"><use href="#i-back"/></svg>Volver</button>
 </header>
 
 <main>
@@ -208,6 +281,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 
     <div class="actions">
       <button class="b green" id="b-cedula" type="button"><svg class="ic"><use href="#i-id"/></svg>Ver cédula</button>
+      <button class="b" id="b-placa" type="button"><svg class="ic"><use href="#i-car"/></svg>Buscar placa</button>
       <button class="b red" id="b-arrestar" type="button"><svg class="ic"><use href="#i-scale"/></svg>Arrestar</button>
     </div>
     <div class="msg" id="msg-db"></div>
@@ -215,11 +289,37 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 
   <!-- RADIO -->
   <section id="v-radio" class="view">
-    <div class="glass panel"><h2><svg class="ic"><use href="#i-radio"/></svg>Radio policial</h2><button class="b" id="r-volver" type="button">Volver</button></div>
-    <div class="glass soon">
-      <svg class="ic"><use href="#i-radio"/></svg>
-      <h3>Próximamente</h3>
-      <p>La radio policial estará disponible muy pronto.</p>
+    <div class="glass panel"><h2><svg class="ic"><use href="#i-radio"/></svg>Radio policial</h2></div>
+
+    <!-- Carpeta con las 10 radios -->
+    <div id="carpeta" class="carpeta">
+      <div class="pestania"><svg class="ic"><use href="#i-radio"/></svg>Radio Fuerza Pública de Colombia</div>
+      <div class="carpeta-cuerpo">
+        <p><b>10 radios oficiales de Medellín en vivo.</b> Los conectados salen de la base de datos real: quien entra aparece al instante y se desconecta solo si cierra la página. Entra a una para ver los oficiales, activar el micrófono (mantén presionado para hablar) o salir de la radio.</p>
+        <div class="canales" id="canales"></div>
+      </div>
+    </div>
+
+    <!-- Canal activo -->
+    <div id="canal-activo" class="canal-activo" hidden>
+      <div class="glass canal-hd">
+        <h3><svg class="ic"><use href="#i-radio"/></svg><span><span id="canal-nombre">—</span><small id="canal-desc">—</small></span></h3>
+        <span class="chip-live"><span class="punto"></span><span id="canal-cuenta">0</span> conectados</span>
+      </div>
+      <div class="glass canal-cuerpo">
+        <h4 class="sec-tit"><svg class="ic"><use href="#i-users"/></svg>OFICIALES CONECTADOS</h4>
+        <div class="conectados" id="conectados"></div>
+        <div class="barra">
+          <button class="mic-btn" id="btn-mic" type="button">
+            <svg class="ic"><use href="#i-mic"/></svg>
+            <span id="mic-txt">Mantén presionado para hablar</span>
+            <small>Suena al encender y al apagar el micro</small>
+          </button>
+          <button class="b red" id="btn-salir" type="button"><svg class="ic"><use href="#i-exit"/></svg>Salir de la radio</button>
+        </div>
+        <div class="msg" id="mic-estado">Micrófono apagado.</div>
+        <div class="msg" id="radio-msg"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -235,6 +335,18 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   <h2 id="cedula-titulo"><svg class="ic"><use href="#i-id"/></svg>Cédula ciudadana</h2>
   <img id="cedula-img" alt="Cédula ciudadana" />
   <div class="msg" id="cedula-msg"></div>
+</div></div>
+
+<div id="m-placa" class="modal"><div class="card">
+  <button class="x" data-close="m-placa" type="button" aria-label="Cerrar"></button>
+  <h2><svg class="ic"><use href="#i-car"/></svg>Buscar vehículo por placa</h2>
+  <p>Consulta el propietario y los datos registrados.</p>
+  <form id="form-placa">
+    <input id="placa" autocomplete="off" placeholder="Ejemplo: ABC-123" maxlength="10" required />
+    <button class="b green" type="submit"><svg class="ic"><use href="#i-search"/></svg>Consultar placa</button>
+  </form>
+  <div class="msg" id="placa-msg"></div>
+  <div id="placa-res"></div>
 </div></div>
 
 <div id="m-alertas" class="modal"><div class="card">
@@ -265,6 +377,8 @@ const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const val = v => (v === undefined || v === null || v === "" ? "—" : esc(v));
 const ic = n => `<svg class="ic"><use href="#i-${n}"/></svg>`;
 let ciudadano = null;
+let miNombre = "";
+let miDiscordId = "";
 
 const DELITOS = [
 "AC-01 — Homicidio simple","AC-02 — Homicidio culposo","AC-03 — Lesiones personales graves","AC-04 — Lesiones leves",
@@ -288,13 +402,14 @@ $("#delitos").innerHTML = DELITOS.map(d => `<label><input type="checkbox" value=
 function ir(v){
   document.querySelectorAll(".view").forEach(e => e.classList.remove("on"));
   $("#v-" + v).classList.add("on");
+  $("#volver-top").classList.toggle("on", v !== "inicio");
+  if (v === "radio") arrancarEncuesta(); else pararEncuesta();
 }
-document.querySelectorAll("[data-go]").forEach(a => a.addEventListener("click", () => ir(a.dataset.go)));
+$("#volver-top").onclick = () => { if (radioActual) salirRadio(); ir("inicio"); };
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => $("#" + b.dataset.close).classList.remove("open")));
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); }));
 $("#go-db").onclick = () => ir("db");
 $("#go-radio").onclick = () => ir("radio");
-$("#r-volver").onclick = () => ir("inicio");
 
 /* Sesión */
 async function init(){
@@ -306,7 +421,9 @@ async function init(){
     return;
   }
   const u = ad.usuario || {};
-  $("#saludo").textContent = "Bienvenido oficial " + (u.nombre || u.username || "");
+  miNombre = String(u.nombre || u.username || "").trim();
+  miDiscordId = String(u.id || "");
+  $("#saludo").textContent = "Bienvenido oficial " + (miNombre || "");
 }
 
 /* Alertas */
@@ -341,10 +458,11 @@ const CAMPOS = [
   ["Fecha de nacimiento", /(fechanac|nacimiento|birth)/],
   ["Edad", /^edad$/],
   ["CUI", /^cui$/],
+  ["Usuario Roblox", /^robloxname$/],
   ["Username", /(username|usuario)/],
   ["Número de documento", /^(nuip|documento|cedula)$/]
 ];
-const OCULTAR = [/(estatura|altura)/, /^(id|_id|discordid)$/, /^(foto|avatar|robloxavatar|robloxid|robloxuserid)$/, /^(licencia|vehiculos|observaciones)$/];
+const OCULTAR = [ /^(id|_id|discordid)$/, /^(foto|avatar|robloxavatar|robloxid|robloxuserid)$/, /^(licencia|vehiculos|observaciones)$/ ];
 const bonito = k => k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, s => s.toUpperCase());
 const simple = v => v !== null && v !== undefined && v !== "" && typeof v !== "object";
 
@@ -362,12 +480,28 @@ function datosCiudadano(c){
   return filas;
 }
 
-function fotoRoblox(c, d){
-  const url = c.foto || c.avatar || c.robloxAvatar || d.foto || d.avatar;
-  const id = c.robloxId || c.robloxUserId || d.robloxId || d.robloxUserId;
-  if (url) return url;
-  if (id) return `https://www.roblox.com/headshot-thumbnail/image?userId=${encodeURIComponent(id)}&width=420&height=420&format=png`;
-  return "";
+/* Foto de Roblox: primero las URLs directas y si no, el proxy del servidor
+   /api/policial/roblox-avatar (Roblox no permite consultarlo desde el navegador). */
+let tokenFoto = 0;
+async function cargarFotoRoblox(c, d, token){
+  const cont = $("#foto");
+  let src = c.foto || c.avatar || c.robloxAvatar || d.foto || d.avatar || "";
+  if (!src) {
+    const nombre = c.roblox_name || c.robloxName || "";
+    if (!nombre) return;
+    try {
+      const r = await fetch("/api/policial/roblox-avatar/" + encodeURIComponent(nombre), { cache: "force-cache" });
+      if (!r.ok) return;
+      const j = await r.json();
+      src = j.foto || "";
+    } catch (e) { return; }
+  }
+  if (!src || token !== tokenFoto) return;
+  const img = new Image();
+  img.alt = "Foto de Roblox";
+  img.onload = () => { if (token !== tokenFoto) return; cont.innerHTML = ""; cont.appendChild(img); };
+  img.onerror = () => {};
+  img.src = src;
 }
 
 function limpiar(){
@@ -403,11 +537,9 @@ function pintar(d){
   b.className = "badge" + (reg.length ? " bad" : "");
   filas($("#t-multas"), ex.multas || d.multas || [], [r => r.articulos || r.articulo, "placa", "valor", r => r.agente || r.oficial, "fecha"]);
 
-  const foto = $("#foto"), src = fotoRoblox(c, d);
-  if (src) {
-    foto.innerHTML = `<img alt="Foto de Roblox" src="${esc(src)}">`;
-    foto.querySelector("img").onerror = () => foto.innerHTML = ic("user");
-  } else foto.innerHTML = ic("user");
+  const token = ++tokenFoto;
+  $("#foto").innerHTML = ic("user");
+  cargarFotoRoblox(c, d, token);
 }
 
 $("#form-busqueda").addEventListener("submit", async e => {
@@ -444,6 +576,22 @@ $("#b-cedula").onclick = () => {
   $("#m-cedula").classList.add("open");
 };
 
+/* Placa */
+$("#b-placa").onclick = () => { $("#m-placa").classList.add("open"); $("#placa").focus(); };
+$("#form-placa").addEventListener("submit", async e => {
+  e.preventDefault();
+  const placa = $("#placa").value.trim().toUpperCase();
+  $("#placa-msg").textContent = "Buscando vehículo..."; $("#placa-res").innerHTML = "";
+  try {
+    const r = await fetch("/api/policial/vehiculo/" + encodeURIComponent(placa), { cache: "no-store" });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Vehículo no encontrado.");
+    const v = d.vehiculo || {}, p = d.propietario || {};
+    $("#placa-res").innerHTML = `<div class="item"><b>Propietario:</b> ${val(p.nombre)}<br><b>NUIP:</b> ${val(p.nuip)}<br><b>Placa:</b> ${val(v.placa || placa)}<br><b>Modelo:</b> ${val(v.modelo || v.nombre)}<br><b>Detalles:</b> ${Object.keys(v.detalles || {}).length ? esc(JSON.stringify(v.detalles)) : "Sin detalles adicionales"}</div>`;
+    $("#placa-msg").textContent = "Consulta completada.";
+  } catch (err) { $("#placa-msg").textContent = err.message; }
+});
+
 /* Arresto */
 $("#b-arrestar").onclick = () => {
   if (!requiereCiudadano()) return;
@@ -469,6 +617,352 @@ $("#confirmar-arresto").addEventListener("click", async () => {
   st.textContent = r.ok ? "Arresto registrado correctamente." : (d.error || "No se pudo registrar el arresto.");
   if (r.ok) setTimeout(() => { $("#m-arresto").classList.remove("open"); $("#form-busqueda").requestSubmit(); }, 1000);
 });
+
+/* ===================== RADIO ===================== */
+const RADIOS = [
+  { id:1, nombre:"Central 911", desc:"Central de operaciones", icono:"siren" },
+  { id:2, nombre:"Patrullas", desc:"Patrullas comunitarias", icono:"shield" },
+  { id:3, nombre:"Tránsito", desc:"Tránsito y vialidad", icono:"car" },
+  { id:4, nombre:"Motorizada", desc:"Unidad motorizada", icono:"radio" },
+  { id:5, nombre:"CAI Belén", desc:"Comando de zona · Medellín", icono:"pin" },
+  { id:6, nombre:"CAI La Candelaria", desc:"Comando de zona · Medellín", icono:"pin" },
+  { id:7, nombre:"Grupo Homicidios", desc:"Investigaciones", icono:"search" },
+  { id:8, nombre:"Antinarcóticos", desc:"Grupo ANT", icono:"note" },
+  { id:9, nombre:"Cinólogos", desc:"Unidad canina", icono:"users" },
+  { id:10, nombre:"Reserva General", desc:"Reserva táctica", icono:"shield" }
+];
+
+let radioActual = null;
+let micOn = false;
+let audioCtx = null;
+
+const iniciales = n => String(n || "?").trim().split(/\s+/).slice(0, 2).map(p => p[0] || "").join("").toUpperCase();
+
+function pintarCarpeta(){
+  $("#canales").innerHTML = RADIOS.map((r, i) => `
+    <button class="canal-card" type="button" data-radio="${r.id}" style="animation-delay:${i * 45}ms">
+      <span class="cc-top">
+        <span class="cc-ic">${ic(r.icono)}</span>
+        <span class="cc-txt"><b>${esc(r.nombre)}</b><small>${esc(r.desc)}</small></span>
+      </span>
+      <span class="cc-estado"><i></i><span class="cc-num" data-cuenta="${r.id}">…</span> conectados</span>
+      <span class="cc-entrar">ENTRAR →</span>
+    </button>`).join("");
+}
+pintarCarpeta();
+
+/* Conectados reales: se leen de la tabla radio_conectados del servidor.
+   Cada 4 segundos se refresca; quien cierra la pagina se cae solo (latido). */
+let encuestaRadio = null;
+
+async function refrescarRadio(){
+  try {
+    const q = radioActual ? "?canal=" + radioActual.id : "";
+    const r = await fetch("/api/radio/estado" + q, { cache: "no-store" });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.correcto) return;
+    Object.keys(d.conteos || {}).forEach(k => {
+      const el = document.querySelector('[data-cuenta="' + k + '"]');
+      if (el) el.textContent = d.conteos[k];
+    });
+    /* si la fila se perdió (latido vencido), volvemos a entrar solos */
+    if (radioActual && d.miCanal === null) {
+      fetch("/api/radio/entrar", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ canal: radioActual.id })
+      }).catch(() => {});
+    }
+    if (radioActual && Array.isArray(d.conectados)) pintarConectados(d.conectados);
+  } catch (e) {}
+}
+
+function arrancarEncuesta(){
+  if (encuestaRadio) return;
+  refrescarRadio();
+  encuestaRadio = setInterval(refrescarRadio, 4000);
+}
+
+function pararEncuesta(){
+  clearInterval(encuestaRadio);
+  encuestaRadio = null;
+}
+
+const horaDe = ms => new Date(Number(ms)).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+
+let firmaConectados = "";
+
+function pintarConectados(lista){
+  $("#canal-cuenta").textContent = lista.length;
+  /* Solo se vuelve a dibujar cuando cambia la lista: asi la animacion de
+     entrada no se repite cada 4 segundos por la encuesta en vivo. */
+  const firma = lista.map(p => p.discordId + (p.tu ? "*" : "")).join(",") || "(vacio)";
+  if (firma === firmaConectados) { actualizarHablando(lista); return; }
+  firmaConectados = firma;
+  if (!lista.length) {
+    $("#conectados").innerHTML = '<div class="msg" style="grid-column:1/-1">Ahora mismo no hay oficiales conectados en esta radio.</div>';
+    return;
+  }
+  $("#conectados").innerHTML = lista.map((p, i) => `
+    <div class="oficial ${p.tu ? "tu" : ""}" data-id="${esc(p.discordId)}" style="animation-delay:${Math.min(i, 8) * 50}ms">
+      <span class="oa">${esc(iniciales(p.nombre))}</span>
+      <span><b>${p.tu ? esc(p.nombre) + " (Tú)" : "Oficial " + esc(p.nombre)}</b>
+      <small>${p.tu ? "En línea · tú" : "Conectado desde las " + esc(horaDe(p.desde))}</small></span>
+    </div>`).join("");
+  actualizarHablando(lista);
+}
+
+/* Pinta quien tiene el micro prendido: el mio (micOn) y el de los demas
+   (p.micro que guarda la tabla radio_conectados). Se llama en cada consulta
+   y al recibir un evento en vivo, para que la lista nunca mienta. */
+function actualizarHablando(lista){
+  const yo = $("#conectados .oficial.tu");
+  if (yo) {
+    yo.classList.toggle("hablando", !!micOn);
+    const s = yo.querySelector("small");
+    if (s) s.textContent = micOn ? "Transmitiendo…" : "En línea · tú";
+  }
+  for (const p of (lista || [])) {
+    if (p.tu) continue;
+    const fila = document.querySelector('#conectados .oficial[data-id="' + p.discordId + '"]');
+    if (fila) fila.classList.toggle("hablando", !!p.micro);
+  }
+}
+
+function marcarHablando(sí){
+  const yo = $("#conectados .oficial.tu");
+  if (!yo) return;
+  yo.classList.toggle("hablando", !!sí);
+  const s = yo.querySelector("small");
+  if (s) s.textContent = sí ? "Transmitiendo…" : "En línea · tú";
+}
+
+async function entrarRadio(id){
+  const r = RADIOS.find(x => x.id === id);
+  if (!r) return;
+  micApagar();
+  radioActual = r;
+  $("#carpeta").hidden = true;
+  $("#canal-activo").hidden = false;
+  $("#canal-nombre").textContent = r.nombre;
+  $("#canal-desc").textContent = r.desc;
+  $("#canal-cuenta").textContent = "…";
+  firmaConectados = "";
+  $("#conectados").innerHTML = '<div class="msg" style="grid-column:1/-1">Conectando con la base de datos…</div>';
+  $("#radio-msg").textContent = "";
+  try {
+    const resp = await fetch("/api/radio/entrar", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ canal: id })
+    });
+    const d = await resp.json();
+    if (!resp.ok) throw new Error(d.error || "No se pudo entrar a la radio.");
+  } catch (err) {
+    $("#radio-msg").textContent = err.message;
+    return;
+  }
+  sonidoEntrar();
+  conectarEventosRadio(id);
+  arrancarEncuesta();
+  refrescarRadio();
+}
+
+function salirRadio(){
+  const estaba = radioActual;
+  micApagar();
+  radioActual = null;
+  $("#canal-activo").hidden = true;
+  $("#carpeta").hidden = false;
+  if (estaba) {
+    desconectarEventosRadio();
+    sonidoSalir();
+    fetch("/api/radio/salir", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+    }).catch(() => {});
+    refrescarRadio();
+  }
+}
+
+$("#canales").addEventListener("click", e => {
+  const b = e.target.closest("[data-radio]");
+  if (b) entrarRadio(+b.dataset.radio);
+});
+$("#btn-salir").onclick = salirRadio;
+
+/* Al cerrar la pestaña sin dar "Salir": el servidor lo nota solo porque
+   se corta el latido, pero por si acaso avisamos tambien. */
+window.addEventListener("pagehide", () => {
+  if (radioActual && navigator.sendBeacon) {
+    try { navigator.sendBeacon("/api/radio/salir", "{}"); } catch (e) {}
+  }
+});
+
+/* --- Sonidos del micro: los WAV que estan en la RAIZ del repo y el
+   servidor sirve en /mic-on.wav y /mic-off.wav --- */
+const sndOn = new Audio("/mic-on.wav");
+const sndOff = new Audio("/mic-off.wav");
+const tocarSonido = (a, vol) => {
+  try {
+    if (vol !== undefined) a.volume = vol;
+    a.currentTime = 0;
+    const p = a.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) {}
+};
+
+/* Sonido de "apagado" al salir de la radio (tono que baja + click corto,
+   como apagar un aparato). El volumen se puede bajar para los demas. */
+function sonidoSalir(volumen){
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const v = Number(volumen) > 0 ? Number(volumen) : 0.2;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(760, t);
+    o.frequency.exponentialRampToValueAtTime(180, t + 0.3);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.36);
+    const c = audioCtx.createOscillator();
+    c.type = "square"; c.frequency.value = 1500;
+    const g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.exponentialRampToValueAtTime(v * 0.45, t + 0.005);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    c.connect(g2); g2.connect(audioCtx.destination);
+    c.start(t); c.stop(t + 0.06);
+  } catch (e) {}
+}
+
+/* Sonido de ENTRAR a una radio: realista, como encender un radio de
+   policia (click del relay + estatica de apertura + tono de confirmacion
+   + cola de squelch). Suena para ti y para todos los del canal. */
+function sonidoEntrar(){
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const master = audioCtx.createGain();
+    master.gain.value = 0.9;
+    master.connect(audioCtx.destination);
+    const rafaga = (inicio, dur, vol) => {
+      const len = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource(); src.buffer = buf;
+      const bp = audioCtx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1500; bp.Q.value = 0.9;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, inicio);
+      g.gain.exponentialRampToValueAtTime(vol, inicio + 0.012);
+      g.gain.setValueAtTime(vol, inicio + dur * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, inicio + dur);
+      src.connect(bp); bp.connect(g); g.connect(master);
+      src.start(inicio); src.stop(inicio + dur + 0.02);
+    };
+    /* click del relay al abrir el micro */
+    const click = audioCtx.createOscillator(); click.type = "square"; click.frequency.value = 2600;
+    const gc = audioCtx.createGain();
+    gc.gain.setValueAtTime(0.0001, t);
+    gc.gain.exponentialRampToValueAtTime(0.07, t + 0.004);
+    gc.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    click.connect(gc); gc.connect(master);
+    click.start(t); click.stop(t + 0.04);
+    rafaga(t + 0.02, 0.13, 0.22);            /* estatica de apertura */
+    /* tono de confirmacion (roger beep) */
+    const beep = audioCtx.createOscillator(); beep.type = "sine"; beep.frequency.value = 1180;
+    const gb = audioCtx.createGain();
+    gb.gain.setValueAtTime(0.0001, t + 0.15);
+    gb.gain.exponentialRampToValueAtTime(0.16, t + 0.165);
+    gb.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    beep.connect(gb); gb.connect(master);
+    beep.start(t + 0.15); beep.stop(t + 0.26);
+    rafaga(t + 0.26, 0.1, 0.14);             /* cola de squelch */
+  } catch (e) {}
+}
+
+/* --- Eventos en vivo de la radio (SSE): todos los conectados al canal
+   escuchan al instante cuando alguien entra, prende/apaga el micro o sale --- */
+let fuenteRadio = null;
+
+function conectarEventosRadio(canal){
+  desconectarEventosRadio();
+  try {
+    fuenteRadio = new EventSource("/api/radio/eventos?canal=" + canal);
+    fuenteRadio.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        if (!ev || !ev.tipo || String(ev.discordId) === miDiscordId) return; /* el mio ya sono en local */
+        if (ev.tipo === "entrar") sonidoEntrar();
+        else if (ev.tipo === "prender") tocarSonido(sndOn, 0.75);
+        else if (ev.tipo === "apagar") tocarSonido(sndOff, 0.75);
+        else if (ev.tipo === "salir") sonidoSalir(0.12);
+        const fila = document.querySelector('#conectados .oficial[data-id="' + ev.discordId + '"]');
+        if (fila) fila.classList.toggle("hablando", ev.tipo === "prender");
+      } catch (err) {}
+    };
+    fuenteRadio.onerror = () => { /* el navegador reintenta solo */ };
+  } catch (e) {}
+}
+
+function desconectarEventosRadio(){
+  if (!fuenteRadio) return;
+  try { fuenteRadio.close(); } catch (e) {}
+  fuenteRadio = null;
+}
+
+/* --- Push-to-talk: mientras se mantiene presionado, suena; al soltar, se apaga --- */
+function micPrender(){
+  if (micOn || !radioActual) return;
+  micOn = true;
+  $("#btn-mic").classList.add("on");
+  $("#mic-txt").textContent = "Transmitiendo…";
+  $("#mic-estado").textContent = "🔴 Transmitiendo por la radio. Suelta el botón para terminar.";
+  marcarHablando(true);
+  tocarSonido(sndOn);
+  fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "prender" }) }).catch(() => {});
+}
+
+function micApagar(){
+  if (!micOn) return;
+  micOn = false;
+  $("#btn-mic").classList.remove("on");
+  $("#mic-txt").textContent = "Mantén presionado para hablar";
+  $("#mic-estado").textContent = "Micrófono apagado.";
+  marcarHablando(false);
+  tocarSonido(sndOff);
+  fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "apagar" }) }).catch(() => {});
+}
+
+(function configurarMic(){
+  const mic = $("#btn-mic");
+  mic.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    try { mic.setPointerCapture(e.pointerId); } catch (err) {}
+    micPrender();
+  });
+  mic.addEventListener("contextmenu", e => e.preventDefault());
+  mic.addEventListener("keydown", e => {
+    if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); micPrender(); }
+  });
+  mic.addEventListener("keyup", e => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); micApagar(); }
+  });
+  mic.addEventListener("blur", micApagar);
+  /* Seguridad: soltar en cualquier parte de la pantalla apaga el micrófono */
+  window.addEventListener("pointerup", micApagar);
+  window.addEventListener("pointercancel", micApagar);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) micApagar(); });
+})();
 
 init();
 </script>
