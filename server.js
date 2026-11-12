@@ -239,6 +239,30 @@ app.get("/tarjeta.png", (req, res) => {
   res.sendFile(archivo);
 });
 
+// Sonidos del microfono del panel policial (tambien estan en la RAIZ del
+// repo). Sin estas rutas el navegador no los podria reproducir porque
+// express.static solo cubre public/ y photos/.
+function enviarSonidoDeRaiz(res, nombres) {
+  for (const nombre of nombres) {
+    const archivo = path.join(__dirname, nombre);
+    if (fs.existsSync(archivo)) {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.sendFile(archivo);
+    }
+  }
+  return res.status(404).end();
+}
+
+// Al PRENDER el microfono del panel policial.
+app.get("/mic-on.wav", (req, res) => {
+  enviarSonidoDeRaiz(res, ["mic_click_on (1).wav", "mic_click_on.wav", "mic-on.wav"]);
+});
+
+// Al APAGAR el microfono del panel policial.
+app.get("/mic-off.wav", (req, res) => {
+  enviarSonidoDeRaiz(res, ["mic_click_off.wav", "mic-off.wav"]);
+});
+
 app.get("/iniciar-sesion.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
 });
@@ -1127,6 +1151,241 @@ app.get("/api/policial/imagen/:discordId", async (req, res) => {
   } catch (error) {
     console.error("[API PDA IMAGEN]", error.message);
     return res.status(500).send("No se pudo cargar la imagen PDA.");
+  }
+});
+
+// Foto de Roblox del ciudadano. El navegador no puede llamar a Roblox
+// directamente (no envía cabeceras CORS), así que el servidor resuelve
+// el nombre de usuario -> ID -> foto de perfil y la devuelve en JSON.
+app.get("/api/policial/roblox-avatar/:username", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const username = String(req.params.username || "").trim();
+  if (!username || username.length > 40) return res.status(400).json({ error: "Usuario de Roblox inválido." });
+  try {
+    const r = await fetch("https://users.roblox.com/v1/usernames/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usernames: [username], excludeBannedUsers: false }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) return res.status(502).json({ error: "Roblox no respondió (usuarios)." });
+    const datos = await r.json();
+    const id = datos?.data?.[0]?.id;
+    if (!id) return res.status(404).json({ error: "Ese usuario de Roblox no existe." });
+    const t = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${id}&size=150x150&format=Png&isCircular=false`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!t.ok) return res.status(502).json({ error: "Roblox no respondió (fotos)." });
+    const td = await t.json();
+    const foto = td?.data?.[0]?.imageUrl;
+    if (!foto) return res.status(404).json({ error: "Ese usuario no tiene foto de perfil." });
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.json({ correcto: true, userId: id, foto });
+  } catch (error) {
+    console.error("[API ROBLOX AVATAR]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar la foto de Roblox." });
+  }
+});
+
+/* ===================== RADIO POLICIAL (base de datos real) =====================
+   Quien entra a una radio queda en la tabla radio_conectados con un latido
+   cada pocos segundos. Si la pestana se cierra sin salir, el latido se corta
+   y a los 90 segundos esa persona aparece como desconectada.                */
+
+let radioSchemaPromise;
+async function asegurarEsquemaRadio() {
+  if (!radioSchemaPromise) {
+    radioSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS radio_conectados (
+          discord_id VARCHAR(32) NOT NULL PRIMARY KEY,
+          canal INT NOT NULL,
+          nombre VARCHAR(120) NOT NULL,
+          entra_en BIGINT NOT NULL,
+          latido BIGINT NOT NULL,
+          micro TINYINT NOT NULL DEFAULT 0,
+          KEY idx_radio_canal (canal)
+        )
+      `);
+      /* Migracion: la tabla pudo crearce antes de existir la columna
+         "micro" (CREATE TABLE IF NOT EXISTS no agrega columnas nuevas).
+         Si ya esta, MySQL responde 1060 y se ignora. */
+      try {
+        await pool.execute("ALTER TABLE radio_conectados ADD COLUMN micro TINYINT NOT NULL DEFAULT 0");
+      } catch (error) {
+        if (error.code !== "ER_DUP_FIELDNAME") throw error;
+      }
+    })().catch((error) => {
+      radioSchemaPromise = null;
+      throw error;
+    });
+  }
+  return radioSchemaPromise;
+}
+
+const CANALES_RADIO = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const LATIDO_RADIO_MS = 90000;
+
+async function limpiarRadioVieja() {
+  await pool.execute("DELETE FROM radio_conectados WHERE latido < ?", [Date.now() - LATIDO_RADIO_MS]);
+}
+
+/* Eventos en vivo de la radio (SSE): cuando alguien entra, prende o apaga
+   el micro o sale, TODOS los demas conectados a ese canal reciben el aviso
+   al instante y reproducen el sonido de la radio. */
+const oyentesRadio = new Map();
+
+function avisarRadio(canal, evento) {
+  const oyentes = oyentesRadio.get(Number(canal));
+  if (!oyentes || !oyentes.size) return;
+  const linea = "data: " + JSON.stringify(evento) + "\n\n";
+  for (const respuesta of oyentes) {
+    try { respuesta.write(linea); } catch (e) { /* la conexion se cierra sola */ }
+  }
+}
+
+app.get("/api/radio/eventos", (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const canal = Number(req.query.canal);
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  // Si la sesion ya trae un rol policial (se verifico al entrar al panel)
+  // no hace falta llamar a Discord otra vez; si no, se verifica ahora.
+  const roles = req.session.usuario.roles || [];
+  const esPolicial = roles.some((rol) => ROLES_POLICIA.has(String(rol)));
+  const verificar = esPolicial ? Promise.resolve(true) : exigirPolicia(req, res);
+  Promise.resolve(verificar).then((permitido) => {
+    if (!permitido) return;
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (typeof res.flushHeaders === "function") res.flushHeaders();
+    res.write(": conectado\n\n");
+    const oyentes = oyentesRadio.get(canal) || new Set();
+    oyentes.add(res);
+    oyentesRadio.set(canal, oyentes);
+    const keepAlive = setInterval(() => {
+      try { res.write(": ping\n\n"); } catch (e) {}
+    }, 20000);
+    req.on("close", () => {
+      clearInterval(keepAlive);
+      const conjunto = oyentesRadio.get(canal);
+      if (conjunto) {
+        conjunto.delete(res);
+        if (!conjunto.size) oyentesRadio.delete(canal);
+      }
+    });
+  });
+});
+
+// Estado de la radio: cuantos conectados hay en cada canal y, si se pide
+// un canal, la lista completa. Cada consulta renueva el latido del consultante.
+app.get("/api/radio/estado", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const canal = req.query.canal !== undefined ? Number(req.query.canal) : null;
+  if (canal !== null && !CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  try {
+    await asegurarEsquemaRadio();
+    const ahora = Date.now();
+    await limpiarRadioVieja();
+    const miId = String(req.session.usuario.id || "");
+    await pool.execute("UPDATE radio_conectados SET latido = ? WHERE discord_id = ?", [ahora, miId]);
+    const [filas] = await pool.execute("SELECT discord_id, canal, nombre, entra_en, micro FROM radio_conectados");
+    const conteos = {};
+    for (let i = 1; i <= 10; i += 1) conteos[i] = 0;
+    filas.forEach((fila) => {
+      const c = Number(fila.canal);
+      if (conteos[c] !== undefined) conteos[c] += 1;
+    });
+    const miFila = filas.find((fila) => String(fila.discord_id) === miId) || null;
+    let conectados = null;
+    if (canal !== null) {
+      conectados = filas
+        .filter((fila) => Number(fila.canal) === canal)
+        .map((fila) => ({
+          discordId: String(fila.discord_id),
+          nombre: fila.nombre,
+          desde: Number(fila.entra_en),
+          micro: Number(fila.micro) || 0,
+          tu: String(fila.discord_id) === miId,
+        }))
+        .sort((a, b) => a.desde - b.desde);
+    }
+    return res.json({
+      correcto: true,
+      ahora,
+      conteos,
+      miCanal: miFila ? Number(miFila.canal) : null,
+      conectados,
+    });
+  } catch (error) {
+    console.error("[API RADIO ESTADO]", error.message);
+    return res.status(500).json({ error: "No se pudo leer la radio." });
+  }
+});
+
+app.post("/api/radio/entrar", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const canal = Number(req.body?.canal);
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  try {
+    await asegurarEsquemaRadio();
+    const ahora = Date.now();
+    await limpiarRadioVieja();
+    const id = String(req.session.usuario.id);
+    const nombre = String(req.session.usuario.nombre || req.session.usuario.username || "Oficial").slice(0, 120);
+    await pool.execute(
+      `INSERT INTO radio_conectados (discord_id, canal, nombre, entra_en, latido, micro)
+       VALUES (?, ?, ?, ?, ?, 0)
+       ON DUPLICATE KEY UPDATE canal = VALUES(canal), nombre = VALUES(nombre), entra_en = VALUES(entra_en), latido = VALUES(latido), micro = 0`,
+      [id, canal, nombre, ahora, ahora]
+    );
+    avisarRadio(canal, { tipo: "entrar", discordId: id, nombre, t: ahora });
+    return res.json({ correcto: true, canal });
+  } catch (error) {
+    console.error("[API RADIO ENTRAR]", error.message);
+    return res.status(500).json({ error: "No se pudo entrar a la radio." });
+  }
+});
+
+app.post("/api/radio/salir", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    await asegurarEsquemaRadio();
+    const id = String(req.session.usuario.id);
+    const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
+    await pool.execute("DELETE FROM radio_conectados WHERE discord_id = ?", [id]);
+    if (filas.length) {
+      avisarRadio(Number(filas[0].canal), { tipo: "salir", discordId: id, nombre: filas[0].nombre, t: Date.now() });
+    }
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[API RADIO SALIR]", error.message);
+    return res.status(500).json({ error: "No se pudo salir de la radio." });
+  }
+});
+
+// Encender/apagar el microfono: guarda el estado en la tabla (para que los
+// demas lo vean) y avisa al canal para que escuchen el sonido al instante.
+app.post("/api/radio/mic", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const encender = String(req.body?.estado || "") === "prender";
+  try {
+    await asegurarEsquemaRadio();
+    const id = String(req.session.usuario.id);
+    const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
+    if (!filas.length) return res.status(400).json({ error: "No estás conectado a ninguna radio." });
+    await pool.execute("UPDATE radio_conectados SET micro = ? WHERE discord_id = ?", [encender ? 1 : 0, id]);
+    avisarRadio(Number(filas[0].canal), {
+      tipo: encender ? "prender" : "apagar",
+      discordId: id,
+      nombre: filas[0].nombre,
+      t: Date.now(),
+    });
+    return res.json({ correcto: true, micro: encender ? 1 : 0 });
+  } catch (error) {
+    console.error("[API RADIO MIC]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el microfono." });
   }
 });
 
