@@ -5,92 +5,104 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Base de datos PONAL | Medellín RP</title>
 <style>
-:root{--g:#0a7a4f;--g2:#0d8f5c;--gd:#075c3b;--red:#d3202f;--ink:#1d2a24;--line:#cfd8d3;--bg:#f4f6f5}
+:root{--g:#0a7a4f;--g2:#0d8f5c;--gd:#075c3b;--gx:#043a25;--gold:#f2c230;--blue:#1c3f94;--red:#d3202f;--ink:#1d2a24;--line:#cfd8d3;--bg:#f2f5f3}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#fff;color:var(--ink);font-family:Montserrat,"Segoe UI",system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 22px;border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:11px;line-height:1.2;color:var(--gd)}
-.logo i{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--g);color:#fff;font-style:normal;font-size:16px}
-.topbar nav{display:flex;gap:22px}
-.topbar nav a{color:var(--gd);font-weight:700;font-size:11px;text-decoration:none;cursor:pointer}
-.topbar nav a:hover{text-decoration:underline}
-main{flex:1;width:min(1100px,calc(100% - 28px));margin:18px auto}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:Montserrat,"Segoe UI",system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column;
+  background:
+    repeating-linear-gradient(45deg,#0a7a4f08 0 12px,transparent 12px 24px),
+    linear-gradient(#fff,#eef3f0)}
+.flag{height:6px;background:linear-gradient(90deg,var(--gold) 0 50%,var(--blue) 50% 75%,var(--red) 75%)}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 26px;background:linear-gradient(180deg,#fff,#f4f8f6);border-bottom:2px solid var(--g);box-shadow:0 4px 14px #0a7a4f1c}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:12px;line-height:1.25;color:var(--gd);letter-spacing:.02em}
+.logo i{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#19b676,var(--gd));color:var(--gold);font-style:normal;font-size:20px;border:3px solid var(--gold);box-shadow:0 3px 8px #0a7a4f55}
+.logo small{display:block;font-weight:600;color:#5a6b63;font-size:10px}
+.topbar nav{display:flex;gap:6px}
+.topbar nav a{color:var(--gd);font-weight:800;font-size:11px;text-decoration:none;cursor:pointer;padding:8px 14px;border-radius:20px;transition:background .15s,color .15s}
+.topbar nav a:hover{background:var(--g);color:#fff}
+main{flex:1;width:min(1100px,calc(100% - 28px));margin:22px auto}
 .view{display:none}.view.on{display:block}
 
 /* Bienvenida */
-.welcome{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
-.menu{background:var(--g);border-radius:10px;padding:14px;display:grid;gap:10px}
-.menu h3{margin:0 0 4px;color:#fff;font-size:12px}
-.menu button{width:100%;text-align:left;border:0;border-radius:6px;padding:12px;background:#fff;color:var(--gd);font:inherit;font-weight:800;cursor:pointer}
-.menu button:hover{background:#e3f4ec}
-.hello{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:34px 28px;min-height:200px}
-.hello h1{margin:0 0 8px;font-size:26px;color:var(--gd)}
-.hello p{margin:0;color:#52625a;max-width:52ch;line-height:1.5}
+.welcome{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start}
+.menu{background:linear-gradient(170deg,var(--g2),var(--gx));border-radius:14px;padding:16px;display:grid;gap:10px;box-shadow:0 10px 26px #043a2540;border:1px solid #ffffff22}
+.menu h3{margin:0 0 4px;color:var(--gold);font-size:12px;letter-spacing:.06em}
+.menu button{width:100%;text-align:left;border:0;border-left:5px solid var(--gold);border-radius:8px;padding:13px 12px;background:#fff;color:var(--gd);font:inherit;font-weight:800;cursor:pointer;transition:transform .15s,background .15s;box-shadow:0 3px 8px #0003}
+.menu button:hover{background:#e3f4ec;transform:translateX(4px)}
+.menu button.alert{border-left-color:var(--red)}
+.hello{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:14px;padding:40px 32px;min-height:240px;box-shadow:0 10px 26px #0a7a4f18}
+.hello::after{content:"★";position:absolute;right:-20px;bottom:-70px;font-size:240px;color:#0a7a4f0d;line-height:1}
+.hello::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(var(--gold),var(--blue),var(--red))}
+.hello h1{margin:0 0 10px;font-size:28px;color:var(--gd)}
+.hello p{margin:0;color:#52625a;max-width:54ch;line-height:1.6;position:relative;z-index:1}
+.hello .chip{display:inline-block;margin-bottom:14px;padding:4px 12px;border-radius:20px;background:#e3f4ec;color:var(--gd);font-weight:800;font-size:10px}
 
 /* Base de datos */
-.panel{background:var(--g);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.panel h2{margin:0;color:#fff;font-size:15px}
+.panel{background:linear-gradient(100deg,var(--gx),var(--g) 60%,var(--g2));border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 8px 22px #043a2540;border-bottom:4px solid var(--gold)}
+.panel h2{margin:0;color:#fff;font-size:17px;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
 .search{display:flex;gap:6px}
-.search input{width:240px;padding:7px 10px;border:1px solid #fff;border-radius:5px;font:inherit;font-size:12px}
-.search button{border:0;border-radius:5px;padding:7px 12px;background:#fff;color:var(--gd);font-weight:800;cursor:pointer}
-.db{display:grid;grid-template-columns:170px 1fr;gap:12px;margin-top:10px}
-.side{background:var(--g);border-radius:8px;padding:14px 12px;color:#fff;font-size:11px}
-.avatar{width:84px;height:84px;margin:0 auto 12px;border-radius:50%;background:#d9dfdc;display:grid;place-items:center;font-size:44px;color:#9aa6a0;overflow:hidden}
-.side dl{margin:0;display:grid;gap:7px}
-.side dt{font-weight:800}
-.side dd{margin:0;opacity:.92;word-break:break-word}
-.sections{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow-x:auto}
-.sec{margin:8px 0 12px}
-.sec h4{margin:0 0 4px;font-size:10px;color:#52625a;letter-spacing:.04em}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{background:var(--g);color:#fff;padding:5px 8px;text-align:center;font-weight:800;border:1px solid #fff}
-td{padding:5px 8px;text-align:center;border-bottom:1px solid var(--line);background:#fff}
+.search input{width:260px;padding:9px 12px;border:2px solid #fff;border-radius:22px;font:inherit;font-size:12px;outline:none}
+.search input:focus{border-color:var(--gold)}
+.search button{border:0;border-radius:22px;padding:9px 16px;background:var(--gold);color:var(--gx);font-weight:900;cursor:pointer}
+.db{display:grid;grid-template-columns:230px 1fr;gap:14px;margin-top:14px}
+.side{background:linear-gradient(175deg,var(--g2),var(--gx));border-radius:14px;padding:18px 14px;color:#fff;font-size:11px;box-shadow:0 8px 22px #043a2540;align-self:start}
+.avatar{width:128px;height:128px;margin:0 auto 10px;border-radius:50%;background:#d9dfdc;display:grid;place-items:center;font-size:60px;color:#9aa6a0;overflow:hidden;border:4px solid var(--gold);box-shadow:0 6px 16px #0006}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.who{text-align:center;margin-bottom:12px}
+.who b{display:block;font-size:14px}
+.who span{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:20px;background:#ffffff22;font-size:10px;font-weight:700}
+.side dl{margin:0;display:grid;gap:0}
+.side dl div{padding:7px 0;border-top:1px solid #ffffff22}
+.side dt{font-weight:800;color:var(--gold);font-size:10px}
+.side dd{margin:2px 0 0;word-break:break-word}
+.sections{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;overflow-x:auto;box-shadow:0 8px 22px #0a7a4f14}
+.sec{margin:6px 0 16px}
+.sec h4{margin:0 0 6px;font-size:11px;color:var(--gd);letter-spacing:.06em;padding:5px 10px;border-left:5px solid var(--gold);background:linear-gradient(90deg,#e3f4ec,transparent);display:flex;justify-content:space-between;align-items:center}
+.badge{font-size:10px;padding:2px 10px;border-radius:20px;font-weight:800;color:#fff;background:var(--g2)}
+.badge.bad{background:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:11px;border-radius:8px;overflow:hidden}
+th{background:linear-gradient(var(--g2),var(--gd));color:#fff;padding:7px 8px;text-align:center;font-weight:800;border:1px solid #fff}
+td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);background:#fff}
+tbody tr:nth-child(even) td{background:#f4f8f6}
 td.empty{color:#7a8a82}
-.obs{background:#fff;border:1px solid var(--line);padding:8px;min-height:44px;font-size:12px}
-.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0}
-.b{border:0;border-radius:4px;padding:8px 20px;color:#fff;background:var(--g2);font:inherit;font-size:11px;font-weight:800;cursor:pointer}
-.b:hover{filter:brightness(1.1)}
-.b.red{background:var(--red)}.b.grey{background:#5d6b64}
+.obs{background:#f7faf8;border:1px dashed #9db8aa;border-radius:6px;padding:10px;min-height:46px;font-size:12px}
+.actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:22px 0 6px}
+.b{border:0;border-radius:24px;padding:11px 30px;color:#fff;background:linear-gradient(var(--g2),var(--gd));font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 5px 12px #0a7a4f55;transition:transform .15s,filter .15s}
+.b:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.b.red{background:linear-gradient(#e63946,#a8101d);box-shadow:0 5px 12px #d3202f55}
+.b.grey{background:linear-gradient(#6d7b74,#4b5852);box-shadow:none}
 .msg{text-align:center;color:#52625a;margin-top:8px;min-height:18px}
 
 /* Radio */
-.radio{display:grid;grid-template-columns:240px 1fr;gap:12px;margin-top:10px}
-.chan{background:var(--g);border-radius:8px;padding:10px;display:grid;gap:6px;align-content:start}
-.chan button{border:0;border-radius:5px;padding:9px;text-align:left;background:#fff;color:var(--gd);font:inherit;font-weight:700;cursor:pointer}
-.chan button.on{background:#0b3d2a;color:#fff}
-.chat{background:var(--bg);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;min-height:380px}
-.chat .head{padding:8px 12px;border-bottom:1px solid var(--line);font-weight:800;color:var(--gd)}
-.log{flex:1;padding:10px 12px;overflow-y:auto;display:grid;gap:6px;align-content:start}
-.log div{background:#fff;border-left:3px solid var(--g);padding:6px 9px;font-size:12px}
-.log small{color:#6b7b73;display:block}
-.send{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
-.send input{flex:1;padding:8px;border:1px solid var(--line);border-radius:5px;font:inherit}
+.soon{margin-top:14px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:70px 20px;box-shadow:0 8px 22px #0a7a4f14;position:relative;overflow:hidden}
+.soon .ico{font-size:64px}
+.soon h3{margin:10px 0 6px;font-size:26px;color:var(--gd)}
+.soon p{margin:0;color:#52625a}
+.soon::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold) 0 50%,var(--blue) 50% 75%,var(--red) 75%)}
 
-footer{padding:14px 20px 22px;text-align:center;font-size:10px;line-height:1.6;color:#33413a}
+footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;color:#33413a;border-top:1px solid var(--line);background:#ffffffaa}
 
 /* Modales */
-.modal{display:none;position:fixed;inset:0;z-index:30;place-items:center;padding:16px;background:#0009}
+.modal{display:none;position:fixed;inset:0;z-index:30;place-items:center;padding:16px;background:#021a10bb;backdrop-filter:blur(2px)}
 .modal.open{display:grid}
-.card{position:relative;width:min(520px,100%);max-height:92vh;overflow:auto;background:#fff;border-top:6px solid var(--g);border-radius:8px;padding:22px}
+.card{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;background:#fff;border-top:7px solid var(--g);border-radius:12px;padding:24px;box-shadow:0 20px 60px #000a}
 .card.wide{width:min(900px,100%)}
-.card h2{margin:0 0 6px;color:var(--gd);font-size:17px}
+.card h2{margin:0 0 6px;color:var(--gd);font-size:18px}
 .card p{margin:0 0 12px;color:#52625a}
-.card form{display:grid;gap:10px}
-.card input[type=text],.card input:not([type]){padding:9px;border:1px solid var(--line);border-radius:5px;font:inherit}
-.x{position:absolute;right:12px;top:8px;border:0;background:none;font-size:24px;cursor:pointer;color:#444}
-.card img{display:block;width:100%;border:1px solid var(--line);border-radius:6px}
-.delitos{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:4px}
-.delitos label{display:flex;gap:8px;padding:5px 6px;cursor:pointer;border-radius:4px}
+.card input:not([type=checkbox]):not([type=file]){padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.x{position:absolute;right:12px;top:8px;border:0;background:none;font-size:26px;cursor:pointer;color:#444}
+.card img{display:block;width:100%;border:1px solid var(--line);border-radius:8px}
+.delitos{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px}
+.delitos label{display:flex;gap:8px;padding:6px;cursor:pointer;border-radius:6px}
 .delitos label:hover{background:#e9f5ef}
-.item{border-left:3px solid var(--g);background:var(--bg);padding:8px 10px;margin-top:8px}
-@media(max-width:760px){.welcome,.db,.radio{grid-template-columns:1fr}.topbar nav{gap:12px}.search input{width:100%}.search{width:100%}}
+.item{border-left:4px solid var(--g);background:var(--bg);border-radius:6px;padding:9px 11px;margin-top:8px}
+@media(max-width:760px){.welcome,.db{grid-template-columns:1fr}.topbar{flex-direction:column;gap:8px}.search input{width:100%}.search{width:100%}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-
+<div class="flag"></div>
 <header class="topbar">
-  <div class="logo"><i>★</i><span>POLICÍA NACIONAL<br>DE COLOMBIA</span></div>
+  <div class="logo"><i>★</i><span>POLICÍA NACIONAL DE COLOMBIA<small>Medellín RP · ER:LC</small></span></div>
   <nav>
     <a data-go="inicio">INICIO</a>
     <a href="/dashboard-user.html">DASHBOARD</a>
@@ -99,88 +111,71 @@ footer{padding:14px 20px 22px;text-align:center;font-size:10px;line-height:1.6;c
 </header>
 
 <main>
-  <!-- 1. BIENVENIDA -->
+  <!-- BIENVENIDA -->
   <section id="v-inicio" class="view on">
     <div class="welcome">
       <aside class="menu">
-        <h3>Menú del oficial</h3>
+        <h3>MENÚ DEL OFICIAL</h3>
         <button id="go-radio" type="button">📻 Ir a la radio</button>
+        <button id="go-alertas" class="alert" type="button">🚨 Alertas</button>
         <button id="go-db" type="button">🗂 Buscar en la base de datos</button>
       </aside>
       <div class="hello">
+        <span class="chip">✓ OFICIAL AUTORIZADO</span>
         <h1 id="saludo">Bienvenido oficial</h1>
-        <p>Policía Metropolitana del Valle de Aburrá. Elige una opción del menú para comunicarte por radio o consultar ciudadanos, vehículos y antecedentes.</p>
+        <p>Policía Metropolitana del Valle de Aburrá. Elige una opción del menú para revisar las alertas, comunicarte por radio o consultar ciudadanos y antecedentes.</p>
       </div>
     </div>
   </section>
 
-  <!-- 2. BASE DE DATOS -->
+  <!-- BASE DE DATOS -->
   <section id="v-db" class="view">
     <div class="panel">
-      <h2>BASE DE DATOS PONAL</h2>
+      <h2>🛡 BASE DE DATOS PONAL</h2>
       <form class="search" id="form-busqueda">
         <input id="nuip" inputmode="numeric" autocomplete="off" placeholder="Entre el número de documento" required />
-        <button type="submit">🔍</button>
+        <button type="submit">🔍 Buscar</button>
       </form>
     </div>
 
     <div class="db">
       <aside class="side">
         <div class="avatar" id="foto">👤</div>
-        <dl>
-          <div><dt>Nombre:</dt><dd id="d-nombre">—</dd></div>
-          <div><dt>Apellido:</dt><dd id="d-apellido">—</dd></div>
-          <div><dt>Nacionalidad:</dt><dd id="d-nac">—</dd></div>
-          <div><dt>Estatura:</dt><dd id="d-est">—</dd></div>
-          <div><dt>Sexo:</dt><dd id="d-sexo">—</dd></div>
-          <div><dt>Fecha de nacimiento:</dt><dd id="d-nac-f">—</dd></div>
-          <div><dt>Edad:</dt><dd id="d-edad">—</dd></div>
-          <div><dt>CUI:</dt><dd id="d-cui">—</dd></div>
-          <div><dt>Username:</dt><dd id="d-user">—</dd></div>
-          <div><dt>Número de documento:</dt><dd id="d-doc">—</dd></div>
-        </dl>
+        <div class="who"><b id="w-nombre">Sin consultar</b><span id="w-doc">Número de documento</span></div>
+        <dl id="datos"></dl>
       </aside>
 
       <div class="sections">
-        <div class="sec"><h4>LICENCIA</h4>
+        <div class="sec"><h4>🪪 LICENCIA</h4>
           <table><thead><tr><th>LICENCIA DE CONDUCIR</th><th>CATEGORIA</th><th>FECHA DE EXPEDICION</th><th>RESTRICCIONES</th></tr></thead>
           <tbody id="t-licencia"></tbody></table></div>
-        <div class="sec"><h4>VEHICULOS</h4>
+        <div class="sec"><h4>🚘 VEHICULOS</h4>
           <table><thead><tr><th>NOMBRE</th><th>PLACA</th><th>COLOR</th></tr></thead>
           <tbody id="t-vehiculos"></tbody></table></div>
-        <div class="sec"><h4>ANTECEDENTES</h4>
+        <div class="sec"><h4>⚖ ANTECEDENTES <span class="badge" id="b-ant">—</span></h4>
           <table><thead><tr><th>ANTECEDENTES</th><th>TIEMPO</th><th>AGENTE</th><th>FECHA DE REGISTRO</th></tr></thead>
           <tbody id="t-antecedentes"></tbody></table></div>
-        <div class="sec"><h4>MULTAS</h4>
+        <div class="sec"><h4>💵 MULTAS</h4>
           <table><thead><tr><th>ARTICULOS</th><th>PLACA</th><th>VALOR</th><th>AGENTE</th><th>FECHA DE REGISTRO</th></tr></thead>
           <tbody id="t-multas"></tbody></table></div>
-        <div class="sec"><h4>OBSERVACIONES</h4><div class="obs" id="d-obs">—</div></div>
+        <div class="sec"><h4>📝 OBSERVACIONES</h4><div class="obs" id="d-obs">—</div></div>
       </div>
     </div>
 
     <div class="actions">
-      <button class="b grey" id="b-volver" type="button">Volver</button>
       <button class="b" id="b-cedula" type="button">Ver cédula</button>
-      <button class="b" id="b-placa" type="button">Buscar placa</button>
-      <button class="b" id="b-alertas" type="button">Alertas</button>
       <button class="b red" id="b-arrestar" type="button">Arrestar</button>
     </div>
     <div class="msg" id="msg-db"></div>
   </section>
 
-  <!-- 3. RADIO -->
+  <!-- RADIO -->
   <section id="v-radio" class="view">
-    <div class="panel"><h2>RADIO POLICIAL</h2><button class="b grey" id="r-volver" type="button">Volver</button></div>
-    <div class="radio">
-      <div class="chan" id="canales"></div>
-      <div class="chat">
-        <div class="head" id="canal-actual">Canal 1 · Central</div>
-        <div class="log" id="log"></div>
-        <form class="send" id="form-radio">
-          <input id="texto-radio" autocomplete="off" placeholder="Transmitir mensaje..." required />
-          <button class="b" type="submit">Transmitir</button>
-        </form>
-      </div>
+    <div class="panel"><h2>📻 RADIO POLICIAL</h2><button class="b grey" id="r-volver" type="button">Volver</button></div>
+    <div class="soon">
+      <div class="ico">📻</div>
+      <h3>Próximamente</h3>
+      <p>La radio policial estará disponible muy pronto.</p>
     </div>
   </section>
 </main>
@@ -198,34 +193,22 @@ footer{padding:14px 20px 22px;text-align:center;font-size:10px;line-height:1.6;c
   <div class="msg" id="cedula-msg"></div>
 </div></div>
 
-<div id="m-placa" class="modal"><div class="card">
-  <button class="x" data-close="m-placa" type="button">×</button>
-  <h2>Buscar vehículo por placa</h2>
-  <p>Consulta el propietario y los datos registrados.</p>
-  <form id="form-placa">
-    <input id="placa" autocomplete="off" placeholder="Ejemplo: ABC-123" maxlength="10" required />
-    <button class="b" type="submit">Consultar placa</button>
-  </form>
-  <div class="msg" id="placa-msg"></div>
-  <div id="placa-res"></div>
-</div></div>
-
 <div id="m-alertas" class="modal"><div class="card">
   <button class="x" data-close="m-alertas" type="button">×</button>
-  <h2>Alertas activas</h2>
+  <h2>🚨 Alertas activas</h2>
   <p>Alertas vigentes del sistema policial.</p>
   <div id="alertas-list"></div>
 </div></div>
 
 <div id="m-arresto" class="modal"><div class="card">
   <button class="x" data-close="m-arresto" type="button">×</button>
-  <h2>Registrar arresto</h2>
+  <h2>⚖ Registrar arresto</h2>
   <p id="arresto-quien"></p>
   <div class="delitos" id="delitos"></div>
   <label style="display:grid;gap:5px;margin-top:10px">📷 Evidencia fotográfica (máx. 8 MB)
     <input id="evidencia" type="file" accept="image/png,image/jpeg,image/webp" />
   </label>
-  <div class="actions" style="margin:12px 0 0">
+  <div class="actions" style="margin:14px 0 0">
     <button class="b grey" data-close="m-arresto" type="button">Cancelar</button>
     <button class="b red" id="confirmar-arresto" type="button">Confirmar arresto</button>
   </div>
@@ -266,7 +249,6 @@ document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); }));
 $("#go-db").onclick = () => ir("db");
 $("#go-radio").onclick = () => ir("radio");
-$("#b-volver").onclick = () => ir("inicio");
 $("#r-volver").onclick = () => ir("inicio");
 
 /* Sesión */
@@ -282,15 +264,57 @@ async function init(){
   $("#saludo").textContent = "Bienvenido oficial " + (u.nombre || u.username || "");
 }
 
-/* Base de datos */
+/* Alertas */
+async function cargarAlertas(){
+  $("#m-alertas").classList.add("open");
+  const l = $("#alertas-list"); l.innerHTML = '<div class="msg">Cargando alertas...</div>';
+  try {
+    const r = await fetch("/api/policial/alertas", { cache: "no-store" });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "No se pudieron cargar las alertas.");
+    l.innerHTML = d.alertas?.length
+      ? d.alertas.map(a => `<div class="item"><b>${esc(a.tipoLabel || a.tipo || "Alerta")}</b><br>📍 Código postal: ${val(a.codigoPostal)}<br>📝 ${esc(a.descripcion || "Sin descripción")}<br><small>⏳ ${esc(a.restanteMinutos ?? "")} minutos restantes</small></div>`).join("")
+      : '<div class="msg">No hay alertas activas.</div>';
+  } catch (err) { l.innerHTML = `<div class="msg">${esc(err.message)}</div>`; }
+}
+$("#go-alertas").onclick = cargarAlertas;
+
+/* Tablas */
 function filas(el, rows, cols){
   el.innerHTML = rows.length
     ? rows.map(r => "<tr>" + cols.map(c => `<td>${val(typeof c === "function" ? c(r) : r[c])}</td>`).join("") + "</tr>").join("")
     : `<tr><td class="empty" colspan="${cols.length}">Sin registros</td></tr>`;
 }
+
+/* Datos de la cédula (campos conocidos + cualquier otro dato que devuelva la API) */
+const CAMPOS = [
+  ["Nombres", c => c.nombres || c.nombre],
+  ["Apellidos", c => c.apellidos],
+  ["Nacionalidad", c => c.nacionalidad],
+  ["Estatura", c => c.estatura],
+  ["Sexo", c => c.sexo || c.genero],
+  ["Fecha de nacimiento", c => c.fechaNacimiento || c.nacimiento],
+  ["Edad", c => c.edad],
+  ["CUI", c => c.cui || c.id],
+  ["Username", c => c.username],
+  ["Número de documento", c => c.nuip]
+];
+const CONOCIDOS = new Set(["nombres","nombre","apellidos","nacionalidad","estatura","sexo","genero","fechaNacimiento","nacimiento","edad","cui","id","username","nuip","foto","avatar","robloxAvatar","robloxId","robloxUserId","licencia","vehiculos","observaciones"]);
+const bonito = k => k.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/^./, s => s.toUpperCase());
+
+function fotoRoblox(c, d){
+  const url = c.foto || c.avatar || c.robloxAvatar || d.foto || d.avatar;
+  const id = c.robloxId || c.robloxUserId || d.robloxId || d.robloxUserId;
+  if (url) return url;
+  if (id) return `https://www.roblox.com/headshot-thumbnail/image?userId=${encodeURIComponent(id)}&width=420&height=420&format=png`;
+  return "";
+}
+
 function limpiar(){
-  ["nombre","apellido","nac","est","sexo","nac-f","edad","cui","user","doc"].forEach(k => $("#d-" + k).textContent = "—");
-  $("#d-obs").textContent = "—";
+  $("#datos").innerHTML = CAMPOS.map(([l]) => `<div><dt>${l}:</dt><dd>—</dd></div>`).join("");
+  $("#w-nombre").textContent = "Sin consultar"; $("#w-doc").textContent = "Número de documento";
+  $("#foto").textContent = "👤"; $("#d-obs").textContent = "—";
+  $("#b-ant").textContent = "—"; $("#b-ant").className = "badge";
   filas($("#t-licencia"), [], [1,2,3,4]); filas($("#t-vehiculos"), [], [1,2,3]);
   filas($("#t-antecedentes"), [], [1,2,3,4]); filas($("#t-multas"), [], [1,2,3,4,5]);
 }
@@ -298,11 +322,14 @@ limpiar();
 
 function pintar(d){
   const c = d.ciudadano || {}, ex = d.expediente || {};
-  const set = (k, v) => $("#d-" + k).textContent = (v === undefined || v === null || v === "") ? "—" : v;
-  set("nombre", c.nombres || c.nombre); set("apellido", c.apellidos);
-  set("nac", c.nacionalidad); set("est", c.estatura); set("sexo", c.sexo || c.genero);
-  set("nac-f", c.fechaNacimiento || c.nacimiento); set("edad", c.edad);
-  set("cui", c.cui || c.id); set("user", c.username || d.username); set("doc", c.nuip);
+  let html = CAMPOS.map(([l, f]) => `<div><dt>${l}:</dt><dd>${val(f(c))}</dd></div>`).join("");
+  html += Object.entries(c)
+    .filter(([k, v]) => !CONOCIDOS.has(k) && v !== null && typeof v !== "object" && v !== "")
+    .map(([k, v]) => `<div><dt>${esc(bonito(k))}:</dt><dd>${esc(v)}</dd></div>`).join("");
+  $("#datos").innerHTML = html;
+
+  $("#w-nombre").textContent = nombreC(d) || "Ciudadano";
+  $("#w-doc").textContent = "NUIP " + (c.nuip || "—");
   $("#d-obs").textContent = ex.observaciones || c.observaciones || "—";
 
   const lic = d.licencia || c.licencia;
@@ -314,12 +341,18 @@ function pintar(d){
     r => (r.delitos || []).map(x => x.delito || x.codigo || x).join(", ") || r.motivo || r.titulo || r.contenido,
     "tiempo", r => r.agente || r.oficial, "fecha"
   ]);
+  const b = $("#b-ant");
+  b.textContent = reg.length ? reg.length + " registro(s)" : "Limpio";
+  b.className = "badge" + (reg.length ? " bad" : "");
   filas($("#t-multas"), ex.multas || d.multas || [], [r => r.articulos || r.articulo, "placa", "valor", r => r.agente || r.oficial, "fecha"]);
 
-  const foto = $("#foto");
-  if (c.foto || c.avatar) foto.innerHTML = `<img src="${esc(c.foto || c.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover">`;
-  else foto.textContent = "👤";
+  const foto = $("#foto"), src = fotoRoblox(c, d);
+  if (src) {
+    foto.innerHTML = `<img alt="Foto de Roblox" src="${esc(src)}">`;
+    foto.querySelector("img").onerror = () => foto.textContent = "👤";
+  } else foto.textContent = "👤";
 }
+const nombreC = (d = ciudadano) => { const c = d.ciudadano || {}; return `${c.nombres || c.nombre || ""} ${c.apellidos || ""}`.trim(); };
 
 $("#form-busqueda").addEventListener("submit", async e => {
   e.preventDefault();
@@ -329,8 +362,7 @@ $("#form-busqueda").addEventListener("submit", async e => {
     const r = await fetch("/api/policial/cedula/" + encodeURIComponent(nuip));
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || "La cédula no está registrada.");
-    ciudadano = d;
-    pintar(d);
+    ciudadano = d; pintar(d);
     $("#msg-db").textContent = "";
   } catch (err) {
     ciudadano = null; limpiar();
@@ -343,7 +375,6 @@ function requiereCiudadano(){
   $("#msg-db").textContent = "Primero busca un ciudadano por número de documento.";
   return false;
 }
-const nombreC = () => { const c = ciudadano.ciudadano || {}; return `${c.nombres || c.nombre || ""} ${c.apellidos || ""}`.trim(); };
 
 /* Cédula */
 $("#b-cedula").onclick = () => {
@@ -355,36 +386,6 @@ $("#b-cedula").onclick = () => {
   img.onerror = () => { img.style.display = "none"; st.textContent = "La cédula no tiene imagen guardada. El ciudadano debe ejecutar /mostrar-cedula en Discord."; };
   img.src = "/api/policial/cedula-imagen/" + ciudadano.discordId + "?t=" + Date.now();
   $("#m-cedula").classList.add("open");
-};
-
-/* Placa */
-$("#b-placa").onclick = () => { $("#m-placa").classList.add("open"); $("#placa").focus(); };
-$("#form-placa").addEventListener("submit", async e => {
-  e.preventDefault();
-  const placa = $("#placa").value.trim().toUpperCase();
-  $("#placa-msg").textContent = "Buscando vehículo..."; $("#placa-res").innerHTML = "";
-  try {
-    const r = await fetch("/api/policial/vehiculo/" + encodeURIComponent(placa), { cache: "no-store" });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "Vehículo no encontrado.");
-    const v = d.vehiculo || {}, p = d.propietario || {};
-    $("#placa-res").innerHTML = `<div class="item"><b>Propietario:</b> ${val(p.nombre)}<br><b>NUIP:</b> ${val(p.nuip)}<br><b>Placa:</b> ${val(v.placa || placa)}<br><b>Modelo:</b> ${val(v.modelo || v.nombre)}<br><b>Detalles:</b> ${Object.keys(v.detalles || {}).length ? esc(JSON.stringify(v.detalles)) : "Sin detalles adicionales"}</div>`;
-    $("#placa-msg").textContent = "Consulta completada.";
-  } catch (err) { $("#placa-msg").textContent = err.message; }
-});
-
-/* Alertas */
-$("#b-alertas").onclick = async () => {
-  $("#m-alertas").classList.add("open");
-  const l = $("#alertas-list"); l.innerHTML = '<div class="msg">Cargando alertas...</div>';
-  try {
-    const r = await fetch("/api/policial/alertas", { cache: "no-store" });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "No se pudieron cargar las alertas.");
-    l.innerHTML = d.alertas?.length
-      ? d.alertas.map(a => `<div class="item"><b>${esc(a.tipoLabel || a.tipo || "Alerta")}</b><br>📍 Código postal: ${val(a.codigoPostal)}<br>📝 ${esc(a.descripcion || "Sin descripción")}<br><small>⏳ ${esc(a.restanteMinutos ?? "")} minutos restantes</small></div>`).join("")
-      : '<div class="msg">No hay alertas activas.</div>';
-  } catch (err) { l.innerHTML = `<div class="msg">${esc(err.message)}</div>`; }
 };
 
 /* Arresto */
@@ -410,29 +411,8 @@ $("#confirmar-arresto").addEventListener("click", async () => {
   });
   const d = await r.json();
   st.textContent = r.ok ? "Arresto registrado correctamente." : (d.error || "No se pudo registrar el arresto.");
-  if (r.ok) { setTimeout(() => { $("#m-arresto").classList.remove("open"); $("#form-busqueda").requestSubmit(); }, 1000); }
+  if (r.ok) setTimeout(() => { $("#m-arresto").classList.remove("open"); $("#form-busqueda").requestSubmit(); }, 1000);
 });
-
-/* Radio (interfaz local; conéctala a tu API/Discord cuando definas el canal) */
-const CANALES = ["Canal 1 · Central", "Canal 2 · Patrullas", "Canal 3 · Tránsito", "Canal 4 · Emergencias"];
-const historial = CANALES.map(() => []);
-let canal = 0;
-function pintarRadio(){
-  $("#canales").innerHTML = CANALES.map((c, i) => `<button type="button" data-i="${i}" class="${i === canal ? "on" : ""}">📻 ${esc(c)}</button>`).join("");
-  $("#canal-actual").textContent = CANALES[canal];
-  $("#log").innerHTML = historial[canal].length
-    ? historial[canal].map(m => `<div><small>${esc(m.quien)} · ${esc(m.hora)}</small>${esc(m.texto)}</div>`).join("")
-    : '<div class="msg">Sin transmisiones en este canal.</div>';
-  $("#log").scrollTop = 1e9;
-}
-$("#canales").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { canal = +b.dataset.i; pintarRadio(); } });
-$("#form-radio").addEventListener("submit", e => {
-  e.preventDefault();
-  const t = $("#texto-radio").value.trim(); if (!t) return;
-  historial[canal].push({ quien: ($("#saludo").textContent.replace("Bienvenido oficial", "").trim() || "Oficial"), hora: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }), texto: t });
-  $("#texto-radio").value = ""; pintarRadio();
-});
-pintarRadio();
 
 init();
 </script>
