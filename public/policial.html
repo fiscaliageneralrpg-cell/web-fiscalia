@@ -5,104 +5,147 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Base de datos PONAL | Medellín RP</title>
 <style>
-:root{--g:#0a7a4f;--g2:#0d8f5c;--gd:#075c3b;--gx:#043a25;--gold:#f2c230;--blue:#1c3f94;--red:#d3202f;--ink:#1d2a24;--line:#cfd8d3;--bg:#f2f5f3}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;color:var(--ink);font-family:Montserrat,"Segoe UI",system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column;
-  background:
-    repeating-linear-gradient(45deg,#0a7a4f08 0 12px,transparent 12px 24px),
-    linear-gradient(#fff,#eef3f0)}
-.flag{height:6px;background:linear-gradient(90deg,var(--gold) 0 50%,var(--blue) 50% 75%,var(--red) 75%)}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 26px;background:linear-gradient(180deg,#fff,#f4f8f6);border-bottom:2px solid var(--g);box-shadow:0 4px 14px #0a7a4f1c}
-.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:12px;line-height:1.25;color:var(--gd);letter-spacing:.02em}
-.logo i{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#19b676,var(--gd));color:var(--gold);font-style:normal;font-size:20px;border:3px solid var(--gold);box-shadow:0 3px 8px #0a7a4f55}
-.logo small{display:block;font-weight:600;color:#5a6b63;font-size:10px}
-.topbar nav{display:flex;gap:6px}
-.topbar nav a{color:var(--gd);font-weight:800;font-size:11px;text-decoration:none;cursor:pointer;padding:8px 14px;border-radius:20px;transition:background .15s,color .15s}
-.topbar nav a:hover{background:var(--g);color:#fff}
-main{flex:1;width:min(1100px,calc(100% - 28px));margin:22px auto}
-.view{display:none}.view.on{display:block}
+:root{--bg:#0a0a0a;--panel:rgba(20,20,20,.72);--line:rgba(255,255,255,.10);--text:#fff;--muted:#a1a1a1;--accent:#d4d4d4;--g:#2fbf86;--gd:#0d8f5c;--red:#e5484d;--shadow:0 30px 100px rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--text);background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.07),transparent 40%),radial-gradient(circle at 80% 80%,rgba(47,191,134,.07),transparent 40%);background-size:200% 200%;animation:fondoMover 20s ease infinite}
+@keyframes fondoMover{0%,100%{background-position:0 0}50%{background-position:100% 100%}}
+@keyframes aparecer{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* Iconos propios (SVG dibujados, heredan el color del texto) */
+.ic{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.25em;flex:none}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;border-bottom:1px solid var(--line);background:rgba(10,10,10,.7);backdrop-filter:blur(20px);position:sticky;top:0;z-index:20}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:12px;line-height:1.25;letter-spacing:.04em}
+.logo small{display:block;font-weight:600;color:var(--muted);font-size:10px;letter-spacing:.02em}
+.logo-img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 4px 10px #000a)}
+.logo-fb{display:none;width:44px;height:44px;place-items:center;border-radius:12px;border:1px solid var(--line);background:#111;color:var(--g)}
+.logo-fb .ic{width:24px;height:24px}
+.topbar nav{display:flex;gap:4px}
+.topbar nav a{color:var(--muted);font-weight:700;font-size:11px;letter-spacing:.06em;text-decoration:none;cursor:pointer;padding:9px 15px;border-radius:999px;transition:all .25s}
+.topbar nav a:hover{color:#fff;background:rgba(255,255,255,.1)}
+main{flex:1;width:min(1100px,calc(100% - 28px));margin:26px auto}
+.view{display:none}.view.on{display:block;animation:aparecer .7s ease both}
+
+.glass{border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:var(--shadow);backdrop-filter:blur(20px)}
 
 /* Bienvenida */
-.welcome{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start}
-.menu{background:linear-gradient(170deg,var(--g2),var(--gx));border-radius:14px;padding:16px;display:grid;gap:10px;box-shadow:0 10px 26px #043a2540;border:1px solid #ffffff22}
-.menu h3{margin:0 0 4px;color:var(--gold);font-size:12px;letter-spacing:.06em}
-.menu button{width:100%;text-align:left;border:0;border-left:5px solid var(--gold);border-radius:8px;padding:13px 12px;background:#fff;color:var(--gd);font:inherit;font-weight:800;cursor:pointer;transition:transform .15s,background .15s;box-shadow:0 3px 8px #0003}
-.menu button:hover{background:#e3f4ec;transform:translateX(4px)}
-.menu button.alert{border-left-color:var(--red)}
-.hello{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:14px;padding:40px 32px;min-height:240px;box-shadow:0 10px 26px #0a7a4f18}
-.hello::after{content:"★";position:absolute;right:-20px;bottom:-70px;font-size:240px;color:#0a7a4f0d;line-height:1}
-.hello::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(var(--gold),var(--blue),var(--red))}
-.hello h1{margin:0 0 10px;font-size:28px;color:var(--gd)}
-.hello p{margin:0;color:#52625a;max-width:54ch;line-height:1.6;position:relative;z-index:1}
-.hello .chip{display:inline-block;margin-bottom:14px;padding:4px 12px;border-radius:20px;background:#e3f4ec;color:var(--gd);font-weight:800;font-size:10px}
+.welcome{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:start}
+.menu{padding:18px;display:grid;gap:10px}
+.menu h3{color:var(--muted);font-size:11px;letter-spacing:.2em;margin-bottom:4px}
+.menu button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:15px 14px;background:rgba(255,255,255,.05);color:#fff;font:inherit;font-weight:700;cursor:pointer;transition:all .3s}
+.menu button:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,255,255,.08)}
+.menu button.alert .ic{color:var(--red)}
+.menu button .ic{width:20px;height:20px}
+.hello{position:relative;overflow:hidden;padding:46px 36px;min-height:280px;display:grid;align-content:center;gap:12px}
+.hello .big{position:absolute;right:-30px;top:50%;width:280px;height:280px;transform:translateY(-50%);opacity:.12;object-fit:contain;pointer-events:none}
+.hello .chip{justify-self:start;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid rgba(47,191,134,.4);border-radius:999px;background:rgba(47,191,134,.1);color:var(--g);font-size:12px;font-weight:800;letter-spacing:.04em;animation:flotar 4.5s ease-in-out infinite}
+.hello h1{font-size:clamp(28px,4.5vw,44px);line-height:1.05;letter-spacing:-.04em;font-weight:900;position:relative}
+.hello p{color:var(--muted);font-size:15px;line-height:1.6;max-width:52ch;position:relative}
 
 /* Base de datos */
-.panel{background:linear-gradient(100deg,var(--gx),var(--g) 60%,var(--g2));border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 8px 22px #043a2540;border-bottom:4px solid var(--gold)}
-.panel h2{margin:0;color:#fff;font-size:17px;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
-.search{display:flex;gap:6px}
-.search input{width:260px;padding:9px 12px;border:2px solid #fff;border-radius:22px;font:inherit;font-size:12px;outline:none}
-.search input:focus{border-color:var(--gold)}
-.search button{border:0;border-radius:22px;padding:9px 16px;background:var(--gold);color:var(--gx);font-weight:900;cursor:pointer}
-.db{display:grid;grid-template-columns:230px 1fr;gap:14px;margin-top:14px}
-.side{background:linear-gradient(175deg,var(--g2),var(--gx));border-radius:14px;padding:18px 14px;color:#fff;font-size:11px;box-shadow:0 8px 22px #043a2540;align-self:start}
-.avatar{width:128px;height:128px;margin:0 auto 10px;border-radius:50%;background:#d9dfdc;display:grid;place-items:center;font-size:60px;color:#9aa6a0;overflow:hidden;border:4px solid var(--gold);box-shadow:0 6px 16px #0006}
+.panel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 22px}
+.panel h2{font-size:18px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.search{display:flex;gap:8px}
+.search input{width:270px;padding:11px 16px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font:inherit;outline:none;transition:border-color .2s}
+.search input::placeholder{color:#7d7d7d}
+.search input:focus{border-color:rgba(255,255,255,.5)}
+.btn,.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:11px 22px;color:#fff;background:rgba(255,255,255,.07);font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .3s}
+.btn:hover,.b:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14);transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,255,255,.08)}
+.b.red{border-color:rgba(229,72,77,.5);background:rgba(229,72,77,.18);color:#ff9a9d}
+.b.red:hover{background:rgba(229,72,77,.32);box-shadow:0 12px 30px rgba(229,72,77,.2)}
+.b.green{border-color:rgba(47,191,134,.5);background:rgba(47,191,134,.15);color:var(--g)}
+
+.db{display:grid;grid-template-columns:250px 1fr;gap:16px;margin-top:16px}
+.side{padding:22px 16px;align-self:start}
+.avatar{width:132px;height:132px;margin:0 auto 12px;border-radius:50%;background:#161616;display:grid;place-items:center;color:#555;overflow:hidden;border:2px solid rgba(255,255,255,.25);box-shadow:0 10px 30px #000a}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.who{text-align:center;margin-bottom:12px}
-.who b{display:block;font-size:14px}
-.who span{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:20px;background:#ffffff22;font-size:10px;font-weight:700}
-.side dl{margin:0;display:grid;gap:0}
-.side dl div{padding:7px 0;border-top:1px solid #ffffff22}
-.side dt{font-weight:800;color:var(--gold);font-size:10px}
-.side dd{margin:2px 0 0;word-break:break-word}
-.sections{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;overflow-x:auto;box-shadow:0 8px 22px #0a7a4f14}
-.sec{margin:6px 0 16px}
-.sec h4{margin:0 0 6px;font-size:11px;color:var(--gd);letter-spacing:.06em;padding:5px 10px;border-left:5px solid var(--gold);background:linear-gradient(90deg,#e3f4ec,transparent);display:flex;justify-content:space-between;align-items:center}
-.badge{font-size:10px;padding:2px 10px;border-radius:20px;font-weight:800;color:#fff;background:var(--g2)}
-.badge.bad{background:var(--red)}
-table{width:100%;border-collapse:collapse;font-size:11px;border-radius:8px;overflow:hidden}
-th{background:linear-gradient(var(--g2),var(--gd));color:#fff;padding:7px 8px;text-align:center;font-weight:800;border:1px solid #fff}
-td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);background:#fff}
-tbody tr:nth-child(even) td{background:#f4f8f6}
-td.empty{color:#7a8a82}
-.obs{background:#f7faf8;border:1px dashed #9db8aa;border-radius:6px;padding:10px;min-height:46px;font-size:12px}
-.actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:22px 0 6px}
-.b{border:0;border-radius:24px;padding:11px 30px;color:#fff;background:linear-gradient(var(--g2),var(--gd));font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 5px 12px #0a7a4f55;transition:transform .15s,filter .15s}
-.b:hover{transform:translateY(-2px);filter:brightness(1.1)}
-.b.red{background:linear-gradient(#e63946,#a8101d);box-shadow:0 5px 12px #d3202f55}
-.b.grey{background:linear-gradient(#6d7b74,#4b5852);box-shadow:none}
-.msg{text-align:center;color:#52625a;margin-top:8px;min-height:18px}
+.avatar .ic{width:56px;height:56px}
+.who{text-align:center;margin-bottom:14px}
+.who b{display:block;font-size:15px;letter-spacing:-.01em}
+.who span{display:inline-block;margin-top:7px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--accent);font-size:10px;font-weight:700}
+.side dl div{padding:9px 0;border-top:1px solid var(--line)}
+.side dt{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.side dd{margin-top:3px;font-weight:600;word-break:break-word}
+.sections{padding:18px 20px;overflow-x:auto}
+.sec{margin-bottom:20px}
+.sec h4{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--accent)}
+.sec h4 .ic{color:var(--g)}
+.badge{margin-left:auto;font-size:10px;padding:3px 12px;border-radius:999px;font-weight:800;color:var(--g);border:1px solid rgba(47,191,134,.4);background:rgba(47,191,134,.1)}
+.badge.bad{color:#ff9a9d;border-color:rgba(229,72,77,.5);background:rgba(229,72,77,.15)}
+.badge:empty{display:none}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th{background:rgba(255,255,255,.08);color:var(--accent);padding:9px 10px;text-align:center;font-weight:700;font-size:10px;letter-spacing:.08em}
+td{padding:9px 10px;text-align:center;border-top:1px solid var(--line);color:#e8e8e8}
+tbody tr:hover td{background:rgba(255,255,255,.04)}
+td.empty{color:#707070}
+.obs{border:1px dashed rgba(255,255,255,.2);border-radius:12px;padding:12px;min-height:50px;color:#d8d8d8;background:rgba(0,0,0,.2)}
+.actions{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:24px 0 6px}
+.msg{text-align:center;color:var(--muted);margin-top:8px;min-height:18px}
 
 /* Radio */
-.soon{margin-top:14px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:70px 20px;box-shadow:0 8px 22px #0a7a4f14;position:relative;overflow:hidden}
-.soon .ico{font-size:64px}
-.soon h3{margin:10px 0 6px;font-size:26px;color:var(--gd)}
-.soon p{margin:0;color:#52625a}
-.soon::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold) 0 50%,var(--blue) 50% 75%,var(--red) 75%)}
+.soon{margin-top:16px;text-align:center;padding:80px 20px}
+.soon .ic{width:64px;height:64px;color:var(--accent);animation:flotar 4.5s ease-in-out infinite}
+.soon h3{margin:16px 0 8px;font-size:32px;font-weight:900;letter-spacing:-.04em}
+.soon p{color:var(--muted);font-size:15px}
 
-footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;color:#33413a;border-top:1px solid var(--line);background:#ffffffaa}
+footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;color:#7d7d7d;border-top:1px solid var(--line)}
 
 /* Modales */
-.modal{display:none;position:fixed;inset:0;z-index:30;place-items:center;padding:16px;background:#021a10bb;backdrop-filter:blur(2px)}
+.modal{display:none;position:fixed;inset:0;z-index:50;place-items:center;padding:16px;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}
 .modal.open{display:grid}
-.card{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;background:#fff;border-top:7px solid var(--g);border-radius:12px;padding:24px;box-shadow:0 20px 60px #000a}
+.card{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;padding:26px;border:1px solid var(--line);border-radius:22px;background:#121212;box-shadow:var(--shadow);animation:aparecer .35s ease both}
 .card.wide{width:min(900px,100%)}
-.card h2{margin:0 0 6px;color:var(--gd);font-size:18px}
-.card p{margin:0 0 12px;color:#52625a}
-.card input:not([type=checkbox]):not([type=file]){padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}
-.x{position:absolute;right:12px;top:8px;border:0;background:none;font-size:26px;cursor:pointer;color:#444}
-.card img{display:block;width:100%;border:1px solid var(--line);border-radius:8px}
-.delitos{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:4px}
-.delitos label{display:flex;gap:8px;padding:6px;cursor:pointer;border-radius:6px}
-.delitos label:hover{background:#e9f5ef}
-.item{border-left:4px solid var(--g);background:var(--bg);border-radius:6px;padding:9px 11px;margin-top:8px}
-@media(max-width:760px){.welcome,.db{grid-template-columns:1fr}.topbar{flex-direction:column;gap:8px}.search input{width:100%}.search{width:100%}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.card h2{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.card p{margin-bottom:14px;color:var(--muted)}
+.card input:not([type=checkbox]):not([type=file]){padding:11px 14px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font:inherit}
+.card img{display:block;width:100%;border:1px solid var(--line);border-radius:12px}
+/* Cerrar: X dibujada con CSS */
+.x{position:absolute;right:14px;top:14px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,.08);cursor:pointer}
+.x::before,.x::after{content:"";position:absolute;left:9px;top:15px;width:14px;height:2px;border-radius:2px;background:#fff}
+.x::before{transform:rotate(45deg)}.x::after{transform:rotate(-45deg)}
+.x:hover{background:rgba(255,255,255,.18)}
+.delitos{max-height:250px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px;background:rgba(0,0,0,.25)}
+.delitos label{display:flex;gap:10px;align-items:center;padding:7px 8px;cursor:pointer;border-radius:8px;color:#ddd}
+.delitos label:hover{background:rgba(255,255,255,.07)}
+.delitos input{accent-color:#e5484d}
+.evid{display:grid;gap:6px;margin-top:12px;color:var(--accent);font-weight:600}
+.evid span{display:flex;align-items:center;gap:8px}
+.evid input{color:var(--muted)}
+.item{border-left:3px solid var(--g);background:rgba(255,255,255,.05);border-radius:10px;padding:11px 13px;margin-top:9px;line-height:1.7}
+.item .ic{width:15px;height:15px;color:var(--muted)}
+@media(max-width:760px){.welcome,.db{grid-template-columns:1fr}.topbar{flex-direction:column;gap:8px;padding:12px}.search,.search input{width:100%}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<div class="flag"></div>
+
+<!-- Biblioteca de iconos propios -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-radio" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8l10-5"/><circle cx="9" cy="14" r="2.5"/><path d="M15 12h3M15 16h3"/></symbol>
+  <symbol id="i-siren" viewBox="0 0 24 24"><path d="M6 17v-4a6 6 0 0 1 12 0v4"/><path d="M4 17h16v4H4z"/><path d="M12 2v2M4.5 5.5L6 7M19.5 5.5L18 7"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8.5l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.8 5.4-1.8 6 0M14 10h4M14 14h4"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 15v-4l2-5h10l2 5v4"/><path d="M3 15h18v4H3z"/><path d="M5 11h14M7 19v2M17 19v2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M6 21h12M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+  <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v4M18 10v4"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 15-5 16 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
 <header class="topbar">
-  <div class="logo"><i>★</i><span>POLICÍA NACIONAL DE COLOMBIA<small>Medellín RP · ER:LC</small></span></div>
+  <div class="logo">
+    <img class="logo-img" src="https://cdn.discordapp.com/attachments/1537889409494556763/1570216558054346863/image-removebg-preview_4.png?ex=6af649a0&is=6af4f820&hm=52bd5bd52a292c2ddf9c4068596c2f9ff254236cef779b6edf60efef417c719c&" alt="Logo Policía" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'" />
+    <span class="logo-fb"><svg class="ic"><use href="#i-shield"/></svg></span>
+    <span>POLICÍA NACIONAL DE COLOMBIA<small>Medellín RP · ER:LC</small></span>
+  </div>
   <nav>
     <a data-go="inicio">INICIO</a>
     <a href="/dashboard-user.html">DASHBOARD</a>
@@ -114,14 +157,15 @@ footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;c
   <!-- BIENVENIDA -->
   <section id="v-inicio" class="view on">
     <div class="welcome">
-      <aside class="menu">
+      <aside class="glass menu">
         <h3>MENÚ DEL OFICIAL</h3>
-        <button id="go-radio" type="button">📻 Ir a la radio</button>
-        <button id="go-alertas" class="alert" type="button">🚨 Alertas</button>
-        <button id="go-db" type="button">🗂 Buscar en la base de datos</button>
+        <button id="go-radio" type="button"><svg class="ic"><use href="#i-radio"/></svg>Ir a la radio</button>
+        <button id="go-alertas" class="alert" type="button"><svg class="ic"><use href="#i-siren"/></svg>Alertas</button>
+        <button id="go-db" type="button"><svg class="ic"><use href="#i-db"/></svg>Buscar en la base de datos</button>
       </aside>
-      <div class="hello">
-        <span class="chip">✓ OFICIAL AUTORIZADO</span>
+      <div class="glass hello">
+        <img class="big" alt="" src="https://cdn.discordapp.com/attachments/1537889409494556763/1570216558054346863/image-removebg-preview_4.png?ex=6af649a0&is=6af4f820&hm=52bd5bd52a292c2ddf9c4068596c2f9ff254236cef779b6edf60efef417c719c&" onerror="this.remove()" />
+        <span class="chip"><svg class="ic"><use href="#i-check"/></svg>Oficial autorizado</span>
         <h1 id="saludo">Bienvenido oficial</h1>
         <p>Policía Metropolitana del Valle de Aburrá. Elige una opción del menú para revisar las alertas, comunicarte por radio o consultar ciudadanos y antecedentes.</p>
       </div>
@@ -130,50 +174,50 @@ footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;c
 
   <!-- BASE DE DATOS -->
   <section id="v-db" class="view">
-    <div class="panel">
-      <h2>🛡 BASE DE DATOS PONAL</h2>
+    <div class="glass panel">
+      <h2><svg class="ic"><use href="#i-shield"/></svg>Base de datos PONAL</h2>
       <form class="search" id="form-busqueda">
         <input id="nuip" inputmode="numeric" autocomplete="off" placeholder="Entre el número de documento" required />
-        <button type="submit">🔍 Buscar</button>
+        <button class="btn" type="submit"><svg class="ic"><use href="#i-search"/></svg>Buscar</button>
       </form>
     </div>
 
     <div class="db">
-      <aside class="side">
-        <div class="avatar" id="foto">👤</div>
+      <aside class="glass side">
+        <div class="avatar" id="foto"><svg class="ic"><use href="#i-user"/></svg></div>
         <div class="who"><b id="w-nombre">Sin consultar</b><span id="w-doc">Número de documento</span></div>
         <dl id="datos"></dl>
       </aside>
 
-      <div class="sections">
-        <div class="sec"><h4>🪪 LICENCIA</h4>
+      <div class="glass sections">
+        <div class="sec"><h4><svg class="ic"><use href="#i-id"/></svg>LICENCIA</h4>
           <table><thead><tr><th>LICENCIA DE CONDUCIR</th><th>CATEGORIA</th><th>FECHA DE EXPEDICION</th><th>RESTRICCIONES</th></tr></thead>
           <tbody id="t-licencia"></tbody></table></div>
-        <div class="sec"><h4>🚘 VEHICULOS</h4>
+        <div class="sec"><h4><svg class="ic"><use href="#i-car"/></svg>VEHICULOS</h4>
           <table><thead><tr><th>NOMBRE</th><th>PLACA</th><th>COLOR</th></tr></thead>
           <tbody id="t-vehiculos"></tbody></table></div>
-        <div class="sec"><h4>⚖ ANTECEDENTES <span class="badge" id="b-ant">—</span></h4>
+        <div class="sec"><h4><svg class="ic"><use href="#i-scale"/></svg>ANTECEDENTES <span class="badge" id="b-ant"></span></h4>
           <table><thead><tr><th>ANTECEDENTES</th><th>TIEMPO</th><th>AGENTE</th><th>FECHA DE REGISTRO</th></tr></thead>
           <tbody id="t-antecedentes"></tbody></table></div>
-        <div class="sec"><h4>💵 MULTAS</h4>
+        <div class="sec"><h4><svg class="ic"><use href="#i-money"/></svg>MULTAS</h4>
           <table><thead><tr><th>ARTICULOS</th><th>PLACA</th><th>VALOR</th><th>AGENTE</th><th>FECHA DE REGISTRO</th></tr></thead>
           <tbody id="t-multas"></tbody></table></div>
-        <div class="sec"><h4>📝 OBSERVACIONES</h4><div class="obs" id="d-obs">—</div></div>
+        <div class="sec"><h4><svg class="ic"><use href="#i-note"/></svg>OBSERVACIONES</h4><div class="obs" id="d-obs">—</div></div>
       </div>
     </div>
 
     <div class="actions">
-      <button class="b" id="b-cedula" type="button">Ver cédula</button>
-      <button class="b red" id="b-arrestar" type="button">Arrestar</button>
+      <button class="b green" id="b-cedula" type="button"><svg class="ic"><use href="#i-id"/></svg>Ver cédula</button>
+      <button class="b red" id="b-arrestar" type="button"><svg class="ic"><use href="#i-scale"/></svg>Arrestar</button>
     </div>
     <div class="msg" id="msg-db"></div>
   </section>
 
   <!-- RADIO -->
   <section id="v-radio" class="view">
-    <div class="panel"><h2>📻 RADIO POLICIAL</h2><button class="b grey" id="r-volver" type="button">Volver</button></div>
-    <div class="soon">
-      <div class="ico">📻</div>
+    <div class="glass panel"><h2><svg class="ic"><use href="#i-radio"/></svg>Radio policial</h2><button class="b" id="r-volver" type="button">Volver</button></div>
+    <div class="glass soon">
+      <svg class="ic"><use href="#i-radio"/></svg>
       <h3>Próximamente</h3>
       <p>La radio policial estará disponible muy pronto.</p>
     </div>
@@ -187,29 +231,29 @@ footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;c
 
 <!-- Modales -->
 <div id="m-cedula" class="modal"><div class="card wide">
-  <button class="x" data-close="m-cedula" type="button">×</button>
-  <h2 id="cedula-titulo">Cédula ciudadana</h2>
+  <button class="x" data-close="m-cedula" type="button" aria-label="Cerrar"></button>
+  <h2 id="cedula-titulo"><svg class="ic"><use href="#i-id"/></svg>Cédula ciudadana</h2>
   <img id="cedula-img" alt="Cédula ciudadana" />
   <div class="msg" id="cedula-msg"></div>
 </div></div>
 
 <div id="m-alertas" class="modal"><div class="card">
-  <button class="x" data-close="m-alertas" type="button">×</button>
-  <h2>🚨 Alertas activas</h2>
+  <button class="x" data-close="m-alertas" type="button" aria-label="Cerrar"></button>
+  <h2><svg class="ic" style="color:var(--red)"><use href="#i-siren"/></svg>Alertas activas</h2>
   <p>Alertas vigentes del sistema policial.</p>
   <div id="alertas-list"></div>
 </div></div>
 
 <div id="m-arresto" class="modal"><div class="card">
-  <button class="x" data-close="m-arresto" type="button">×</button>
-  <h2>⚖ Registrar arresto</h2>
+  <button class="x" data-close="m-arresto" type="button" aria-label="Cerrar"></button>
+  <h2><svg class="ic"><use href="#i-scale"/></svg>Registrar arresto</h2>
   <p id="arresto-quien"></p>
   <div class="delitos" id="delitos"></div>
-  <label style="display:grid;gap:5px;margin-top:10px">📷 Evidencia fotográfica (máx. 8 MB)
+  <label class="evid"><span><svg class="ic"><use href="#i-camera"/></svg>Evidencia fotográfica (máx. 8 MB)</span>
     <input id="evidencia" type="file" accept="image/png,image/jpeg,image/webp" />
   </label>
-  <div class="actions" style="margin:14px 0 0">
-    <button class="b grey" data-close="m-arresto" type="button">Cancelar</button>
+  <div class="actions" style="margin:16px 0 0">
+    <button class="b" data-close="m-arresto" type="button">Cancelar</button>
     <button class="b red" id="confirmar-arresto" type="button">Confirmar arresto</button>
   </div>
   <div class="msg" id="arresto-msg"></div>
@@ -219,6 +263,7 @@ footer{padding:16px 20px 24px;text-align:center;font-size:10px;line-height:1.6;c
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val = v => (v === undefined || v === null || v === "" ? "—" : esc(v));
+const ic = n => `<svg class="ic"><use href="#i-${n}"/></svg>`;
 let ciudadano = null;
 
 const DELITOS = [
@@ -257,7 +302,7 @@ async function init(){
   if (!a.ok) { location.href = "/iniciar-seccion.html"; return; }
   const ad = await a.json();
   if (!ad.policialAutorizado) {
-    document.body.innerHTML = '<main><h1>Acceso denegado</h1><p>No tienes uno de los roles policiales autorizados.</p><a href="/dashboard-user.html">Volver</a></main>';
+    document.body.innerHTML = '<main><h1>Acceso denegado</h1><p>No tienes uno de los roles policiales autorizados.</p><a href="/dashboard-user.html" style="color:#fff">Volver</a></main>';
     return;
   }
   const u = ad.usuario || {};
@@ -273,7 +318,7 @@ async function cargarAlertas(){
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || "No se pudieron cargar las alertas.");
     l.innerHTML = d.alertas?.length
-      ? d.alertas.map(a => `<div class="item"><b>${esc(a.tipoLabel || a.tipo || "Alerta")}</b><br>📍 Código postal: ${val(a.codigoPostal)}<br>📝 ${esc(a.descripcion || "Sin descripción")}<br><small>⏳ ${esc(a.restanteMinutos ?? "")} minutos restantes</small></div>`).join("")
+      ? d.alertas.map(a => `<div class="item"><b>${esc(a.tipoLabel || a.tipo || "Alerta")}</b><br>${ic("pin")} Código postal: ${val(a.codigoPostal)}<br>${ic("note")} ${esc(a.descripcion || "Sin descripción")}<br><small>${ic("clock")} ${esc(a.restanteMinutos ?? "")} minutos restantes</small></div>`).join("")
       : '<div class="msg">No hay alertas activas.</div>';
   } catch (err) { l.innerHTML = `<div class="msg">${esc(err.message)}</div>`; }
 }
@@ -286,21 +331,36 @@ function filas(el, rows, cols){
     : `<tr><td class="empty" colspan="${cols.length}">Sin registros</td></tr>`;
 }
 
-/* Datos de la cédula (campos conocidos + cualquier otro dato que devuelva la API) */
+/* Datos de la cédula: cada dato aparece UNA sola vez (se buscan alias y se omiten los vacíos) */
+const norm = k => k.toLowerCase().replace(/[^a-z0-9]/g, "");
 const CAMPOS = [
-  ["Nombres", c => c.nombres || c.nombre],
-  ["Apellidos", c => c.apellidos],
-  ["Nacionalidad", c => c.nacionalidad],
-  ["Estatura", c => c.estatura],
-  ["Sexo", c => c.sexo || c.genero],
-  ["Fecha de nacimiento", c => c.fechaNacimiento || c.nacimiento],
-  ["Edad", c => c.edad],
-  ["CUI", c => c.cui || c.id],
-  ["Username", c => c.username],
-  ["Número de documento", c => c.nuip]
+  ["Nombres", /^(nombres?|primernombre)$/],
+  ["Apellidos", /^apellidos?$/],
+  ["Nacionalidad", /^nacionalidad$/],
+  ["Sexo", /^(sexo|genero)$/],
+  ["Fecha de nacimiento", /(fechanac|nacimiento|birth)/],
+  ["Edad", /^edad$/],
+  ["CUI", /^cui$/],
+  ["Username", /(username|usuario)/],
+  ["Número de documento", /^(nuip|documento|cedula)$/]
 ];
-const CONOCIDOS = new Set(["nombres","nombre","apellidos","nacionalidad","estatura","sexo","genero","fechaNacimiento","nacimiento","edad","cui","id","username","nuip","foto","avatar","robloxAvatar","robloxId","robloxUserId","licencia","vehiculos","observaciones"]);
-const bonito = k => k.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/^./, s => s.toUpperCase());
+const OCULTAR = [/(estatura|altura)/, /^(id|_id|discordid)$/, /^(foto|avatar|robloxavatar|robloxid|robloxuserid)$/, /^(licencia|vehiculos|observaciones)$/];
+const bonito = k => k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, s => s.toUpperCase());
+const simple = v => v !== null && v !== undefined && v !== "" && typeof v !== "object";
+
+function datosCiudadano(c){
+  const usadas = new Set(), filas = [];
+  for (const [label, re] of CAMPOS) {
+    const k = Object.keys(c).find(k => re.test(norm(k)) && simple(c[k]));
+    Object.keys(c).forEach(x => { if (re.test(norm(x))) usadas.add(x); });
+    if (k) filas.push([label, c[k]]);
+  }
+  for (const [k, v] of Object.entries(c)) {
+    if (usadas.has(k) || !simple(v) || OCULTAR.some(re => re.test(norm(k)))) continue;
+    filas.push([bonito(k), v]);
+  }
+  return filas;
+}
 
 function fotoRoblox(c, d){
   const url = c.foto || c.avatar || c.robloxAvatar || d.foto || d.avatar;
@@ -311,23 +371,20 @@ function fotoRoblox(c, d){
 }
 
 function limpiar(){
-  $("#datos").innerHTML = CAMPOS.map(([l]) => `<div><dt>${l}:</dt><dd>—</dd></div>`).join("");
+  $("#datos").innerHTML = "";
   $("#w-nombre").textContent = "Sin consultar"; $("#w-doc").textContent = "Número de documento";
-  $("#foto").textContent = "👤"; $("#d-obs").textContent = "—";
-  $("#b-ant").textContent = "—"; $("#b-ant").className = "badge";
+  $("#foto").innerHTML = ic("user"); $("#d-obs").textContent = "—";
+  $("#b-ant").textContent = ""; $("#b-ant").className = "badge";
   filas($("#t-licencia"), [], [1,2,3,4]); filas($("#t-vehiculos"), [], [1,2,3]);
   filas($("#t-antecedentes"), [], [1,2,3,4]); filas($("#t-multas"), [], [1,2,3,4,5]);
 }
 limpiar();
 
+const nombreC = (d = ciudadano) => { const c = d.ciudadano || {}; return `${c.nombres || c.nombre || ""} ${c.apellidos || ""}`.trim(); };
+
 function pintar(d){
   const c = d.ciudadano || {}, ex = d.expediente || {};
-  let html = CAMPOS.map(([l, f]) => `<div><dt>${l}:</dt><dd>${val(f(c))}</dd></div>`).join("");
-  html += Object.entries(c)
-    .filter(([k, v]) => !CONOCIDOS.has(k) && v !== null && typeof v !== "object" && v !== "")
-    .map(([k, v]) => `<div><dt>${esc(bonito(k))}:</dt><dd>${esc(v)}</dd></div>`).join("");
-  $("#datos").innerHTML = html;
-
+  $("#datos").innerHTML = datosCiudadano(c).map(([l, v]) => `<div><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`).join("");
   $("#w-nombre").textContent = nombreC(d) || "Ciudadano";
   $("#w-doc").textContent = "NUIP " + (c.nuip || "—");
   $("#d-obs").textContent = ex.observaciones || c.observaciones || "—";
@@ -349,10 +406,9 @@ function pintar(d){
   const foto = $("#foto"), src = fotoRoblox(c, d);
   if (src) {
     foto.innerHTML = `<img alt="Foto de Roblox" src="${esc(src)}">`;
-    foto.querySelector("img").onerror = () => foto.textContent = "👤";
-  } else foto.textContent = "👤";
+    foto.querySelector("img").onerror = () => foto.innerHTML = ic("user");
+  } else foto.innerHTML = ic("user");
 }
-const nombreC = (d = ciudadano) => { const c = d.ciudadano || {}; return `${c.nombres || c.nombre || ""} ${c.apellidos || ""}`.trim(); };
 
 $("#form-busqueda").addEventListener("submit", async e => {
   e.preventDefault();
@@ -379,7 +435,7 @@ function requiereCiudadano(){
 /* Cédula */
 $("#b-cedula").onclick = () => {
   if (!requiereCiudadano()) return;
-  $("#cedula-titulo").textContent = "Cédula de " + nombreC();
+  $("#cedula-titulo").innerHTML = ic("id") + "Cédula de " + esc(nombreC());
   const img = $("#cedula-img"), st = $("#cedula-msg");
   st.textContent = "Cargando imagen..."; img.style.display = "block";
   img.onload = () => st.textContent = "Imagen generada por /mostrar-cedula en Discord.";
