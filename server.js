@@ -230,6 +230,15 @@ app.use(express.static(path.join(__dirname, "public")));
 // Si la imagen también existe en public/photos, la de public gana.
 app.use("/photos", express.static(path.join(__dirname, "photos")));
 
+// Tarjeta Nequi en la RAIZ del repo (tarjeta.png): el servidor solo sirve
+// public/ y photos/, asi que sin esta ruta la imagen de la raiz no se veria.
+// Es el respaldo de la tarjeta cuando el enlace de Discord caduca.
+app.get("/tarjeta.png", (req, res) => {
+  const archivo = path.join(__dirname, "tarjeta.png");
+  if (!fs.existsSync(archivo)) return res.status(404).end();
+  res.sendFile(archivo);
+});
+
 app.get("/iniciar-sesion.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
 });
