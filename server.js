@@ -1421,7 +1421,9 @@ app.post("/api/radio/voz", async (req, res) => {
   const seq = Number(req.body?.seq) || 0;
   const pcm = typeof req.body?.pcm === "string" ? req.body.pcm : "";
   if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
-  if (!pcm || pcm.length > 8000 || seq < 0) return res.status(400).json({ error: "Audio invalido." });
+  /* tope generoso: un trozo de 8192 muestras a 8 kHz son hasta ~21,800
+     caracteres en base64 en un micro raro de baja tasa */
+  if (!pcm || pcm.length > 32000 || seq < 0) return res.status(400).json({ error: "Audio invalido." });
   if (microsActivos.get(id) !== canal) {
     /* microsActivos vive en memoria: si Render reinicia el proceso (lo hace
        en cada deploy y al despertar el servicio) se vacia aunque el usuario
