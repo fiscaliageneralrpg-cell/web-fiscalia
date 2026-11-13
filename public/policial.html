@@ -313,7 +313,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
           <button class="mic-btn" id="btn-mic" type="button">
             <svg class="ic"><use href="#i-mic"/></svg>
             <span id="mic-txt">Mantén presionado para hablar</span>
-            <small>Suena al encender y al apagar el micro</small>
+            <small>La primera vez el navegador pedirá permiso; tu voz se escucha en todo el canal</small>
           </button>
           <button class="b red" id="btn-salir" type="button"><svg class="ic"><use href="#i-exit"/></svg>Salir de la radio</button>
         </div>
@@ -775,6 +775,7 @@ function salirRadio(){
   $("#carpeta").hidden = false;
   if (estaba) {
     desconectarEventosRadio();
+    detenerCaptura();
     sonidoSalir();
     fetch("/api/radio/salir", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
@@ -792,6 +793,7 @@ $("#btn-salir").onclick = salirRadio;
 /* Al cerrar la pestaña sin dar "Salir": el servidor lo nota solo porque
    se corta el latido, pero por si acaso avisamos tambien. */
 window.addEventListener("pagehide", () => {
+  try { detenerCaptura(); } catch (e) {}
   if (radioActual && navigator.sendBeacon) {
     try { navigator.sendBeacon("/api/radio/salir", "{}"); } catch (e) {}
   }
@@ -902,10 +904,11 @@ function conectarEventosRadio(canal){
       try {
         const ev = JSON.parse(e.data);
         if (!ev || !ev.tipo || String(ev.discordId) === miDiscordId) return; /* el mio ya sono en local */
-        if (ev.tipo === "entrar") sonidoEntrar();
+        if (ev.tipo === "voz") { reproducirVoz(ev.discordId, ev.pcm); return; } /* trozo de voz: solo suena */
+        if (ev.tipo === "entrar") { relojesVoz.delete(ev.discordId); sonidoEntrar(); }
         else if (ev.tipo === "prender") tocarSonido(sndOn, 0.75);
-        else if (ev.tipo === "apagar") tocarSonido(sndOff, 0.75);
-        else if (ev.tipo === "salir") sonidoSalir(0.12);
+        else if (ev.tipo === "apagar") { relojesVoz.delete(ev.discordId); tocarSonido(sndOff, 0.75); }
+        else if (ev.tipo === "salir") { relojesVoz.delete(ev.discordId); sonidoSalir(0.12); }
         const fila = document.querySelector('#conectados .oficial[data-id="' + ev.discordId + '"]');
         if (fila) fila.classList.toggle("hablando", ev.tipo === "prender");
       } catch (err) {}
@@ -920,21 +923,161 @@ function desconectarEventosRadio(){
   fuenteRadio = null;
 }
 
-/* --- Push-to-talk: mientras se mantiene presionado, suena; al soltar, se apaga --- */
-function micPrender(){
-  if (micOn || !radioActual) return;
+/* =================== VOZ REAL POR LA RADIO ===================
+   Al mantener presionado el micro se pide el PERMISO del navegador
+   (getUserMedia -> aparece el cartelito "quiere usar tu microfono"), se
+   captura tu voz, se manda en trozos PCM de 8 kHz al servidor y el
+   servidor la reenvia por SSE a TODOS los demas conectados al canal.  */
+let streamMic = null;        // permiso concedido (se guarda para volver a hablar rapido)
+let capturaCtx = null;       // contexto donde se captura el audio
+let procesadorVoz = null;    // ScriptProcessor que recoge los trozos
+let sosteniendoMic = false;  // el boton esta presionado ahora
+let enVueloVoz = false;      // hay un trozo viajando al servidor
+let pendienteVoz = null;     // trozo siguiente esperando su turno
+let seqVoz = 0;
+const relojesVoz = new Map(); /* id -> segundo en el que termina su ultima
+   voz programada; sirve de colchon para que no se corten los trozos */
+
+/* Float32 del navegador -> Int16 exactamente a 8000 Hz (interpolacion) */
+function rea8k(x, tasa){
+  const r = tasa / 8000;
+  const n = Math.floor(x.length / r);
+  const out = new Int16Array(Math.max(0, n));
+  for (let i = 0; i < n; i++) {
+    const p = i * r, i0 = Math.floor(p), f = p - i0;
+    const s = x[i0] * (1 - f) + (x[i0 + 1] !== undefined ? x[i0 + 1] : x[i0]) * f;
+    out[i] = Math.max(-1, Math.min(1, s)) * 32767;
+  }
+  return out;
+}
+
+function b64pcm(int16){
+  const bytes = new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 4096) {
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + 4096));
+  }
+  return btoa(s);
+}
+
+function arrancarCaptura(){
+  if (procesadorVoz || !streamMic) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!capturaCtx) capturaCtx = new AC();
+    if (capturaCtx.state === "suspended") capturaCtx.resume();
+    const fuente = capturaCtx.createMediaStreamSource(streamMic);
+    procesadorVoz = capturaCtx.createScriptProcessor(4096, 1, 1);
+    const silencio = capturaCtx.createGain();
+    silencio.gain.value = 0; /* el procesador necesita llegar al altavoz para funcionar, pero en silencio */
+    procesadorVoz.onaudioprocess = (e) => {
+      if (!micOn || !radioActual || enVueloVoz) return; /* si aun viaja el anterior, este se salta */
+      const pcm = rea8k(e.inputBuffer.getChannelData(0), capturaCtx.sampleRate);
+      if (!pcm.length) return;
+      enviarVoz(pcm);
+    };
+    fuente.connect(procesadorVoz);
+    procesadorVoz.connect(silencio);
+    silencio.connect(capturaCtx.destination);
+  } catch (e) {}
+}
+
+function detenerCaptura(){
+  try { if (procesadorVoz) procesadorVoz.disconnect(); } catch (e) {}
+  procesadorVoz = null;
+  try { if (streamMic) streamMic.getTracks().forEach(t => t.stop()); } catch (e) {}
+  streamMic = null;
+  try { if (capturaCtx && capturaCtx.state !== "closed") capturaCtx.close(); } catch (e) {}
+  capturaCtx = null;
+  enVueloVoz = false;
+  pendienteVoz = null;
+}
+
+function enviarVoz(pcm){
+  const paquete = { canal: radioActual.id, seq: ++seqVoz, pcm: b64pcm(pcm) };
+  if (enVueloVoz) { pendienteVoz = paquete; return; }
+  mandarVoz(paquete);
+}
+
+async function mandarVoz(paquete){
+  enVueloVoz = true;
+  try {
+    await fetch("/api/radio/voz", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paquete),
+    });
+  } catch (e) {}
+  enVueloVoz = false;
+  const siguiente = pendienteVoz;
+  pendienteVoz = null;
+  if (siguiente && micOn && radioActual) mandarVoz(siguiente);
+}
+
+/* Reproduce un trozo de voz entrante con colchon: si es el primero de ese
+   oficial deja 150 ms de margen y luego encadena los trozos sin cortes. */
+function reproducirVoz(id, b64){
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC || !b64) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const muestras = new Int16Array(bytes.buffer, 0, bytes.length >> 1);
+    if (!muestras.length) return;
+    const buf = audioCtx.createBuffer(1, muestras.length, 8000);
+    const canal = buf.getChannelData(0);
+    for (let i = 0; i < muestras.length; i++) canal[i] = muestras[i] / 32768;
+    const dur = muestras.length / 8000;
+    const ahora = audioCtx.currentTime;
+    let inicio = relojesVoz.get(id);
+    if (inicio === undefined || inicio < ahora - 0.4) inicio = ahora + 0.15; /* primer trozo o se atraso mucho */
+    else inicio = Math.max(inicio, ahora + 0.01);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start(inicio);
+    relojesVoz.set(id, inicio + dur);
+  } catch (e) {}
+}
+
+/* --- Push-to-talk: se mantiene presionado = hablas (con permiso real del
+   navegador la primera vez); al soltar deja de transmitir --- */
+async function micPrender(){
+  if (micOn || !radioActual || sosteniendoMic) return;
+  sosteniendoMic = true;
+  if (!streamMic) {
+    $("#mic-estado").textContent = "🔵 Pidiendo permiso del micrófono al navegador…";
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("sin-mediaDevices");
+      streamMic = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      sosteniendoMic = false;
+      $("#mic-estado").textContent = "❌ El navegador no autorizó el micrófono. Haz clic en el candado de la barra, permite el micrófono para medellinrp.com y vuelve a presionar el botón.";
+      return;
+    }
+    arrancarCaptura();
+    $("#mic-estado").textContent = "✅ Micrófono listo. Mantén presionado para hablar.";
+  }
+  if (!sosteniendoMic || !radioActual) return; /* lo soltó mientras se pedía permiso */
   micOn = true;
   $("#btn-mic").classList.add("on");
   $("#mic-txt").textContent = "Transmitiendo…";
-  $("#mic-estado").textContent = "🔴 Transmitiendo por la radio. Suelta el botón para terminar.";
+  $("#mic-estado").textContent = "🔴 Transmitiendo por la radio. Tu voz se escucha en el canal. Suelta el botón para terminar.";
   marcarHablando(true);
   tocarSonido(sndOn);
   fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "prender" }) }).catch(() => {});
 }
 
 function micApagar(){
+  sosteniendoMic = false;
   if (!micOn) return;
   micOn = false;
+  pendienteVoz = null;
   $("#btn-mic").classList.remove("on");
   $("#mic-txt").textContent = "Mantén presionado para hablar";
   $("#mic-estado").textContent = "Micrófono apagado.";
