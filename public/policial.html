@@ -905,15 +905,15 @@ function conectarEventosRadio(canal){
         const ev = JSON.parse(e.data);
         if (!ev || !ev.tipo || String(ev.discordId) === miDiscordId) return; /* el mio ya sono en local */
         if (ev.tipo === "voz") {
-          reproducirVoz(ev.discordId, ev.pcm);
+          recibirVoz(ev.discordId, ev.seq, ev.pcm);
           const fv = document.querySelector('#conectados .oficial[data-id="' + ev.discordId + '"]');
           if (fv) fv.classList.add("hablando"); /* se ve el pulso mientras llega audio */
           return;
         }
-        if (ev.tipo === "entrar") { relojesVoz.delete(ev.discordId); sonidoEntrar(); }
-        else if (ev.tipo === "prender") tocarSonido(sndOn, 0.75);
-        else if (ev.tipo === "apagar") { relojesVoz.delete(ev.discordId); tocarSonido(sndOff, 0.75); }
-        else if (ev.tipo === "salir") { relojesVoz.delete(ev.discordId); sonidoSalir(0.12); }
+        if (ev.tipo === "entrar") { estadosVoz.delete(ev.discordId); sonidoEntrar(); }
+        else if (ev.tipo === "prender") { estadosVoz.delete(ev.discordId); tocarSonido(sndOn, 0.75); }
+        else if (ev.tipo === "apagar") { estadosVoz.delete(ev.discordId); tocarSonido(sndOff, 0.75); }
+        else if (ev.tipo === "salir") { estadosVoz.delete(ev.discordId); sonidoSalir(0.12); }
         const fila = document.querySelector('#conectados .oficial[data-id="' + ev.discordId + '"]');
         if (fila) fila.classList.toggle("hablando", ev.tipo === "prender");
       } catch (err) {}
@@ -937,13 +937,15 @@ let streamMic = null;        // permiso concedido (se guarda para volver a habla
 let capturaCtx = null;       // contexto donde se captura el audio
 let procesadorVoz = null;    // ScriptProcessor que recoge los trozos
 let sosteniendoMic = false;  // el boton esta presionado ahora
-let enVueloVoz = false;      // hay un trozo viajando al servidor
-let pendienteVoz = null;     // trozo siguiente esperando su turno
 let seqVoz = 0;
 let vozOkAvisada = false;   /* ya confirmo al menos un trozo en el servidor */
 let ultimoErrorVoz = "";    /* ultimo error mostrado (para no repetirlo) */
-const relojesVoz = new Map(); /* id -> segundo en el que termina su ultima
-   voz programada; sirve de colchon para que no se corten los trozos */
+let colaSalida = [];        /* trozos esperando salir: max 12 (~2 s); si el
+   internet se atrasa se descarta lo mas VIEJO, nunca lo nuevo */
+let enviosEnVuelo = 0;      /* POST simultaneos: max 4 (aguanta ida y vuelta
+   lenta sin bloquear los trozos que siguen) */
+const estadosVoz = new Map(); /* emisor -> { proximo, fin, cola }: sirve para
+   REORDENAR los trozos y saltar los que el internet perdio */
 
 /* Float32 del navegador -> Int16 exactamente a 8000 Hz (interpolacion) */
 function rea8k(x, tasa){
@@ -975,14 +977,14 @@ function arrancarCaptura(){
     if (!capturaCtx) capturaCtx = new AC();
     if (capturaCtx.state === "suspended") capturaCtx.resume();
     const fuente = capturaCtx.createMediaStreamSource(streamMic);
-    procesadorVoz = capturaCtx.createScriptProcessor(4096, 1, 1);
+    procesadorVoz = capturaCtx.createScriptProcessor(8192, 1, 1);
     const silencio = capturaCtx.createGain();
     silencio.gain.value = 0; /* el procesador necesita llegar al altavoz para funcionar, pero en silencio */
     procesadorVoz.onaudioprocess = (e) => {
       if (!micOn || !radioActual) return;
       const pcm = rea8k(e.inputBuffer.getChannelData(0), capturaCtx.sampleRate);
       if (!pcm.length) return;
-      enviarVoz(pcm); /* si aun viaja el anterior, se encola (1 de espera) */
+      enviarVoz(pcm); /* entra a la cola: no espera a nadie */
     };
     fuente.connect(procesadorVoz);
     procesadorVoz.connect(silencio);
@@ -997,79 +999,156 @@ function detenerCaptura(){
   streamMic = null;
   try { if (capturaCtx && capturaCtx.state !== "closed") capturaCtx.close(); } catch (e) {}
   capturaCtx = null;
-  enVueloVoz = false;
-  pendienteVoz = null;
+  colaSalida = [];
+  enviosEnVuelo = 0;
 }
 
 function enviarVoz(pcm){
-  const paquete = { canal: radioActual.id, seq: ++seqVoz, pcm: b64pcm(pcm) };
-  if (enVueloVoz) { pendienteVoz = paquete; return; }
-  mandarVoz(paquete);
+  colaSalida.push({ canal: radioActual.id, seq: ++seqVoz, pcm: b64pcm(pcm) });
+  /* Si el internet esta malo y la cola se llena, se pierde lo mas VIEJO:
+     la voz tarda como mucho ~2 s en llegar y nunca se acumula atras. */
+  while (colaSalida.length > 12) colaSalida.shift();
+  enviarColaVoz();
+}
+
+/* Manda hasta 4 trozos a la vez: aunque uno tarde por el internet, los
+   demas salen igual; no hay que esperar la respuesta del anterior. */
+function enviarColaVoz(){
+  while (enviosEnVuelo < 4 && colaSalida.length) {
+    const paquete = colaSalida.shift();
+    enviosEnVuelo++;
+    mandarVoz(paquete).finally(() => { enviosEnVuelo--; enviarColaVoz(); });
+  }
 }
 
 async function mandarVoz(paquete){
-  enVueloVoz = true;
-  try {
-    const resp = await fetch("/api/radio/voz", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(paquete),
-    });
-    if (resp.ok) {
-      if (!vozOkAvisada) {
-        vozOkAvisada = true;
+  for (let intento = 0; intento < 3; intento++) {
+    if (!micOn || !radioActual) return; /* solto el micro: no insistir */
+    try {
+      const resp = await fetch("/api/radio/voz", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paquete),
+      });
+      if (resp.ok) {
+        if (!vozOkAvisada) {
+          vozOkAvisada = true;
+          $("#mic-estado").textContent = "🔴 Transmitiendo: tu voz ya llegó al canal.";
+        }
+        if ($("#radio-msg").textContent.indexOf("⚠ ") === 0) $("#radio-msg").textContent = "";
         ultimoErrorVoz = "";
-        $("#mic-estado").textContent = "🔴 Transmitiendo: tu voz ya llegó al canal.";
+        return;
       }
-      if ($("#radio-msg").textContent.indexOf("⚠ Voz") === 0) $("#radio-msg").textContent = "";
-    } else {
-      let detalle = "HTTP " + resp.status;
-      if (resp.status === 404) detalle = "404: el server.js de GitHub no tiene la función de voz, súbelo de nuevo";
-      else if (resp.status === 403) detalle = "403: el servidor no reconoce tu micro, suelta y vuelve a presionar";
-      else if (resp.status === 401) detalle = "401: se cerró tu sesión, vuelve a entrar con Discord";
-      if (ultimoErrorVoz !== detalle) {
-        ultimoErrorVoz = detalle;
-        $("#radio-msg").textContent = "⚠ Voz no enviada (" + detalle + ").";
+      if (resp.status >= 400 && resp.status < 500) {
+        /* el servidor dijo que no (403/404/401): reintentar no cambia nada */
+        let detalle = "HTTP " + resp.status;
+        if (resp.status === 404) detalle = "404: el server.js de GitHub no tiene la función de voz, súbelo de nuevo";
+        else if (resp.status === 403) detalle = "403: el servidor no reconoce tu micro, suelta y vuelve a presionar";
+        else if (resp.status === 401) detalle = "401: se cerró tu sesión, vuelve a entrar con Discord";
+        if (ultimoErrorVoz !== detalle) {
+          ultimoErrorVoz = detalle;
+          $("#radio-msg").textContent = "⚠ Voz no enviada (" + detalle + ").";
+        }
+        return;
       }
-    }
-  } catch (e) {
-    if (ultimoErrorVoz !== "conexion") {
-      ultimoErrorVoz = "conexion";
-      $("#radio-msg").textContent = "⚠ Voz no enviada: sin conexión con el servidor.";
-    }
+      /* 5xx del servidor: se reintenta mas abajo */
+    } catch (e) { /* sin internet en este momento: se reintenta mas abajo */ }
+    await new Promise((r) => setTimeout(r, 200 * (intento + 1)));
   }
-  enVueloVoz = false;
-  const siguiente = pendienteVoz;
-  pendienteVoz = null;
-  if (siguiente && micOn && radioActual) mandarVoz(siguiente);
+  /* Se agotaron los 3 intentos: ese trozo se pierde (el que escucha lo
+     salta por el numero de secuencia) pero los demas siguen saliendo. */
+  if (ultimoErrorVoz !== "conexion") {
+    ultimoErrorVoz = "conexion";
+    $("#radio-msg").textContent = "⚠ Internet inestable: parte de tu voz puede perderse.";
+  }
 }
 
-/* Reproduce un trozo de voz entrante con colchon: si es el primero de ese
-   oficial deja 150 ms de margen y luego encadena los trozos sin cortes. */
-function reproducirVoz(id, b64){
+/* ---- Lado que ESCUCHA: reordena los trozos y se salva de cortes ----
+   Los trozos viajan por separado (4 en paralelo) y con internet malo
+   pueden llegar fuera de orden, repetidos o tarde. Esto los acomoda por
+   su numero, salta los que el internet perdio y mantiene un colchon. */
+function recibirVoz(id, seq, b64){
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC || !b64) return;
     if (!audioCtx) audioCtx = new AC();
     if (audioCtx.state === "suspended") audioCtx.resume();
+    const n = Number(seq) || 0;
+    let e = estadosVoz.get(id);
+    if (!e) {
+      e = { proximo: n, fin: 0, cola: new Map() };
+      estadosVoz.set(id, e);
+    } else if (n < e.proximo) {
+      /* salto hacia atras grande = el emisor recargo la pagina (empieza
+         de nuevo); salto chico = trozo repetido o muy tarde: se descarta */
+      if (e.proximo - n > 10) { e.proximo = n; e.cola.clear(); e.fin = 0; }
+      else return;
+    } else if (n - e.proximo > 300) {
+      e.proximo = n; e.cola.clear(); e.fin = 0; /* perdio demasiado: arranca ahi */
+    }
+    e.cola.set(n, b64);
+    vaciarVoz(id, e);
+  } catch (err) {}
+}
+
+function vaciarVoz(id, e){
+  /* saca en orden todo lo que ya llego */
+  while (e.cola.has(e.proximo)) {
+    const b64 = e.cola.get(e.proximo);
+    e.cola.delete(e.proximo);
+    e.proximo++;
+    e.fin = programarVoz(b64, e.fin);
+  }
+  /* Falta el siguiente pero ya hay trozos despues (el internet se comio
+     uno): si quedan 3 o mas, o el colchon esta por acabarse, se salta el
+     trozo perdido y sigue con lo que hay en vez de quedarse mudo. */
+  if (e.cola.size && (e.cola.size >= 3 || e.fin <= audioCtx.currentTime + 0.05)) {
+    let min = Infinity;
+    for (const k of e.cola.keys()) if (k < min) min = k;
+    e.proximo = min;
+    vaciarVoz(id, e); /* avanza al menos un trozo: recursion acotada */
+  }
+}
+
+/* Programa un trozo en la linea del tiempo: el primero deja 300 ms de
+   colchon (aguanta tirones de internet) y los demas encadenan sin huecos. */
+function programarVoz(b64, finAnterior){
+  try {
     const bin = atob(b64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const muestras = new Int16Array(bytes.buffer, 0, bytes.length >> 1);
-    if (!muestras.length) return;
+    if (!muestras.length) return finAnterior;
     const buf = audioCtx.createBuffer(1, muestras.length, 8000);
     const canal = buf.getChannelData(0);
     for (let i = 0; i < muestras.length; i++) canal[i] = muestras[i] / 32768;
     const dur = muestras.length / 8000;
     const ahora = audioCtx.currentTime;
-    let inicio = relojesVoz.get(id);
-    if (inicio === undefined || inicio < ahora - 0.4) inicio = ahora + 0.15; /* primer trozo o se atraso mucho */
-    else inicio = Math.max(inicio, ahora + 0.01);
+    let inicio;
+    if (!finAnterior || finAnterior < ahora - 0.6) inicio = ahora + 0.30; /* primer trozo o tras corte largo */
+    else inicio = Math.max(finAnterior, ahora + 0.01);
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
     src.connect(audioCtx.destination);
     src.start(inicio);
-    relojesVoz.set(id, inicio + dur);
-  } catch (e) {}
+    return inicio + dur;
+  } catch (e) { return finAnterior; }
+}
+
+/* Aviso al servidor de prender/apagar con reintentos: si este mensaje se
+   pierde por el internet, el servidor no sabe que estas hablando y rechaza
+   toda la voz (403). Si el estado cambio, el reintento se cancela. */
+function avisarMicro(estado){
+  const esperado = estado === "prender";
+  const intentar = (quedan) => {
+    if (micOn !== esperado) return;
+    fetch("/api/radio/mic", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado }),
+    })
+      .then((r) => { if (!r.ok && r.status >= 500 && quedan > 0) setTimeout(() => intentar(quedan - 1), 700); })
+      .catch(() => { if (quedan > 0) setTimeout(() => intentar(quedan - 1), 700); });
+  };
+  intentar(2);
 }
 
 /* --- Push-to-talk: se mantiene presionado = hablas (con permiso real del
@@ -1111,14 +1190,14 @@ async function micPrender(){
   $("#mic-estado").textContent = "🔴 Transmitiendo por la radio: tu voz se escucha en el canal." + (sostenia ? " Suelta el botón para terminar." : " Toca el botón para apagarlo.");
   marcarHablando(true);
   tocarSonido(sndOn);
-  fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "prender" }) }).catch(() => {});
+  avisarMicro("prender");
 }
 
 function micApagar(){
   sosteniendoMic = false;
   if (!micOn) return;
   micOn = false;
-  pendienteVoz = null;
+  colaSalida = []; /* la voz que quedo en cola ya no sirve */
   vozOkAvisada = false;
   ultimoErrorVoz = "";
   $("#btn-mic").classList.remove("on");
@@ -1126,7 +1205,7 @@ function micApagar(){
   $("#mic-estado").textContent = "Micrófono apagado.";
   marcarHablando(false);
   tocarSonido(sndOff);
-  fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "apagar" }) }).catch(() => {});
+  avisarMicro("apagar");
 }
 
 (function configurarMic(){
