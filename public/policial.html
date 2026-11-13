@@ -904,7 +904,12 @@ function conectarEventosRadio(canal){
       try {
         const ev = JSON.parse(e.data);
         if (!ev || !ev.tipo || String(ev.discordId) === miDiscordId) return; /* el mio ya sono en local */
-        if (ev.tipo === "voz") { reproducirVoz(ev.discordId, ev.pcm); return; } /* trozo de voz: solo suena */
+        if (ev.tipo === "voz") {
+          reproducirVoz(ev.discordId, ev.pcm);
+          const fv = document.querySelector('#conectados .oficial[data-id="' + ev.discordId + '"]');
+          if (fv) fv.classList.add("hablando"); /* se ve el pulso mientras llega audio */
+          return;
+        }
         if (ev.tipo === "entrar") { relojesVoz.delete(ev.discordId); sonidoEntrar(); }
         else if (ev.tipo === "prender") tocarSonido(sndOn, 0.75);
         else if (ev.tipo === "apagar") { relojesVoz.delete(ev.discordId); tocarSonido(sndOff, 0.75); }
@@ -935,6 +940,8 @@ let sosteniendoMic = false;  // el boton esta presionado ahora
 let enVueloVoz = false;      // hay un trozo viajando al servidor
 let pendienteVoz = null;     // trozo siguiente esperando su turno
 let seqVoz = 0;
+let vozOkAvisada = false;   /* ya confirmo al menos un trozo en el servidor */
+let ultimoErrorVoz = "";    /* ultimo error mostrado (para no repetirlo) */
 const relojesVoz = new Map(); /* id -> segundo en el que termina su ultima
    voz programada; sirve de colchon para que no se corten los trozos */
 
@@ -972,10 +979,10 @@ function arrancarCaptura(){
     const silencio = capturaCtx.createGain();
     silencio.gain.value = 0; /* el procesador necesita llegar al altavoz para funcionar, pero en silencio */
     procesadorVoz.onaudioprocess = (e) => {
-      if (!micOn || !radioActual || enVueloVoz) return; /* si aun viaja el anterior, este se salta */
+      if (!micOn || !radioActual) return;
       const pcm = rea8k(e.inputBuffer.getChannelData(0), capturaCtx.sampleRate);
       if (!pcm.length) return;
-      enviarVoz(pcm);
+      enviarVoz(pcm); /* si aun viaja el anterior, se encola (1 de espera) */
     };
     fuente.connect(procesadorVoz);
     procesadorVoz.connect(silencio);
@@ -1003,11 +1010,33 @@ function enviarVoz(pcm){
 async function mandarVoz(paquete){
   enVueloVoz = true;
   try {
-    await fetch("/api/radio/voz", {
+    const resp = await fetch("/api/radio/voz", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(paquete),
     });
-  } catch (e) {}
+    if (resp.ok) {
+      if (!vozOkAvisada) {
+        vozOkAvisada = true;
+        ultimoErrorVoz = "";
+        $("#mic-estado").textContent = "🔴 Transmitiendo: tu voz ya llegó al canal.";
+      }
+      if ($("#radio-msg").textContent.indexOf("⚠ Voz") === 0) $("#radio-msg").textContent = "";
+    } else {
+      let detalle = "HTTP " + resp.status;
+      if (resp.status === 404) detalle = "404: el server.js de GitHub no tiene la función de voz, súbelo de nuevo";
+      else if (resp.status === 403) detalle = "403: el servidor no reconoce tu micro, suelta y vuelve a presionar";
+      else if (resp.status === 401) detalle = "401: se cerró tu sesión, vuelve a entrar con Discord";
+      if (ultimoErrorVoz !== detalle) {
+        ultimoErrorVoz = detalle;
+        $("#radio-msg").textContent = "⚠ Voz no enviada (" + detalle + ").";
+      }
+    }
+  } catch (e) {
+    if (ultimoErrorVoz !== "conexion") {
+      ultimoErrorVoz = "conexion";
+      $("#radio-msg").textContent = "⚠ Voz no enviada: sin conexión con el servidor.";
+    }
+  }
   enVueloVoz = false;
   const siguiente = pendienteVoz;
   pendienteVoz = null;
@@ -1048,6 +1077,7 @@ function reproducirVoz(id, b64){
 async function micPrender(){
   if (micOn || !radioActual || sosteniendoMic) return;
   sosteniendoMic = true;
+  let sostenia = true; /* ¿sigue presionado el boton al conceder el permiso? */
   if (!streamMic) {
     $("#mic-estado").textContent = "🔵 Pidiendo permiso del micrófono al navegador…";
     try {
@@ -1060,14 +1090,25 @@ async function micPrender(){
       $("#mic-estado").textContent = "❌ El navegador no autorizó el micrófono. Haz clic en el candado de la barra, permite el micrófono para medellinrp.com y vuelve a presionar el botón.";
       return;
     }
+    /* Para hacer clic en "Permitir" el usuario suelta el boton (y el dialogo
+       puede disparar blur): aun asi el micro queda ENCENDIDO, porque acaba
+       de dar permiso a proposito. */
+    sostenia = sosteniendoMic;
+    sosteniendoMic = true;
     arrancarCaptura();
-    $("#mic-estado").textContent = "✅ Micrófono listo. Mantén presionado para hablar.";
+    vozOkAvisada = false;
+    ultimoErrorVoz = "";
+    $("#radio-msg").textContent = "";
+    $("#mic-estado").textContent = sostenia
+      ? "✅ Micrófono listo."
+      : "✅ Micrófono encendido. Presiona y suelta el botón una vez para apagarlo.";
   }
-  if (!sosteniendoMic || !radioActual) return; /* lo soltó mientras se pedía permiso */
+  if (!sosteniendoMic || !radioActual) return;
   micOn = true;
+  vozOkAvisada = false;
   $("#btn-mic").classList.add("on");
   $("#mic-txt").textContent = "Transmitiendo…";
-  $("#mic-estado").textContent = "🔴 Transmitiendo por la radio. Tu voz se escucha en el canal. Suelta el botón para terminar.";
+  $("#mic-estado").textContent = "🔴 Transmitiendo por la radio: tu voz se escucha en el canal." + (sostenia ? " Suelta el botón para terminar." : " Toca el botón para apagarlo.");
   marcarHablando(true);
   tocarSonido(sndOn);
   fetch("/api/radio/mic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado: "prender" }) }).catch(() => {});
@@ -1078,6 +1119,8 @@ function micApagar(){
   if (!micOn) return;
   micOn = false;
   pendienteVoz = null;
+  vozOkAvisada = false;
+  ultimoErrorVoz = "";
   $("#btn-mic").classList.remove("on");
   $("#mic-txt").textContent = "Mantén presionado para hablar";
   $("#mic-estado").textContent = "Micrófono apagado.";
@@ -1106,6 +1149,15 @@ function micApagar(){
   window.addEventListener("pointercancel", micApagar);
   document.addEventListener("visibilitychange", () => { if (document.hidden) micApagar(); });
 })();
+
+/* Politica de autoplay: si el navegador dejo el audio en pausa, cualquier
+   toque reanuda el contexto (tanto la voz entrante como la captura). */
+["pointerdown", "keydown"].forEach((tipo) => {
+  document.addEventListener(tipo, () => {
+    try { if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); } catch (e) {}
+    try { if (capturaCtx && capturaCtx.state === "suspended") capturaCtx.resume(); } catch (e) {}
+  }, { passive: true, capture: true });
+});
 
 init();
 </script>
