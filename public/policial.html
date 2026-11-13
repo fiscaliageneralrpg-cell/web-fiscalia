@@ -250,7 +250,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
     <div class="glass panel">
       <h2><svg class="ic"><use href="#i-shield"/></svg>Base de datos PONAL</h2>
       <form class="search" id="form-busqueda">
-        <input id="nuip" inputmode="numeric" autocomplete="off" placeholder="Entre el número de documento" required />
+        <input id="nuip" autocomplete="off" placeholder="Cédula, placa o nombre del ciudadano" required />
         <button class="btn" type="submit"><svg class="ic"><use href="#i-search"/></svg>Buscar</button>
       </form>
     </div>
@@ -281,7 +281,6 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 
     <div class="actions">
       <button class="b green" id="b-cedula" type="button"><svg class="ic"><use href="#i-id"/></svg>Ver cédula</button>
-      <button class="b" id="b-placa" type="button"><svg class="ic"><use href="#i-car"/></svg>Buscar placa</button>
       <button class="b red" id="b-arrestar" type="button"><svg class="ic"><use href="#i-scale"/></svg>Arrestar</button>
     </div>
     <div class="msg" id="msg-db"></div>
@@ -295,7 +294,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
     <div id="carpeta" class="carpeta">
       <div class="pestania"><svg class="ic"><use href="#i-radio"/></svg>Radio Fuerza Pública de Colombia</div>
       <div class="carpeta-cuerpo">
-        <p><b>10 radios oficiales de Medellín en vivo.</b> Los conectados salen de la base de datos real: quien entra aparece al instante y se desconecta solo si cierra la página. Entra a una para ver los oficiales, activar el micrófono (mantén presionado para hablar) o salir de la radio.</p>
+        <p><b>10 radios oficiales de Medellín en vivo.</b> Los conectados salen de la base de datos real: quien entra aparece al instante y se desconecta solo si cierra la página. Entra a una para ver los oficiales conectados en vivo, mantener presionado el micrófono para hablar o salir de la radio.</p>
         <div class="canales" id="canales"></div>
       </div>
     </div>
@@ -335,18 +334,6 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   <h2 id="cedula-titulo"><svg class="ic"><use href="#i-id"/></svg>Cédula ciudadana</h2>
   <img id="cedula-img" alt="Cédula ciudadana" />
   <div class="msg" id="cedula-msg"></div>
-</div></div>
-
-<div id="m-placa" class="modal"><div class="card">
-  <button class="x" data-close="m-placa" type="button" aria-label="Cerrar"></button>
-  <h2><svg class="ic"><use href="#i-car"/></svg>Buscar vehículo por placa</h2>
-  <p>Consulta el propietario y los datos registrados.</p>
-  <form id="form-placa">
-    <input id="placa" autocomplete="off" placeholder="Ejemplo: ABC-123" maxlength="10" required />
-    <button class="b green" type="submit"><svg class="ic"><use href="#i-search"/></svg>Consultar placa</button>
-  </form>
-  <div class="msg" id="placa-msg"></div>
-  <div id="placa-res"></div>
 </div></div>
 
 <div id="m-alertas" class="modal"><div class="card">
@@ -544,12 +531,27 @@ function pintar(d){
 
 $("#form-busqueda").addEventListener("submit", async e => {
   e.preventDefault();
-  const nuip = $("#nuip").value.trim();
+  const consulta = $("#nuip").value.trim();
+  if (!consulta) return;
   $("#msg-db").textContent = "Consultando...";
   try {
-    const r = await fetch("/api/policial/cedula/" + encodeURIComponent(nuip));
+    const r = await fetch("/api/policial/buscar?consulta=" + encodeURIComponent(consulta));
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "La cédula no está registrada.");
+    if (!r.ok) throw new Error(d.error || "Sin resultados para esa búsqueda.");
+    if (Array.isArray(d.coincidencias) && d.coincidencias.length) {
+      if (d.coincidencias.length === 1 && d.coincidencias[0].nuip) {
+        const r2 = await fetch("/api/policial/cedula/" + encodeURIComponent(d.coincidencias[0].nuip));
+        const d2 = await r2.json();
+        if (r2.ok) { ciudadano = d2; pintar(d2); $("#msg-db").textContent = ""; return; }
+      }
+      ciudadano = null; limpiar();
+      $("#msg-db").innerHTML = `Se encontraron ${d.coincidencias.length} coincidencias. Elige una:<br>` +
+        d.coincidencias.map(c => `<button class="b" type="button" data-nuip="${esc(c.nuip || "")}" style="margin:4px 4px 0 0">${esc(c.nombre || "Sin nombre")} · ${esc(c.nuip || "s/n")}</button>`).join("");
+      $("#msg-db").querySelectorAll("button[data-nuip]").forEach(btn => {
+        btn.onclick = () => { $("#nuip").value = btn.dataset.nuip; $("#form-busqueda").requestSubmit(); };
+      });
+      return;
+    }
     ciudadano = d; pintar(d);
     $("#msg-db").textContent = "";
   } catch (err) {
@@ -560,7 +562,7 @@ $("#form-busqueda").addEventListener("submit", async e => {
 
 function requiereCiudadano(){
   if (ciudadano) return true;
-  $("#msg-db").textContent = "Primero busca un ciudadano por número de documento.";
+  $("#msg-db").textContent = "Primero busca un ciudadano por cédula, placa o nombre.";
   return false;
 }
 
@@ -575,22 +577,6 @@ $("#b-cedula").onclick = () => {
   img.src = "/api/policial/cedula-imagen/" + ciudadano.discordId + "?t=" + Date.now();
   $("#m-cedula").classList.add("open");
 };
-
-/* Placa */
-$("#b-placa").onclick = () => { $("#m-placa").classList.add("open"); $("#placa").focus(); };
-$("#form-placa").addEventListener("submit", async e => {
-  e.preventDefault();
-  const placa = $("#placa").value.trim().toUpperCase();
-  $("#placa-msg").textContent = "Buscando vehículo..."; $("#placa-res").innerHTML = "";
-  try {
-    const r = await fetch("/api/policial/vehiculo/" + encodeURIComponent(placa), { cache: "no-store" });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "Vehículo no encontrado.");
-    const v = d.vehiculo || {}, p = d.propietario || {};
-    $("#placa-res").innerHTML = `<div class="item"><b>Propietario:</b> ${val(p.nombre)}<br><b>NUIP:</b> ${val(p.nuip)}<br><b>Placa:</b> ${val(v.placa || placa)}<br><b>Modelo:</b> ${val(v.modelo || v.nombre)}<br><b>Detalles:</b> ${Object.keys(v.detalles || {}).length ? esc(JSON.stringify(v.detalles)) : "Sin detalles adicionales"}</div>`;
-    $("#placa-msg").textContent = "Consulta completada.";
-  } catch (err) { $("#placa-msg").textContent = err.message; }
-});
 
 /* Arresto */
 $("#b-arrestar").onclick = () => {
@@ -614,13 +600,13 @@ $("#confirmar-arresto").addEventListener("click", async () => {
     body: JSON.stringify({ discordId: ciudadano.discordId, delitos, imagenBase64 })
   });
   const d = await r.json();
-  st.textContent = r.ok ? "Arresto registrado correctamente." : (d.error || "No se pudo registrar el arresto.");
+  st.textContent = r.ok ? (d.mensaje || "Arresto registrado correctamente.") + (d.aviso ? ` (${d.aviso})` : "") : (d.error || "No se pudo registrar el arresto.");
   if (r.ok) setTimeout(() => { $("#m-arresto").classList.remove("open"); $("#form-busqueda").requestSubmit(); }, 1000);
 });
 
 /* ===================== RADIO ===================== */
 const RADIOS = [
-  { id:1, nombre:"Central 911", desc:"Central de operaciones", icono:"siren" },
+  { id:1, nombre:"Central 123", desc:"Central de operaciones", icono:"siren" },
   { id:2, nombre:"Patrullas", desc:"Patrullas comunitarias", icono:"shield" },
   { id:3, nombre:"Tránsito", desc:"Tránsito y vialidad", icono:"car" },
   { id:4, nombre:"Motorizada", desc:"Unidad motorizada", icono:"radio" },
