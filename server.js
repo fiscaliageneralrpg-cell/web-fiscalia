@@ -1226,8 +1226,16 @@ async function asegurarEsquemaRadio() {
 const CANALES_RADIO = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 const LATIDO_RADIO_MS = 90000;
 
+/* Microfonos PRENDIDOS ahora mismo (id -> canal). Solo quien aparece aqui
+   puede mandar voz por la radio; lo pone /api/radio/mic al prender y lo
+   quitan apagar, salir, entrar a otro canal y la limpieza de latidos. */
+const microsActivos = new Map();
+
 async function limpiarRadioVieja() {
-  await pool.execute("DELETE FROM radio_conectados WHERE latido < ?", [Date.now() - LATIDO_RADIO_MS]);
+  const desde = Date.now() - LATIDO_RADIO_MS;
+  const [viejas] = await pool.execute("SELECT discord_id FROM radio_conectados WHERE latido < ?", [desde]);
+  await pool.execute("DELETE FROM radio_conectados WHERE latido < ?", [desde]);
+  for (const fila of viejas) microsActivos.delete(String(fila.discord_id));
 }
 
 /* Eventos en vivo de la radio (SSE): cuando alguien entra, prende o apaga
@@ -1340,6 +1348,7 @@ app.post("/api/radio/entrar", async (req, res) => {
        ON DUPLICATE KEY UPDATE canal = VALUES(canal), nombre = VALUES(nombre), entra_en = VALUES(entra_en), latido = VALUES(latido), micro = 0`,
       [id, canal, nombre, ahora, ahora]
     );
+    microsActivos.delete(id); /* el upsert pone micro = 0 */
     avisarRadio(canal, { tipo: "entrar", discordId: id, nombre, t: ahora });
     return res.json({ correcto: true, canal });
   } catch (error) {
@@ -1355,6 +1364,7 @@ app.post("/api/radio/salir", async (req, res) => {
     const id = String(req.session.usuario.id);
     const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
     await pool.execute("DELETE FROM radio_conectados WHERE discord_id = ?", [id]);
+    microsActivos.delete(id);
     if (filas.length) {
       avisarRadio(Number(filas[0].canal), { tipo: "salir", discordId: id, nombre: filas[0].nombre, t: Date.now() });
     }
@@ -1376,6 +1386,8 @@ app.post("/api/radio/mic", async (req, res) => {
     const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
     if (!filas.length) return res.status(400).json({ error: "No estás conectado a ninguna radio." });
     await pool.execute("UPDATE radio_conectados SET micro = ? WHERE discord_id = ?", [encender ? 1 : 0, id]);
+    if (encender) microsActivos.set(id, Number(filas[0].canal));
+    else microsActivos.delete(id);
     avisarRadio(Number(filas[0].canal), {
       tipo: encender ? "prender" : "apagar",
       discordId: id,
@@ -1387,6 +1399,25 @@ app.post("/api/radio/mic", async (req, res) => {
     console.error("[API RADIO MIC]", error.message);
     return res.status(500).json({ error: "No se pudo actualizar el microfono." });
   }
+});
+
+/* Voz del microfono: el panel manda trozos de audio (PCM 8 kHz en base64)
+   mientras el usuario mantiene presionado, y aqui se reenvian AL INSTANTE a
+   todos los demas conectados al canal por el mismo SSE de la radio.
+   Sin Discord ni MySQL por trozo: solo sesion + micro prendido en memoria. */
+app.post("/api/radio/voz", (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const id = String(req.session.usuario.id);
+  const canal = Number(req.body?.canal);
+  const seq = Number(req.body?.seq) || 0;
+  const pcm = typeof req.body?.pcm === "string" ? req.body.pcm : "";
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  if (!pcm || pcm.length > 8000 || seq < 0) return res.status(400).json({ error: "Audio invalido." });
+  if (microsActivos.get(id) !== canal) {
+    return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+  }
+  avisarRadio(canal, { tipo: "voz", discordId: id, seq, pcm, t: Date.now() });
+  return res.json({ correcto: true });
 });
 
 /* ===================== NEQUI / SALDOS ===================== */
