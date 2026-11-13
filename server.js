@@ -1299,6 +1299,12 @@ app.get("/api/radio/estado", async (req, res) => {
     const miId = String(req.session.usuario.id || "");
     await pool.execute("UPDATE radio_conectados SET latido = ? WHERE discord_id = ?", [ahora, miId]);
     const [filas] = await pool.execute("SELECT discord_id, canal, nombre, entra_en, micro FROM radio_conectados");
+    /* Repara microsActivos desde la BD: si el proceso se reinicio (deploy o
+       despertar de Render) el mapa quedo vacio aunque la tabla dice quien
+       tiene el micro prendido. Solo se agregan, nunca se quitan aqui. */
+    for (const fila of filas) {
+      if (Number(fila.micro) === 1) microsActivos.set(String(fila.discord_id), Number(fila.canal));
+    }
     const conteos = {};
     for (let i = 1; i <= 10; i += 1) conteos[i] = 0;
     filas.forEach((fila) => {
@@ -1404,8 +1410,11 @@ app.post("/api/radio/mic", async (req, res) => {
 /* Voz del microfono: el panel manda trozos de audio (PCM 8 kHz en base64)
    mientras el usuario mantiene presionado, y aqui se reenvian AL INSTANTE a
    todos los demas conectados al canal por el mismo SSE de la radio.
-   Sin Discord ni MySQL por trozo: solo sesion + micro prendido en memoria. */
-app.post("/api/radio/voz", (req, res) => {
+   Sin Discord ni MySQL por trozo: solo sesion + micro prendido.            */
+const ultimaReparacionVoz = new Map(); /* id -> ultimo intento de reparar
+   el mapa desde la BD (para no consultar MySQL en cada trozo rechazado) */
+
+app.post("/api/radio/voz", async (req, res) => {
   if (!exigirSesion(req, res)) return;
   const id = String(req.session.usuario.id);
   const canal = Number(req.body?.canal);
@@ -1414,7 +1423,29 @@ app.post("/api/radio/voz", (req, res) => {
   if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
   if (!pcm || pcm.length > 8000 || seq < 0) return res.status(400).json({ error: "Audio invalido." });
   if (microsActivos.get(id) !== canal) {
-    return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+    /* microsActivos vive en memoria: si Render reinicia el proceso (lo hace
+       en cada deploy y al despertar el servicio) se vacia aunque el usuario
+       siga con el micro presionado. Antes de rechazar, se repara el mapa
+       leyendo la fila de radio_conectados (micro=1 en ese canal). */
+    const ahora = Date.now();
+    if (ahora - (ultimaReparacionVoz.get(id) || 0) > 2000) {
+      ultimaReparacionVoz.set(id, ahora);
+      try {
+        const [filas] = await pool.execute("SELECT canal, micro FROM radio_conectados WHERE discord_id = ?", [id]);
+        const fila = filas[0];
+        if (fila && Number(fila.micro) === 1 && Number(fila.canal) === canal) {
+          microsActivos.set(id, canal); /* reparado: el trozo sale abajo */
+        } else {
+          console.log(`[API RADIO VOZ] rechazado id=${id} canal=${canal} (micro apagado o sin radio)`);
+          return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+        }
+      } catch (error) {
+        console.error("[API RADIO VOZ]", error.message);
+        return res.status(500).json({ error: "No se pudo enviar la voz." });
+      }
+    } else {
+      return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+    }
   }
   avisarRadio(canal, { tipo: "voz", discordId: id, seq, pcm, t: Date.now() });
   return res.json({ correcto: true });
