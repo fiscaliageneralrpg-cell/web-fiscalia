@@ -1025,29 +1025,107 @@ app.get("/api/policial/cedula/:nuip", async (req, res) => {
   try {
     const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [nuip]);
     if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada." });
-    const ciudadano = filas[0];
-    const discordId = String(ciudadano.discord_id || "");
-    if (!discordId) return res.status(404).json({ error: "La cédula no está vinculada a un Discord." });
-    let expediente = { arrestos: [], antecedentes: [], multas: [] };
-    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
-      try {
-        const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
-        const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, {
-          headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
-          signal: AbortSignal.timeout(8000),
-        });
-        if (respuestaBot.ok) {
-          const datosBot = await respuestaBot.json();
-          expediente = datosBot.expediente || expediente;
-        }
-      } catch (e) {
-        console.warn("[API PDA NUIP] No se pudo leer expediente del bot:", e.message);
-      }
-    }
-    return res.json({ correcto: true, discordId, ciudadano, expediente });
+    return await responderCiudadanoCompleto(res, filas[0]);
   } catch (error) {
     console.error("[API PDA NUIP]", error.message);
     return res.status(500).json({ error: "No se pudo consultar la cédula." });
+  }
+});
+
+// Devuelve el ciudadano con su expediente completo (JSON del bot).
+async function responderCiudadanoCompleto(res, ciudadano) {
+  const discordId = String(ciudadano.discord_id || "");
+  if (!discordId) return res.status(404).json({ error: "La cédula no está vinculada a un Discord." });
+  let expediente = { arrestos: [], antecedentes: [], multas: [] };
+  if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+    try {
+      const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+      const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, {
+        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (respuestaBot.ok) {
+        const datosBot = await respuestaBot.json();
+        expediente = datosBot.expediente || expediente;
+      }
+    } catch (e) {
+      console.warn("[API PDA NUIP] No se pudo leer expediente del bot:", e.message);
+    }
+  }
+  return res.json({ correcto: true, discordId, ciudadano, expediente });
+}
+
+// Búsqueda única del PDA: acepta número de cédula, placa o nombre.
+app.get("/api/policial/buscar", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const consulta = String(req.query.consulta || "").trim();
+  if (!consulta) return res.status(400).json({ error: "Escribe una cédula, una placa o un nombre." });
+  try {
+    // 1) Todo dígito => cédula (número de documento).
+    if (/^\d{4,15}$/.test(consulta)) {
+      const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [consulta]);
+      if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada." });
+      return await responderCiudadanoCompleto(res, filas[0]);
+    }
+
+    const esPlaca = /^[A-Za-z0-9-]{4,10}$/.test(consulta) && /\d/.test(consulta) && /[A-Za-z]/.test(consulta);
+
+    // 2) Letras + números sin espacios => placa de vehículo.
+    if (esPlaca) {
+      const placa = consulta.toUpperCase();
+      let discordId = "";
+      try {
+        const [vehiculos] = await pool.execute("SELECT discord_id FROM vehiculos WHERE UPPER(placa) = ? LIMIT 1", [placa]);
+        discordId = String(vehiculos[0]?.discord_id || "");
+      } catch (e) {
+        console.warn("[API PDA BUSCAR] vehiculos no disponible:", e.message);
+      }
+      if (!discordId && process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+        try {
+          const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+          const respuestaBot = await fetch(`${baseApi}/api/vehiculos/000000000000000000?placa=${encodeURIComponent(placa)}`, {
+            headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (respuestaBot.ok) {
+            const datosBot = await respuestaBot.json();
+            discordId = String(datosBot.propietario?.discordId || "");
+          }
+        } catch (e) {
+          console.warn("[API PDA BUSCAR] placa no disponible en el bot:", e.message);
+        }
+      }
+      if (discordId) {
+        const [dueno] = await pool.execute("SELECT * FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
+        if (dueno.length) return await responderCiudadanoCompleto(res, dueno[0]);
+      }
+      // Si la placa no existe, se continúa por si también es un nombre.
+    }
+
+    // 3) Resto => nombre (coincidencia parcial en nombre, nombres o apellidos).
+    const patron = `%${consulta}%`;
+    const [filas] = await pool.execute(
+      "SELECT nuip, discord_id, nombre, nombres, apellidos FROM usuarios WHERE nombre LIKE ? OR nombres LIKE ? OR apellidos LIKE ? ORDER BY nombre LIMIT 20",
+      [patron, patron, patron],
+    );
+    if (!filas.length) {
+      return res.status(404).json({ error: `No se encontró nadie con "${consulta}" (cédula, placa o nombre).` });
+    }
+    if (filas.length === 1) {
+      const [completo] = await pool.execute("SELECT * FROM usuarios WHERE discord_id = ? LIMIT 1", [String(filas[0].discord_id || "")]);
+      if (completo.length) return await responderCiudadanoCompleto(res, completo[0]);
+    }
+    return res.json({
+      correcto: true,
+      coincidencias: filas.map((f) => ({
+        nuip: f.nuip || "",
+        discordId: String(f.discord_id || ""),
+        nombre: String(f.nombre || `${f.nombres || ""} ${f.apellidos || ""}`.trim() || "Sin nombre"),
+      })),
+    });
+  } catch (error) {
+    console.error("[API PDA BUSCAR]", error.message);
+    return res.status(500).json({ error: "No se pudo completar la búsqueda." });
   }
 });
 
