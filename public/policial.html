@@ -181,21 +181,6 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 .rastreo-tag{flex:none;font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:rgba(47,191,134,.16);color:#7ff0c2;border:1px solid rgba(47,191,134,.4)}
 .rastreo-tag.yo{background:rgba(255,209,102,.16);color:#ffd166;border-color:rgba(255,209,102,.45)}
 .rastreo-tag.unidad{background:rgba(255,255,255,.08);color:#ddd;border-color:var(--line);margin-left:6px}
-/* Bodycam en vivo del oficial */
-.bc-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px}
-.bc-feed{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#07090c}
-.bc-bar{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:11px;font-weight:800;letter-spacing:.05em;background:rgba(255,255,255,.05);border-bottom:1px solid var(--line)}
-.bc-rec{width:9px;height:9px;flex:none;border-radius:50%;background:#ff4d4f;animation:parpadear 1.2s infinite}
-@keyframes parpadear{0%,100%{opacity:1}50%{opacity:.15}}
-.bc-pill{padding:2px 8px;border-radius:999px;background:rgba(47,191,134,.16);color:#7ff0c2;border:1px solid rgba(47,191,134,.4);font-size:10px}
-.bc-bar .hora{margin-left:auto;color:var(--muted);font-weight:600}
-.bc-cuerpo{display:flex;gap:14px;padding:14px;align-items:flex-start}
-#bc-foto{width:86px;height:86px;flex:none;border-radius:12px;border:1px solid var(--line);object-fit:cover;background:#111}
-#bc-info{flex:1;font-size:13px;line-height:1.8}
-#bc-info b{font-size:15px}
-#bc-mapa{height:230px;border-top:1px solid var(--line);background:#0b1220}
-#bc-mapa .leaflet-container{background:#0b1220;font:inherit;color:#fff}
-.bc-nota{margin-top:10px;font-size:11px;color:var(--muted)}
 /* Cerrar: X dibujada con CSS */
 .x{position:absolute;right:14px;top:14px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,.08);cursor:pointer}
 .x::before,.x::after{content:"";position:absolute;left:9px;top:15px;width:14px;height:2px;border-radius:2px;background:#fff}
@@ -379,24 +364,6 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   </div>
 </div></div>
 
-<div id="m-bodycam" class="modal"><div class="card wide">
-  <button class="x" data-close="m-bodycam" type="button" aria-label="Cerrar"></button>
-  <h2><svg class="ic"><use href="#i-camera"/></svg>Bodycam en vivo</h2>
-  <p>Feed en vivo del oficial seleccionado.</p>
-  <div class="bc-feed">
-    <div class="bc-bar"><span class="bc-rec"></span>REC<span class="bc-pill" id="bc-unidad">—</span><span id="bc-nombre" style="margin-left:4px">—</span><span class="hora" id="bc-hora">—</span></div>
-    <div class="bc-cuerpo">
-      <img id="bc-foto" alt="Foto del oficial" />
-      <div id="bc-info"><div class="msg">Cargando feed...</div></div>
-    </div>
-    <div id="bc-mapa"></div>
-  </div>
-  <p class="bc-nota">La API oficial de ER:LC no transmite video de bodycam: este feed muestra su telemetría real en vivo (calle, postal, edificio, unidad, estrellas y posición exacta en el mapa) cada 5 segundos. Mapa © ER:LC Tools.</p>
-  <div class="actions" style="margin:12px 0 0">
-    <button class="b" data-close="m-bodycam" type="button">Cerrar bodycam</button>
-  </div>
-</div></div>
-
 <div id="m-arresto" class="modal"><div class="card">
   <button class="x" data-close="m-arresto" type="button" aria-label="Cerrar"></button>
   <h2><svg class="ic"><use href="#i-scale"/></svg>Registrar arresto</h2>
@@ -535,12 +502,9 @@ function pintarRastreo(d){
   RASTREO.capa.clearLayers();
   /* SOLO policia: los civiles (incluida tu propia cuenta si no es oficial) ya no aparecen. */
   const ver = [...(d.policia || [])];
-  RASTREO.datos = ver;
-  RASTREO.actualizadoEn = d.actualizadoEn;
   ver.forEach(p => {
     if (!Number.isFinite(p.pxX) || !Number.isFinite(p.pxY)) return;
     const esYo = Boolean(p.esYo);
-    const seguro = encodeURIComponent(p.nombre).replace(/'/g, "%27");
     L.circleMarker([-p.pxY, p.pxX], {
       radius: esYo ? 9 : 7, color: "#0a0a0a", weight: 2,
       fillColor: esYo ? "#ffd166" : "#2fbf86", fillOpacity: .95,
@@ -549,92 +513,16 @@ function pintarRastreo(d){
       `Equipo: ${esc(p.equipo)}<br>` +
       `Calle: ${esc(p.calle || "Sin calle")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""}${p.edificio ? ` · Edificio ${esc(p.edificio)}` : ""}` +
       (p.estrellas ? `<br>Estrellas de búsqueda: ${p.estrellas}` : "") +
-      `<br><small>${esYo ? "📍 Tu ubicación en tiempo real" : "Rastreo en vivo"}</small>` +
-      `<button class="b bc-btn" type="button" onclick="abrirBodycam(decodeURIComponent('${seguro}'))">🎥 Ver bodycam del oficial</button>`
+      `<br><small>${esYo ? "📍 Tu ubicación en tiempo real" : "Rastreo en vivo"}</small>`
     ).addTo(RASTREO.capa);
   });
   $("#rastreo-lista").innerHTML = ver.length
     ? ver.map(p => `<div class="item rastreo-fila"><span><b>${esc(p.nombre)}</b>${p.unidad ? `<span class="rastreo-tag unidad">${esc(p.unidad)}</span>` : ""}<br><small>${ic("pin")} ${esc(p.calle || "Sin calle")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""} ${p.edificio ? `· Edificio ${esc(p.edificio)}` : ""}<br>${ic("clock")} ${esc(p.equipo)}${p.estrellas ? ` · ⭐ ${p.estrellas}` : ""}</small></span><span class="rastreo-tag${p.esYo ? " yo" : ""}">${p.esYo ? "USTED" : "EN VIVO"}</span></div>`).join("")
     : '<div class="msg">No hay policía conectada al servidor en este momento.</div>';
-  if ($("#m-bodycam").classList.contains("open")) pintarBodycam();
-}
-
-/* ---------- Bodycam en vivo de un oficial ----------
-   La API de ER:LC no da video: el feed muestra la telemetría real del
-   oficial (calle/postal/edificio/unidad/estrellas), su foto de Roblox y
-   un mapa acercado a su posición, todo refrescando con el mismo ciclo
-   de 5 segundos del rastreador. */
-RASTREO.bodycam = null;
-RASTREO.camMapa = null;
-RASTREO.camCapa = null;
-RASTREO.camFotoDe = null;
-
-function abrirBodycam(nombre){
-  const n = String(nombre || "").trim();
-  if (!n) return;
-  RASTREO.bodycam = n;
-  RASTREO.camFotoDe = null;
-  $("#m-bodycam").classList.add("open");
-  $("#bc-nombre").textContent = n;
-  $("#bc-info").innerHTML = '<div class="msg">Cargando feed...</div>';
-  pintarBodycam(true);
-}
-
-async function pintarBodycam(recentrar){
-  if (!$("#m-bodycam").classList.contains("open") || !RASTREO.bodycam) return;
-  const p = (RASTREO.datos || []).find(x => x.nombre === RASTREO.bodycam);
-  if (!p){
-    $("#bc-info").innerHTML = '<div class="msg">Este oficial ya no aparece en el servidor (se desconectó, cambió de equipo o el servidor se reinició).</div>';
-    return;
-  }
-  $("#bc-nombre").textContent = p.nombre;
-  $("#bc-unidad").textContent = p.unidad || p.equipo;
-  $("#bc-hora").textContent = fechaBogota(new Date().toISOString());
-  $("#bc-info").innerHTML =
-    `<b>${esc(p.nombre)}</b><br>` +
-    `${ic("pin")} ${esc(p.calle || "Sin calle")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""}${p.edificio ? ` · Edificio ${esc(p.edificio)}` : ""}<br>` +
-    `${ic("shield")} ${esc(p.equipo)}${p.unidad ? ` · Unidad ${esc(p.unidad)}` : ""}<br>` +
-    (p.estrellas ? `${ic("siren")} Estrellas de búsqueda: ${p.estrellas}<br>` : "") +
-    (p.permiso ? `${ic("id")} Permiso: ${esc(p.permiso)}<br>` : "") +
-    `<small>${ic("clock")} Actualizado ${fechaBogota(RASTREO.actualizadoEn || new Date().toISOString())} · posición en vivo</small>`;
-
-  if (RASTREO.camFotoDe !== p.nombre){
-    RASTREO.camFotoDe = p.nombre;
-    const img = $("#bc-foto");
-    img.removeAttribute("src");
-    fetch(`/api/policial/roblox-avatar/${encodeURIComponent(p.nombre)}`)
-      .then(r => r.json())
-      .then(d => { if (d?.foto && RASTREO.bodycam === p.nombre) img.src = d.foto; })
-      .catch(() => {});
-  }
-
-  if (!Number.isFinite(p.pxX) || !Number.isFinite(p.pxY)) return;
-  try {
-    await cargarLeaflet();
-    if (!RASTREO.camMapa){
-      const crs = Object.assign({}, L.CRS.Simple, {
-        scale: z => Math.pow(2, z - 5),
-        zoom: s => Math.log(s) / Math.LN2 + 5,
-      });
-      RASTREO.camMapa = L.map("bc-mapa", { crs, minZoom: 3, maxZoom: 5, zoomSnap: 1, attributionControl: false });
-      L.tileLayer(TILES_ERLC, { minZoom: 3, maxZoom: 5, tileSize: 990, noWrap: true, keepBuffer: 1 }).addTo(RASTREO.camMapa);
-      RASTREO.camCapa = L.layerGroup().addTo(RASTREO.camMapa);
-      recentrar = true;
-    }
-    RASTREO.camMapa.invalidateSize();
-    RASTREO.camCapa.clearLayers();
-    L.circleMarker([-p.pxY, p.pxX], {
-      radius: 12, color: "#ffd166", weight: 3, fillColor: "#2fbf86", fillOpacity: .9,
-    }).bindPopup(`<b>${esc(p.nombre)}</b><br>${esc(p.calle || "")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""}`).addTo(RASTREO.camCapa);
-    const vista = [-p.pxY, p.pxX];
-    if (recentrar) RASTREO.camMapa.setView(vista, 5);
-    else if (RASTREO.camMapa.getCenter().distanceTo(L.latLng(vista[0], vista[1])) > 200) RASTREO.camMapa.panTo(vista);
-  } catch {}
 }
 
 async function actualizarRastreo(){
-  const abierto = $("#m-rastreo").classList.contains("open") || $("#m-bodycam").classList.contains("open");
-  if (!abierto){
+  if (!$("#m-rastreo").classList.contains("open")){
     if (RASTREO.temporizador){ clearInterval(RASTREO.temporizador); RASTREO.temporizador = null; }
     return;
   }
