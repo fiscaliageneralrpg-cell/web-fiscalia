@@ -1187,6 +1187,113 @@ app.get("/api/policial/alertas", async (req, res) => {
   }
 });
 
+/* ==================== RASTREADOR DE OFICIALES (ER:LC EN VIVO) ====================
+   Lee las posiciones REALES del servidor de ER:LC con la API oficial de PRC
+   (api.erlc.gg/v2/server) y las convierte a píxeles del mapa de ER:LC Tools.
+   Requiere en Render la variable ERLC_SERVER_KEY (en el juego: Settings ->
+   ERLC API, pack del servidor privado). Opcional:
+     ERLC_EQUIPOS_POLICIA="police,sheriff,highway patrol"  (equipos a mostrar)
+     ERLC_SERVER_API="https://api.erlc.gg/v2/server"       (solo para pruebas) */
+const EQUIPOS_POLICIA_POR_DEFECTO = ["police", "sheriff", "trooper", "highway patrol", "state trooper"];
+
+function equipoEsPolicia(equipo) {
+  const nombre = String(equipo || "").trim().toLowerCase();
+  if (!nombre) return false;
+  const propios = String(process.env.ERLC_EQUIPOS_POLICIA || "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const lista = propios.length ? propios : EQUIPOS_POLICIA_POR_DEFECTO;
+  return lista.some((e) => nombre === e || nombre.includes(e));
+}
+
+/* LocationX/LocationZ de api.erlc.gg -> píxeles del mapa de verano de
+   ER:LC Tools (fórmula de https://erlc-tools.com/map-api, verificada en el
+   juego contra códigos postales):
+     world z = -5426.232 + 2·LocationX        world x = 4641.842 − 2·LocationZ
+     X = (z + 5472)·2.75                      Y = 29700 − (x + 6112)·2.75     */
+function ubicacionRastreo(locationX, locationZ) {
+  const mundoZ = -5426.232 + 2 * Number(locationX || 0);
+  const mundoX = 4641.842 - 2 * Number(locationZ || 0);
+  return {
+    mundoX: Math.round(mundoX * 100) / 100,
+    mundoZ: Math.round(mundoZ * 100) / 100,
+    pxX: Math.round((mundoZ + 5472) * 2.75 * 10) / 10,
+    pxY: Math.round((29700 - (mundoX + 6112) * 2.75) * 10) / 10,
+  };
+}
+
+/* Cache corto para no martillar la API de ER:LC con el refresco de 5 s. */
+let cacheRastreo = { tiempo: 0, jugadores: null };
+
+app.get("/api/policial/rastreo", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const clave = String(process.env.ERLC_SERVER_KEY || "").trim();
+  if (!clave) {
+    return res.status(503).json({
+      error: "Falta la clave del servidor de ER:LC en Render (variable ERLC_SERVER_KEY). La encuentras en el juego: Settings → ERLC API.",
+    });
+  }
+
+  let jugadores = null;
+  if (cacheRastreo.jugadores && Date.now() - cacheRastreo.tiempo < 4000) {
+    jugadores = cacheRastreo.jugadores;
+  } else {
+    try {
+      const origen = String(process.env.ERLC_SERVER_API || "https://api.erlc.gg/v2/server")
+        .trim().replace(/[?&]Players=true$/, "");
+      const respuesta = await fetch(`${origen}${origen.includes("?") ? "&" : "?"}Players=true`, {
+        headers: { "server-key": clave, Accept: "application/json" },
+        signal: AbortSignal.timeout(12000),
+      });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        return res.status(502).json({
+          error: `El servidor de ER:LC respondió ${respuesta.status}: ${datos.message || datos.error || "sin detalle"}.`,
+        });
+      }
+      jugadores = (Array.isArray(datos.Players) ? datos.Players : [])
+        .map((jugador) => {
+          if (!jugador?.Location) return null;
+          const [robloxName, robloxId] = String(jugador.Player || "").split(":");
+          const loc = jugador.Location;
+          const mapa = ubicacionRastreo(loc.LocationX, loc.LocationZ);
+          return {
+            nombre: String(robloxName || "").trim() || "Jugador",
+            robloxId: robloxId || null,
+            equipo: String(jugador.Team || "Civilian"),
+            unidad: jugador.Callsign || null,
+            permiso: jugador.Permission || null,
+            estrellas: Number(jugador.WantedStars || 0),
+            policia: equipoEsPolicia(jugador.Team),
+            calle: loc.StreetName || null,
+            postal: loc.PostalCode || null,
+            edificio: loc.BuildingNumber || null,
+            ...mapa,
+          };
+        })
+        .filter(Boolean);
+      cacheRastreo = { tiempo: Date.now(), jugadores };
+    } catch (error) {
+      console.error("[RASTREO ERLC]", error.message);
+      return res.status(502).json({ error: "No se pudo consultar el servidor de ER:LC en este momento." });
+    }
+  }
+
+  const mios = [
+    String(req.query.yo || "").trim().toLowerCase(),
+    String(req.session.usuario?.cedula?.roblox_name || "").trim().toLowerCase(),
+  ].filter(Boolean);
+  const conYo = jugadores.map((j) => ({ ...j, esYo: mios.includes(String(j.nombre).toLowerCase()) }));
+
+  return res.json({
+    correcto: true,
+    servidor: "Servidor ER:LC",
+    policia: conYo.filter((j) => j.policia),
+    yo: conYo.find((j) => j.esYo) || null,
+    total: conYo.length,
+    actualizadoEn: new Date().toISOString(),
+  });
+});
+
 app.get("/api/policial/vehiculo/:placa", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   const placa = String(req.params.placa || "").trim().toUpperCase();
