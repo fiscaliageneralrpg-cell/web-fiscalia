@@ -362,6 +362,18 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val = v => (v === undefined || v === null || v === "" ? "—" : esc(v));
+/* Fechas en hora de Colombia (America/Bogota): el registro viene en ISO con Z
+   y en la tabla se veía crudo ("2026-11-14T01:27:55.126Z"). */
+function fechaBogota(v){
+  if (v === undefined || v === null || v === "") return "";
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)){ const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; }
+  const f = new Date(v);
+  if (!Number.isFinite(f.getTime())) return s;
+  return f.toLocaleString("es-CO", { timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+/* Tiempo de prisión: el bot guarda prisionSegundos (algunos registros antiguos traen "tiempo"). */
+const tiempoPrision = r => r.tiempo || (Number(r.prisionSegundos) > 0 ? `${Math.ceil(Number(r.prisionSegundos) / 60)} min` : null);
 const ic = n => `<svg class="ic"><use href="#i-${n}"/></svg>`;
 let ciudadano = null;
 let miNombre = "";
@@ -511,18 +523,18 @@ function pintar(d){
   $("#d-obs").textContent = ex.observaciones || c.observaciones || "—";
 
   const lic = d.licencia || c.licencia;
-  filas($("#t-licencia"), lic ? [lic] : [], ["numero","categoria","fechaExpedicion","restricciones"]);
+  filas($("#t-licencia"), lic ? [lic] : [], ["numero","categoria", r => fechaBogota(r.fechaExpedicion),"restricciones"]);
   filas($("#t-vehiculos"), d.vehiculos || c.vehiculos || [], [r => r.nombre || r.modelo, "placa", "color"]);
 
   const reg = [...(ex.arrestos || []), ...(ex.antecedentes || [])];
   filas($("#t-antecedentes"), reg, [
     r => (r.delitos || []).map(x => x.delito || x.codigo || x).join(", ") || r.motivo || r.titulo || r.contenido,
-    "tiempo", r => r.agente || r.oficial, "fecha"
+    r => tiempoPrision(r), r => r.agente || r.oficial, r => fechaBogota(r.fecha)
   ]);
   const b = $("#b-ant");
   b.textContent = reg.length ? reg.length + " registro(s)" : "Limpio";
   b.className = "badge" + (reg.length ? " bad" : "");
-  filas($("#t-multas"), ex.multas || d.multas || [], [r => r.articulos || r.articulo, "placa", "valor", r => r.agente || r.oficial, "fecha"]);
+  filas($("#t-multas"), ex.multas || d.multas || [], [r => r.articulos || r.articulo, "placa", "valor", r => r.agente || r.oficial, r => fechaBogota(r.fecha)]);
 
   const token = ++tokenFoto;
   $("#foto").innerHTML = ic("user");
