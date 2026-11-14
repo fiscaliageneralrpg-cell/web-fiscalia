@@ -174,6 +174,13 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 .card form{display:grid;gap:10px}
 .card input:not([type=checkbox]):not([type=file]){padding:11px 14px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font:inherit}
 .card img{display:block;width:100%;border:1px solid var(--line);border-radius:12px}
+/* Rastreador de oficiales (mapa ER:LC Tools + Leaflet) */
+#rastreo-mapa{height:min(58vh,430px);border:1px solid var(--line);border-radius:14px;background:#0b1220;overflow:hidden}
+#rastreo-mapa .leaflet-container{background:#0b1220;font:inherit;color:#fff}
+.rastreo-fila{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.rastreo-tag{flex:none;font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:rgba(47,191,134,.16);color:#7ff0c2;border:1px solid rgba(47,191,134,.4)}
+.rastreo-tag.yo{background:rgba(255,209,102,.16);color:#ffd166;border-color:rgba(255,209,102,.45)}
+.rastreo-tag.unidad{background:rgba(255,255,255,.08);color:#ddd;border-color:var(--line);margin-left:6px}
 /* Cerrar: X dibujada con CSS */
 .x{position:absolute;right:14px;top:14px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,.08);cursor:pointer}
 .x::before,.x::after{content:"";position:absolute;left:9px;top:15px;width:14px;height:2px;border-radius:2px;background:#fff}
@@ -234,6 +241,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
         <h3>MENÚ DEL OFICIAL</h3>
         <button id="go-radio" type="button"><svg class="ic"><use href="#i-radio"/></svg>Ir a la radio</button>
         <button id="go-alertas" class="alert" type="button"><svg class="ic"><use href="#i-siren"/></svg>Alertas</button>
+        <button id="go-rastreo" type="button"><svg class="ic"><use href="#i-pin"/></svg>Rastreador de oficiales</button>
         <button id="go-db" type="button"><svg class="ic"><use href="#i-db"/></svg>Buscar en la base de datos</button>
       </aside>
       <div class="glass hello">
@@ -343,6 +351,19 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   <div id="alertas-list"></div>
 </div></div>
 
+<div id="m-rastreo" class="modal"><div class="card wide">
+  <button class="x" data-close="m-rastreo" type="button" aria-label="Cerrar"></button>
+  <h2><svg class="ic"><use href="#i-pin"/></svg>Rastreador de oficiales</h2>
+  <p>Posiciones en vivo del servidor de ER:LC: solo los equipos de policía, actualizadas cada 5 segundos. Mapa y datos © ER:LC Tools (uso de herramientas).</p>
+  <div id="rastreo-mapa"></div>
+  <div id="rastreo-lista" style="margin-top:12px"></div>
+  <div class="msg" id="rastreo-msg">Abriendo rastreo...</div>
+  <div class="actions" style="margin:12px 0 0">
+    <button class="b" id="rastreo-actualizar" type="button"><svg class="ic"><use href="#i-search"/></svg>Actualizar ahora</button>
+    <button class="b" data-close="m-rastreo" type="button">Cerrar</button>
+  </div>
+</div></div>
+
 <div id="m-arresto" class="modal"><div class="card">
   <button class="x" data-close="m-arresto" type="button" aria-label="Cerrar"></button>
   <h2><svg class="ic"><use href="#i-scale"/></svg>Registrar arresto</h2>
@@ -439,6 +460,95 @@ async function cargarAlertas(){
   } catch (err) { l.innerHTML = `<div class="msg">${esc(err.message)}</div>`; }
 }
 $("#go-alertas").onclick = cargarAlertas;
+
+/* Rastreador de oficiales: mapa de ER:LC Tools + posiciones en vivo de ER:LC */
+const TILES_ERLC = "https://erlc-tools.com/map-tiles/summer/z{z}/{x}_{y}.webp";
+const RASTREO = { mapa: null, capa: null, cargando: null, temporizador: null };
+
+function cargarLeaflet(){
+  if (window.L) return Promise.resolve();
+  if (RASTREO.cargando) return RASTREO.cargando;
+  RASTREO.cargando = new Promise((ok, mal) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+    js.onload = ok;
+    js.onerror = () => mal(new Error("No se pudo cargar el mapa (Leaflet). Revisa tu conexión a internet."));
+    document.head.appendChild(js);
+  });
+  return RASTREO.cargando;
+}
+
+async function crearMapaRastreo(){
+  await cargarLeaflet();
+  if (RASTREO.mapa){ RASTREO.mapa.invalidateSize(); return; }
+  /* Pirámide de ER:LC Tools: z0..z5 con tiles de 990 px. scale(z)=2^(z-5)
+     deja 1 px de pantalla = 1 px de mapa en el nivel 5 (2.75 px por stud). */
+  const crs = Object.assign({}, L.CRS.Simple, {
+    scale: z => Math.pow(2, z - 5),
+    zoom: s => Math.log(s) / Math.LN2 + 5,
+  });
+  RASTREO.mapa = L.map("rastreo-mapa", { crs, minZoom: 0, maxZoom: 5, zoomSnap: 1, attributionControl: false });
+  L.tileLayer(TILES_ERLC, { minZoom: 0, maxZoom: 5, tileSize: 990, noWrap: true, keepBuffer: 1 }).addTo(RASTREO.mapa);
+  RASTREO.capa = L.layerGroup().addTo(RASTREO.mapa);
+  RASTREO.mapa.setView([-14850, 14850], 1); /* centro del mundo: 29700 px */
+}
+
+function pintarRastreo(d){
+  if (!RASTREO.capa) return;
+  RASTREO.capa.clearLayers();
+  const ver = [...(d.policia || [])];
+  if (d.yo && !d.yo.policia) ver.push(d.yo);
+  ver.forEach(p => {
+    if (!Number.isFinite(p.pxX) || !Number.isFinite(p.pxY)) return;
+    const esYo = Boolean(p.esYo);
+    L.circleMarker([-p.pxY, p.pxX], {
+      radius: esYo ? 9 : 7, color: "#0a0a0a", weight: 2,
+      fillColor: esYo ? "#ffd166" : "#2fbf86", fillOpacity: .95,
+    }).bindPopup(
+      `<b>${esc(p.nombre)}</b>${p.unidad ? ` · ${esc(p.unidad)}` : ""}<br>` +
+      `Equipo: ${esc(p.equipo)}<br>` +
+      `Calle: ${esc(p.calle || "Sin calle")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""}${p.edificio ? ` · Edificio ${esc(p.edificio)}` : ""}` +
+      (p.estrellas ? `<br>Estrellas de búsqueda: ${p.estrellas}` : "") +
+      `<br><small>${esYo ? "📍 Tu ubicación en tiempo real" : "Rastreo en vivo"}</small>`
+    ).addTo(RASTREO.capa);
+  });
+  $("#rastreo-lista").innerHTML = ver.length
+    ? ver.map(p => `<div class="item rastreo-fila"><span><b>${esc(p.nombre)}</b>${p.unidad ? `<span class="rastreo-tag unidad">${esc(p.unidad)}</span>` : ""}<br><small>${ic("pin")} ${esc(p.calle || "Sin calle")}${p.postal ? ` · Postal ${esc(p.postal)}` : ""} ${p.edificio ? `· Edificio ${esc(p.edificio)}` : ""}<br>${ic("clock")} ${esc(p.equipo)}${p.estrellas ? ` · ⭐ ${p.estrellas}` : ""}</small></span><span class="rastreo-tag${p.esYo ? " yo" : ""}">${p.esYo ? "USTED" : "EN VIVO"}</span></div>`).join("")
+    : '<div class="msg">No hay policía conectada al servidor en este momento.</div>';
+}
+
+async function actualizarRastreo(){
+  if (!$("#m-rastreo").classList.contains("open")){
+    if (RASTREO.temporizador){ clearInterval(RASTREO.temporizador); RASTREO.temporizador = null; }
+    return;
+  }
+  const msg = $("#rastreo-msg");
+  try {
+    const yo = String(ciudadano?.roblox_name || ciudadano?.robloxName || "").trim();
+    const r = await fetch(`/api/policial/rastreo${yo ? `?yo=${encodeURIComponent(yo)}` : ""}`, { cache: "no-store" });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "No se pudo cargar el rastreo.");
+    await crearMapaRastreo();
+    pintarRastreo(d);
+    msg.textContent = `Actualizado ${fechaBogota(d.actualizadoEn)} · ${d.policia?.length || 0} policía en vivo · ${d.total || 0} jugador(es) en el servidor`;
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+}
+
+async function abrirRastreo(){
+  $("#m-rastreo").classList.add("open");
+  $("#rastreo-msg").textContent = "Cargando posiciones en vivo...";
+  await crearMapaRastreo().catch(() => {}); /* el mapa se ve aunque falle la API */
+  await actualizarRastreo();
+  if (!RASTREO.temporizador) RASTREO.temporizador = setInterval(actualizarRastreo, 5000);
+}
+$("#go-rastreo").onclick = abrirRastreo;
+$("#rastreo-actualizar").onclick = actualizarRastreo;
 
 /* Tablas */
 function filas(el, rows, cols){
