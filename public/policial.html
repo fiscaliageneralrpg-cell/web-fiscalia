@@ -181,6 +181,10 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
 .rastreo-tag{flex:none;font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:rgba(47,191,134,.16);color:#7ff0c2;border:1px solid rgba(47,191,134,.4)}
 .rastreo-tag.yo{background:rgba(255,209,102,.16);color:#ffd166;border-color:rgba(255,209,102,.45)}
 .rastreo-tag.unidad{background:rgba(255,255,255,.08);color:#ddd;border-color:var(--line);margin-left:6px}
+/* Cámaras de la ciudad (capa ER:LC Tools) */
+#rastreo-camaras.on{background:rgba(47,191,134,.22);border-color:rgba(47,191,134,.65);color:#7ff0c2}
+.cam-ic{width:22px;height:22px;border-radius:50%;border:2px solid var(--cam,#5fd0c0);background:rgba(7,9,12,.88);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.65)}
+.cam-ic i{font-style:normal;font-size:10px;line-height:1;color:var(--cam,#5fd0c0)}
 /* Cerrar: X dibujada con CSS */
 .x{position:absolute;right:14px;top:14px;width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,.08);cursor:pointer}
 .x::before,.x::after{content:"";position:absolute;left:9px;top:15px;width:14px;height:2px;border-radius:2px;background:#fff}
@@ -359,6 +363,7 @@ footer{padding:18px 20px 26px;text-align:center;font-size:11px;line-height:1.7;c
   <div id="rastreo-lista" style="margin-top:12px"></div>
   <div class="msg" id="rastreo-msg">Abriendo rastreo...</div>
   <div class="actions" style="margin:12px 0 0">
+    <button class="b" id="rastreo-camaras" type="button"><svg class="ic"><use href="#i-camera"/></svg>Cámaras de la ciudad</button>
     <button class="b" id="rastreo-actualizar" type="button"><svg class="ic"><use href="#i-search"/></svg>Actualizar ahora</button>
     <button class="b" data-close="m-rastreo" type="button">Cerrar</button>
   </div>
@@ -534,7 +539,8 @@ async function actualizarRastreo(){
     if (!r.ok) throw new Error(d.error || "No se pudo cargar el rastreo.");
     await crearMapaRastreo();
     pintarRastreo(d);
-    msg.textContent = `Actualizado ${fechaBogota(d.actualizadoEn)} · ${d.policia?.length || 0} oficial(es) en vivo (solo policía)`;
+    msg.textContent = `Actualizado ${fechaBogota(d.actualizadoEn)} · ${d.policia?.length || 0} oficial(es) en vivo (solo policía)` +
+      (RASTREO.camarasAbiertas && RASTREO.camarasDatos ? ` · ${RASTREO.camarasDatos.total} cámaras en el mapa` : "");
   } catch (err) {
     msg.textContent = err.message;
   }
@@ -549,6 +555,59 @@ async function abrirRastreo(){
 }
 $("#go-rastreo").onclick = abrirRastreo;
 $("#rastreo-actualizar").onclick = actualizarRastreo;
+
+/* Capa de cámaras de la ciudad: posiciones fijas (seguridad, velocidad,
+   semáforo) de ER:LC Tools. Son fotos fijas del juego: sin video en vivo. */
+RASTREO.camarasAbiertas = false;
+RASTREO.capaCamaras = null;
+RASTREO.camarasDatos = null;
+
+async function alternarCamaras(){
+  const btn = $("#rastreo-camaras");
+  if (RASTREO.camarasAbiertas){
+    RASTREO.camarasAbiertas = false;
+    if (RASTREO.capaCamaras && RASTREO.mapa) RASTREO.mapa.removeLayer(RASTREO.capaCamaras);
+    btn.classList.remove("on");
+    return;
+  }
+  btn.disabled = true;
+  try {
+    if (!RASTREO.camarasDatos){
+      const r = await fetch("/api/policial/camaras", { cache: "no-store" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "No se pudieron cargar las cámaras.");
+      RASTREO.camarasDatos = d;
+    }
+    await crearMapaRastreo();
+    if (!RASTREO.capaCamaras){
+      RASTREO.capaCamaras = L.layerGroup();
+      RASTREO.camarasDatos.grupos.forEach(g => g.items.forEach(it => {
+        L.marker([-it.pxY, it.pxX], {
+          title: g.nombre,
+          icon: L.divIcon({
+            className: "cam-wrap",
+            html: `<div class="cam-ic" style="--cam:${g.color}"><i style="transform:rotate(${90 - it.yaw}deg)">➤</i></div>`,
+            iconSize: [22, 22], iconAnchor: [11, 11],
+          }),
+        }).bindPopup(
+          `<b>${g.emoji} ${esc(g.nombre)}</b><br>` +
+          `${esc(it.etiqueta || "Cámara fija de la ciudad")}` +
+          (it.tramo ? `<br>Tramo vigilado · ${it.tramo.largo || "?"} studs de largo` : "") +
+          `<br>Orientación: ${it.yaw}°` +
+          `<br><small>Posición fija · Datos © ER:LC Tools (sin video en vivo)</small>`
+        ).addTo(RASTREO.capaCamaras);
+      }));
+    }
+    RASTREO.capaCamaras.addTo(RASTREO.mapa);
+    RASTREO.camarasAbiertas = true;
+    btn.classList.add("on");
+  } catch (err) {
+    $("#rastreo-msg").textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("#rastreo-camaras").onclick = alternarCamaras;
 
 /* Tablas */
 function filas(el, rows, cols){
