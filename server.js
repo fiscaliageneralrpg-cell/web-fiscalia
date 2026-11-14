@@ -1294,6 +1294,67 @@ app.get("/api/policial/rastreo", async (req, res) => {
   });
 });
 
+/* ==================== CÁMARAS DE LA CIUDAD (ER:LC Tools) ====================
+   Posiciones FIJAS de las cámaras del juego: seguridad, velocidad y
+   semáforo, desde map-points-summer.json de ER:LC Tools (datos estáticos
+   con CORS abierto; la API de ER:LC no transmite video de cámaras).
+   Mundo (studs) -> px del mapa de verano: X=(z+5472)·2.75, Y=29700−(x+6112)·2.75 */
+const TIPOS_CAMARA = [
+  { id: "security", nombre: "Cámaras de seguridad", color: "#5fd0c0", emoji: "📷" },
+  { id: "speedcams", nombre: "Cámaras de velocidad", color: "#ffb020", emoji: "📸" },
+  { id: "redlight", nombre: "Cámaras de semáforo", color: "#ff5a5a", emoji: "🔴" },
+];
+let cacheCamaras = { tiempo: 0, datos: null };
+
+function pixelDeMundo(mundoX, mundoZ) {
+  return {
+    pxX: Math.round((Number(mundoZ) + 5472) * 2.75 * 10) / 10,
+    pxY: Math.round((29700 - (Number(mundoX) + 6112) * 2.75) * 10) / 10,
+  };
+}
+
+app.get("/api/policial/camaras", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  if (cacheCamaras.datos && Date.now() - cacheCamaras.tiempo < 30 * 60 * 1000) {
+    return res.json(cacheCamaras.datos);
+  }
+  try {
+    const origen = String(process.env.ERLC_MAP_POINTS || "https://erlc-tools.com/map-points-summer.json").trim();
+    const r = await fetch(origen, { signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
+    const datos = await r.json().catch(() => ({}));
+    if (!r.ok || !Array.isArray(datos.kinds)) {
+      return res.status(502).json({ error: `ER:LC Tools respondió ${r.status} al leer las cámaras.` });
+    }
+    const grupos = TIPOS_CAMARA.map((tipo) => {
+      const kind = datos.kinds.find((k) => k.id === tipo.id);
+      const items = [];
+      (kind?.groups || []).forEach((g) => (g.items || []).forEach((it) => {
+        const [x, , z, yaw, etiqueta, zona] = it;
+        if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(z))) return;
+        const fila = { ...pixelDeMundo(x, z), yaw: Number(yaw) || 0, etiqueta: etiqueta ? String(etiqueta) : null };
+        if (Array.isArray(zona) && Number.isFinite(Number(zona[0])) && Number.isFinite(Number(zona[2]))) {
+          /* tramo vigilado de la cámara de velocidad (world studs -> px) */
+          fila.tramo = { ...pixelDeMundo(zona[0], zona[2]), ancho: Number(zona[4]) || null, largo: Number(zona[5]) || null };
+        }
+        items.push(fila);
+      }));
+      return { ...tipo, total: items.length, items };
+    });
+    const salida = {
+      correcto: true,
+      grupos,
+      total: grupos.reduce((a, g) => a + g.total, 0),
+      fuente: "ER:LC Tools (map-points-summer)",
+      actualizadoEn: new Date().toISOString(),
+    };
+    cacheCamaras = { tiempo: Date.now(), datos: salida };
+    return res.json(salida);
+  } catch (error) {
+    console.error("[CAMARAS ERLC-TOOLS]", error.message);
+    return res.status(502).json({ error: "No se pudieron cargar las cámaras de ER:LC Tools en este momento." });
+  }
+});
+
 app.get("/api/policial/vehiculo/:placa", async (req, res) => {
   if (!(await exigirPolicia(req, res))) return;
   const placa = String(req.params.placa || "").trim().toUpperCase();
