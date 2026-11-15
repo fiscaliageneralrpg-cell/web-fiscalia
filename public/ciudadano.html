@@ -5076,6 +5076,7 @@
     /* ===== App principal ===== */
     .principal { display: flex; flex-direction: column; height: 100vh; }
     .topbar {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -5101,6 +5102,139 @@
       font-weight: 900;
       border: 1px solid var(--linea);
     }
+
+    /* La foto de perfil es un BOTÓN que despliega el menú hacia abajo */
+    button.mi-cuenta {
+      border: 0;
+      background: transparent;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 5px 8px;
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.18s;
+    }
+    button.mi-cuenta:hover,
+    button.mi-cuenta[aria-expanded="true"] { background: rgba(255, 255, 255, 0.08); }
+    .mi-cuenta .flecha { font-size: 9px; color: var(--muted); transition: transform 0.2s; }
+    button.mi-cuenta[aria-expanded="true"] .flecha { transform: rotate(180deg); }
+    .punto-cuenta {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--verde-fuerte);
+      border: 2px solid var(--panel2);
+      box-shadow: 0 0 8px rgba(37, 211, 102, 0.95);
+      animation: parpadeo 1.4s ease infinite;
+    }
+    @keyframes parpadeo { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+    /* Menú que se baja desde la foto de perfil (avisos + cuenta) */
+    .menu-cuenta {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 10px;
+      z-index: 25;
+      width: 306px;
+      max-width: calc(100vw - 24px);
+      max-height: min(72vh, 470px);
+      overflow: auto;
+      padding: 8px;
+      border: 1px solid var(--linea);
+      border-radius: 18px;
+      background: rgba(17, 27, 33, 0.985);
+      box-shadow: var(--sombra);
+      animation: bajar 0.22s ease both;
+    }
+    .menu-cuenta[hidden] { display: none; }
+    @keyframes bajar { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+    .mc-perfil { display: flex; align-items: center; gap: 10px; padding: 6px 8px 10px; border-bottom: 1px solid var(--linea); }
+    .mc-perfil img,
+    .mc-perfil .inicial {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      flex: none;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--panel2);
+      color: var(--verde-fuerte);
+      font-weight: 900;
+      border: 1px solid var(--linea);
+    }
+    .mc-perfil b { display: block; color: var(--texto); font-size: 14px; }
+    .mc-perfil small { color: var(--muted); font-size: 11.5px; }
+    .mc-tit { padding: 11px 8px 5px; font-size: 10.5px; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+    .notif { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 12px; cursor: pointer; transition: background 0.15s; }
+    .notif:hover { background: rgba(255, 255, 255, 0.06); }
+    .notif .av { width: 38px; height: 38px; font-size: 15px; }
+    .notif .c { flex: 1; min-width: 0; }
+    .notif .c b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif .c small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif.nuevo .c b { color: var(--verde-fuerte); }
+    .notif.nuevo .c small { color: var(--texto); }
+    .notif .hora { flex: none; font-size: 10px; color: var(--muted); }
+    .no-leido {
+      flex: none;
+      min-width: 19px;
+      height: 19px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--verde-fuerte);
+      color: #04110c;
+      font-size: 10.5px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 8px rgba(37, 211, 102, 0.5);
+    }
+    .fila-chat .fila1 .der { display: flex; align-items: center; gap: 6px; flex: none; }
+    .mc-vacio { padding: 14px 8px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .mc-vacio b { color: var(--texto); }
+    .mc-op {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 8px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--texto);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .mc-op:hover { background: rgba(255, 255, 255, 0.07); }
+    .mc-op .ico { width: 20px; text-align: center; font-size: 15px; }
+    .mc-op.peligro { color: #ff8b8b; }
+    .mc-op.peligro:hover { background: rgba(255, 90, 90, 0.14); }
+    .mc-edit, .mc-confirm { display: grid; gap: 8px; padding: 4px 8px 8px; }
+    .mc-edit input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--linea);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+      outline: none;
+    }
+    .mc-edit input:focus { border-color: var(--verde); }
+    .mc-edit .fila, .mc-confirm .fila { display: flex; gap: 8px; }
+    .mc-confirm { color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+    .mc-confirm b { color: #ff8b8b; }
+    .btn-mini { flex: 1; padding: 9px 10px; border: 0; border-radius: 11px; font-weight: 800; font-size: 12.5px; cursor: pointer; }
+    .btn-mini.ok { background: var(--verde-fuerte); color: #04110c; }
+    .btn-mini.no { background: rgba(255, 255, 255, 0.09); color: var(--texto); }
+    .btn-mini.rojo { background: #ef7777; color: #2b0000; }
+    .mc-foto { display: none; }
+    .menu-cuenta .aviso { padding: 0 8px; }
     .wa { display: grid; grid-template-columns: 320px minmax(0, 1fr); flex: 1; min-height: 0; }
 
     /* Izquierda: lista de chats */
@@ -5353,11 +5487,67 @@
         <span class="bol"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.04 3C8.9 3 3.1 8.8 3.1 15.94c0 2.28.6 4.5 1.74 6.46L3 29.5l7.3-1.9a12.9 12.9 0 0 0 5.74 1.37c7.14 0 12.94-5.8 12.94-12.94C29 8.8 23.18 3 16.04 3zm0 23.7c-1.83 0-3.63-.49-5.2-1.42l-.37-.22-4.33 1.14 1.16-4.22-.24-.39a10.7 10.7 0 0 1-1.64-5.66c0-5.94 4.84-10.77 10.79-10.77 2.88 0 5.59 1.12 7.63 3.16a10.7 10.7 0 0 1 3.15 7.62c0 5.95-4.84 10.77-10.79 10.77z"/></svg></span>
         WhatsApp <small>· Medellín RP</small>
       </span>
-      <span class="mi-cuenta">
+      <button
+        class="mi-cuenta"
+        id="w-btn-cuenta"
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-controls="w-menu-cuenta"
+        title="Toca tu foto para ver avisos y tu cuenta"
+      >
         <span class="info"><b id="w-mi-nombre">—</b><small id="w-mi-numero">—</small></span>
         <img id="w-mi-foto" alt="Mi foto" hidden />
         <span class="inicial" id="w-mi-inicial">?</span>
-      </span>
+        <span class="flecha" aria-hidden="true">▼</span>
+        <span class="punto-cuenta" id="w-punto-cuenta" hidden></span>
+      </button>
+
+      <!-- Menú que se DESPLIEGA hacia abajo desde la foto de perfil -->
+      <div class="menu-cuenta" id="w-menu-cuenta" role="menu" aria-label="Tu cuenta" hidden>
+        <div class="mc-perfil">
+          <img id="w-menu-foto" alt="" hidden />
+          <span class="inicial" id="w-menu-inicial">?</span>
+          <span><b id="w-menu-nombre">—</b><small id="w-menu-numero">—</small></span>
+        </div>
+
+        <div class="mc-tit">Avisos de mensajes</div>
+        <div id="w-notifs"></div>
+
+        <div class="mc-tit">Tu cuenta</div>
+        <button class="mc-op" id="w-op-nombre" type="button" role="menuitem">
+          <span class="ico">✏️</span>Cambiar nombre
+        </button>
+        <div class="mc-edit" id="w-edit-nombre" hidden>
+          <input id="w-input-nombre" type="text" maxlength="40" placeholder="Tu nuevo nombre" autocomplete="off" />
+          <div class="fila">
+            <button class="btn-mini ok" id="w-guardar-nombre" type="button">Guardar</button>
+            <button class="btn-mini no" id="w-cancelar-nombre" type="button">Cancelar</button>
+          </div>
+        </div>
+
+        <button class="mc-op" id="w-op-foto" type="button" role="menuitem">
+          <span class="ico">📷</span>Cambiar foto de perfil
+        </button>
+        <input class="mc-foto" id="w-foto-cuenta" type="file" accept="image/*" />
+
+        <button class="mc-op peligro" id="w-op-eliminar" type="button" role="menuitem">
+          <span class="ico">🗑️</span>Eliminar cuenta
+        </button>
+        <div class="mc-confirm" id="w-confirm-eliminar" hidden>
+          <span>
+            ¿Seguro que quieres <b>eliminar tu cuenta</b>? Se borran tu número,
+            tu nombre, tu foto y todos tus chats de este dispositivo. Esto
+            <b>no se puede deshacer</b>.
+          </span>
+          <div class="fila">
+            <button class="btn-mini no" id="w-no-eliminar" type="button">Cancelar</button>
+            <button class="btn-mini rojo" id="w-si-eliminar" type="button">Sí, eliminar</button>
+          </div>
+        </div>
+
+        <div class="aviso" id="w-aviso-cuenta"></div>
+      </div>
     </header>
 
     <div class="wa">
@@ -5582,7 +5772,9 @@ function abrirPrincipal() {
   $("#w-mi-nombre").textContent = estado.cuenta.nombre;
   $("#w-mi-numero").textContent = formatear(estado.cuenta.numero);
   pintarFoto($("#w-mi-foto"), $("#w-mi-inicial"), estado.cuenta);
+  pintarMenuPerfil();
   pintarChats();
+  pintarNotifs();
 }
 const ultimoDe = (c) => (c.mensajes && c.mensajes.length ? c.mensajes[c.mensajes.length - 1] : null);
 function avHtml(c) {
@@ -5599,7 +5791,8 @@ function pintarChats() {
     ? lista
         .map((c) => {
           const m = ultimoDe(c);
-          return `<div class="fila-chat${c.id === chatAbierto ? " activo" : ""}" data-chat="${esc(c.id)}">${avHtml(c)}<span class="cuerpo"><span class="fila1"><b>${esc(c.nombre)}</b><span class="hora">${m ? hora(m.t) : ""}</span></span><small>${m ? esc((m.de === "yo" ? "Tú: " : "") + m.texto) : "Sin mensajes aún"}</small></span></div>`;
+          const badge = c.noLeidos ? `<span class="no-leido">${c.noLeidos > 99 ? "99+" : c.noLeidos}</span>` : "";
+          return `<div class="fila-chat${c.id === chatAbierto ? " activo" : ""}" data-chat="${esc(c.id)}">${avHtml(c)}<span class="cuerpo"><span class="fila1"><b>${esc(c.nombre)}</b><span class="der">${badge}<span class="hora">${m ? hora(m.t) : ""}</span></span></span><small>${m ? esc((m.de === "yo" ? "Tú: " : "") + m.texto) : "Sin mensajes aún"}</small></span></div>`;
         })
         .join("")
     : `<div class="vacio-chats"><b>${q ? "Sin resultados" : "Aún no tienes chats"}</b>${q ? "Prueba con otro nombre o número." : "Toca ＋ Nuevo chat para escribirle a alguien."}</div>`;
@@ -5611,6 +5804,10 @@ function abrirChat(id) {
   const c = estado.chats.find((x) => x.id === id);
   if (!c) return;
   chatAbierto = id;
+  if (c.noLeidos) {
+    c.noLeidos = 0;
+    guardar();
+  }
   $("#w-principal").classList.add("chat-abierto");
   $("#w-sin-chat").hidden = true;
   $("#w-chat").hidden = false;
@@ -5619,6 +5816,7 @@ function abrirChat(id) {
   pintarFoto($("#w-conv-foto"), $("#w-conv-inicial"), c);
   pintarMensajes();
   pintarChats();
+  pintarNotifs();
 }
 function pintarMensajes() {
   const c = chatActual();
@@ -5649,9 +5847,11 @@ $("#w-form").addEventListener("submit", (e) => {
   c.mensajes = c.mensajes || [];
   c.mensajes.push({ de: "yo", texto, t: Date.now() });
   $("#w-msg").value = "";
+  programarRespuesta(c);
   guardar();
   pintarMensajes();
   pintarChats();
+  pintarNotifs();
 });
 
 /* Clicks en la lista de chats */
@@ -5702,6 +5902,199 @@ $("#w-crear-chat").addEventListener("click", () => {
   $("#w-modal").hidden = true;
   abrirChat(c.id);
   setTimeout(() => $("#w-msg").focus(), 150);
+});
+
+/* ===== Avisos de mensajes: el contacto te responde (1ª vez por chat) ===== */
+const RESPUESTAS_AUTOMATICAS = true;
+const RESPUESTAS = [
+  "¡Hola! ¿Cómo estás?",
+  "¡Buenas! Sí, ahora te respondo.",
+  "Jaja dale, cuéntame.",
+  "Perfecto, quedo pendiente.",
+  "Listo, nos vemos entonces.",
+  "¡De una! Avísame si necesitas algo.",
+  "Qué bien, gracias por escribirme.",
+  "Ok, cualquier cosa me avisas.",
+];
+const relojesRespuesta = {};
+function programarRespuesta(c) {
+  if (!RESPUESTAS_AUTOMATICAS || !c || c.respondido) return;
+  c.respondido = true;
+  const texto = RESPUESTAS[Math.floor(Math.random() * RESPUESTAS.length)];
+  const retardo = 1600 + Math.random() * 2200;
+  relojesRespuesta[c.id] = setTimeout(() => {
+    delete relojesRespuesta[c.id];
+    const vivo = estado.chats.find((x) => x.id === c.id);
+    if (!vivo) return;
+    vivo.mensajes = vivo.mensajes || [];
+    vivo.mensajes.push({ de: "el", texto, t: Date.now() });
+    const abierto = chatAbierto === vivo.id;
+    if (!abierto) vivo.noLeidos = (vivo.noLeidos || 0) + 1;
+    guardar();
+    pintarChats();
+    pintarNotifs();
+    if (abierto) pintarMensajes();
+    else toast("Nuevo mensaje de " + vivo.nombre);
+  }, retardo);
+}
+
+/* ===== Menú que se baja desde la foto de perfil ===== */
+function pintarMenuPerfil() {
+  if (!estado.cuenta) return;
+  pintarFoto($("#w-menu-foto"), $("#w-menu-inicial"), estado.cuenta);
+  $("#w-menu-nombre").textContent = estado.cuenta.nombre;
+  $("#w-menu-numero").textContent = formatear(estado.cuenta.numero);
+}
+function pintarNotifs() {
+  const cont = $("#w-notifs");
+  if (!cont) return;
+  const conMsgs = estado.chats
+    .filter((c) => c.mensajes && c.mensajes.length)
+    .sort((a, b) => (ultimoDe(b) ? ultimoDe(b).t : 0) - (ultimoDe(a) ? ultimoDe(a).t : 0));
+  const total = estado.chats.reduce((s, c) => s + (c.noLeidos || 0), 0);
+  const punto = $("#w-punto-cuenta");
+  if (punto) punto.hidden = total <= 0;
+  cont.innerHTML = conMsgs.length
+    ? conMsgs
+        .map((c) => {
+          const m = ultimoDe(c);
+          const nuevo = c.noLeidos ? " nuevo" : "";
+          const fin = c.noLeidos
+            ? `<span class="no-leido">${c.noLeidos > 99 ? "99+" : c.noLeidos}</span>`
+            : `<span class="hora">${m ? hora(m.t) : ""}</span>`;
+          return `<div class="notif${nuevo}" data-chat="${esc(c.id)}" role="menuitem" tabindex="0">${avHtml(c)}<span class="c"><b>${esc(c.nombre)}</b><small>${m ? esc((m.de === "yo" ? "Tú: " : "") + m.texto) : ""}</small></span>${fin}</div>`;
+        })
+        .join("")
+    : `<div class="mc-vacio"><b>Sin avisos por ahora</b><br>Cuando lleguen mensajes verás el aviso aquí.</div>`;
+}
+function abrirMenu() {
+  const m = $("#w-menu-cuenta");
+  if (!m) return;
+  m.hidden = false;
+  $("#w-btn-cuenta").setAttribute("aria-expanded", "true");
+  pintarMenuPerfil();
+  pintarNotifs();
+}
+function cerrarMenu() {
+  const m = $("#w-menu-cuenta");
+  if (!m || m.hidden) return;
+  m.hidden = true;
+  $("#w-btn-cuenta").setAttribute("aria-expanded", "false");
+  $("#w-edit-nombre").hidden = true;
+  $("#w-confirm-eliminar").hidden = true;
+  $("#w-aviso-cuenta").textContent = "";
+}
+$("#w-btn-cuenta").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const m = $("#w-menu-cuenta");
+  if (m.hidden) abrirMenu();
+  else cerrarMenu();
+});
+document.addEventListener("click", (e) => {
+  const m = $("#w-menu-cuenta");
+  if (!m || m.hidden) return;
+  if (!m.contains(e.target) && !$("#w-btn-cuenta").contains(e.target)) cerrarMenu();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") cerrarMenu();
+});
+
+/* Aviso -> abre ese chat */
+$("#w-notifs").addEventListener("click", (e) => {
+  const fila = e.target.closest("[data-chat]");
+  if (!fila) return;
+  abrirChat(fila.dataset.chat);
+  cerrarMenu();
+});
+
+/* Opción 1: cambiar nombre */
+$("#w-op-nombre").addEventListener("click", () => {
+  const ed = $("#w-edit-nombre");
+  ed.hidden = !ed.hidden;
+  $("#w-confirm-eliminar").hidden = true;
+  if (!ed.hidden) {
+    $("#w-input-nombre").value = estado.cuenta.nombre;
+    $("#w-aviso-cuenta").textContent = "";
+    setTimeout(() => $("#w-input-nombre").focus(), 50);
+  }
+});
+$("#w-cancelar-nombre").addEventListener("click", () => {
+  $("#w-edit-nombre").hidden = true;
+  $("#w-aviso-cuenta").textContent = "";
+});
+$("#w-input-nombre").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("#w-guardar-nombre").click();
+  }
+});
+$("#w-guardar-nombre").addEventListener("click", () => {
+  const n = $("#w-input-nombre").value.trim();
+  if (n.length < 2) {
+    $("#w-aviso-cuenta").textContent = "Escribe un nombre de al menos 2 caracteres.";
+    return;
+  }
+  estado.cuenta.nombre = n;
+  guardar();
+  $("#w-mi-nombre").textContent = n;
+  pintarMenuPerfil();
+  $("#w-edit-nombre").hidden = true;
+  $("#w-aviso-cuenta").textContent = "";
+  toast("Nombre actualizado ✔");
+});
+
+/* Opción 2: cambiar foto de perfil */
+$("#w-op-foto").addEventListener("click", () => $("#w-foto-cuenta").click());
+$("#w-foto-cuenta").addEventListener("change", async (e) => {
+  try {
+    const datos = await comprimirImagen(e.target.files[0], 320);
+    if (!datos) return;
+    estado.cuenta.foto = datos;
+    guardar();
+    pintarFoto($("#w-mi-foto"), $("#w-mi-inicial"), estado.cuenta);
+    pintarMenuPerfil();
+    $("#w-aviso-cuenta").textContent = "";
+    toast("Foto de perfil actualizada ✔");
+  } catch (err) {
+    $("#w-aviso-cuenta").textContent = "❌ " + err.message;
+  }
+  e.target.value = "";
+});
+
+/* Opción 3: eliminar cuenta (con confirmación) */
+$("#w-op-eliminar").addEventListener("click", () => {
+  const cf = $("#w-confirm-eliminar");
+  cf.hidden = !cf.hidden;
+  $("#w-edit-nombre").hidden = true;
+});
+$("#w-no-eliminar").addEventListener("click", () => {
+  $("#w-confirm-eliminar").hidden = true;
+});
+$("#w-si-eliminar").addEventListener("click", () => {
+  Object.keys(relojesRespuesta).forEach((k) => {
+    clearTimeout(relojesRespuesta[k]);
+    delete relojesRespuesta[k];
+  });
+  try { localStorage.removeItem(CLAVE); } catch (e) {}
+  estado = { cuenta: null, chats: [] };
+  chatAbierto = null;
+  fotoNueva = "";
+  cerrarMenu();
+  $("#w-principal").hidden = true;
+  $("#w-principal").classList.remove("chat-abierto");
+  $("#w-chat").hidden = true;
+  $("#w-sin-chat").hidden = false;
+  $("#w-lista").innerHTML = "";
+  $("#w-punto-cuenta").hidden = true;
+  $("#w-numero").value = "";
+  $("#w-nombre").value = "";
+  $("#w-msg").value = "";
+  const prev = $("#w-preview-foto");
+  if (prev) { prev.src = ""; prev.hidden = true; }
+  const ini3 = $("#w-inicial-foto");
+  if (ini3) ini3.hidden = false;
+  irPaso(1);
+  toast("Tu cuenta y tus chats fueron eliminados de este dispositivo.");
 });
 
 /* ===== Arranque ===== */
