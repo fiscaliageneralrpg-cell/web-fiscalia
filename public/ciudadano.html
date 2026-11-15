@@ -1132,6 +1132,19 @@
         border-color: rgba(255, 255, 255, 0.3);
       }
 
+      /* fondo del ícono: WhatsApp verde */
+      .app .icono.whatsapp {
+        background: linear-gradient(150deg, #25d366 0%, #12b357 55%, #0b7a3e 100%);
+        border-color: rgba(255, 255, 255, 0.45);
+      }
+
+      .app .icono.whatsapp svg {
+        width: 31px;
+        height: 31px;
+        fill: #fff;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+      }
+
       @keyframes resplandorCian {
         0%, 100% {
           box-shadow:
@@ -2040,8 +2053,8 @@
               </div>
             </div>
             <p class="empty">
-              Tu celular está apagado. Ábrelo para entrar a las apps de Nequi y
-              Twitter.
+              Tu celular está apagado. Ábrelo para entrar a las apps de Nequi,
+              Twitter y WhatsApp.
             </p>
             <button id="abrir-celular" class="btn-celular" type="button">
               📱 Abrir celular
@@ -2209,6 +2222,21 @@
                     onerror="this.remove()"
                 /></span>
                 <span class="nombre">Twitter</span>
+              </a>
+              <a
+                class="app"
+                href="#whatsapp"
+                data-app="whatsapp"
+                style="--d: 0.62s"
+                title="Abrir WhatsApp"
+              >
+                <span class="icono whatsapp"
+                  ><svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path
+                      d="M16.04 3C8.9 3 3.1 8.8 3.1 15.94c0 2.28.6 4.5 1.74 6.46L3 29.5l7.3-1.9a12.9 12.9 0 0 0 5.74 1.37c7.14 0 12.94-5.8 12.94-12.94C29 8.8 23.18 3 16.04 3zm0 23.7c-1.83 0-3.63-.49-5.2-1.42l-.37-.22-4.33 1.14 1.16-4.22-.24-.39a10.7 10.7 0 0 1-1.64-5.66c0-5.94 4.84-10.77 10.79-10.77 2.88 0 5.59 1.12 7.63 3.16a10.7 10.7 0 0 1 3.15 7.62c0 5.95-4.84 10.77-10.79 10.77zm5.92-8.06c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.5-.16-.72.16-.21.32-.83 1.05-1.01 1.26-.19.22-.37.25-.69.08-.32-.16-1.36-.5-2.58-1.6-.95-.85-1.6-1.9-1.78-2.22-.19-.32-.02-.5.14-.66.14-.14.32-.37.48-.56.16-.19.21-.32.32-.53.11-.22.05-.4-.03-.56-.08-.16-.72-1.74-.99-2.38-.26-.63-.53-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.1-1.12 2.67 0 1.58 1.14 3.1 1.3 3.31.16.22 2.25 3.43 5.45 4.81.76.33 1.35.52 1.81.67.76.24 1.46.21 2.01.13.61-.09 1.9-.78 2.17-1.53.27-.75.27-1.39.19-1.53-.08-.13-.29-.21-.61-.37z"
+                    /></svg
+                ></span>
+                <span class="nombre">WhatsApp</span>
               </a>
             </div>
 
@@ -4881,6 +4909,811 @@
       }
     </script>
   </template>
+<template id="plantilla-whatsapp">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta
+    name="description"
+    content="WhatsApp de Medellín RP: crea tu número, tu perfil y conversa con tus contactos."
+  />
+  <title>WhatsApp | Medellín RP</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    :root {
+      --fondo: #0b141a;
+      --panel: #111b21;
+      --panel2: #1b262f;
+      --linea: rgba(255, 255, 255, 0.1);
+      --texto: #e9edef;
+      --muted: #8696a0;
+      --verde: #00a884;
+      --verde-fuerte: #25d366;
+      --mio: #005c4b;
+      --otro: #202c33;
+      --sombra: 0 20px 60px rgba(0, 0, 0, 0.55);
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      color: var(--texto);
+      background: var(--fondo);
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    button { font: inherit; cursor: pointer; }
+    input { font: inherit; }
+
+    /* ===== Onboarding (4 pasos) ===== */
+    .pantalla {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      overflow: auto;
+      background:
+        radial-gradient(circle at 25% 15%, rgba(0, 168, 132, 0.16), transparent 45%),
+        radial-gradient(circle at 80% 85%, rgba(37, 211, 102, 0.12), transparent 45%),
+        var(--fondo);
+    }
+    .pantalla.on { display: grid; animation: subir 0.4s ease both; }
+    @keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    .tarjeta {
+      width: min(430px, 100%);
+      padding: 30px 26px;
+      border: 1px solid var(--linea);
+      border-radius: 24px;
+      background: rgba(17, 27, 33, 0.94);
+      box-shadow: var(--sombra);
+      text-align: center;
+      animation: subir 0.4s ease both;
+    }
+    .logo-wa {
+      display: grid;
+      place-items: center;
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: linear-gradient(150deg, var(--verde-fuerte), #0f8d4e);
+      box-shadow: 0 14px 34px rgba(37, 211, 102, 0.35);
+    }
+    .logo-wa svg { width: 46px; height: 46px; fill: #fff; }
+    .tarjeta h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.03em; }
+    .tarjeta p { margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .tarjeta p b { color: var(--texto); }
+    .campo { display: grid; gap: 7px; margin-bottom: 14px; text-align: left; }
+    .campo > span { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+    .campo input[type="text"],
+    .campo input[type="tel"] {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--linea);
+      border-radius: 14px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.35);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .campo input:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.18); }
+    .prefijo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 14px;
+      border: 1px solid var(--linea);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.35);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .prefijo:focus-within { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.18); }
+    .prefijo b { color: var(--muted); font-size: 14px; }
+    .prefijo input { flex: 1; min-width: 0; border: 0; background: transparent; color: #fff; outline: none; letter-spacing: 0.05em; }
+    .foto-perfil { position: relative; width: 104px; height: 104px; margin: 0 auto 16px; }
+    .foto-perfil img,
+    .foto-perfil .inicial {
+      display: grid;
+      place-items: center;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--linea);
+      background: var(--panel2);
+      font-size: 40px;
+      font-weight: 900;
+      color: var(--verde-fuerte);
+    }
+    .foto-perfil label {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--verde);
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    }
+    .foto-perfil label svg { width: 18px; height: 18px; fill: #04110c; }
+    .foto-perfil input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .acciones { display: grid; gap: 10px; margin-top: 6px; }
+    .btn {
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--verde-fuerte);
+      color: #04110c;
+      font-weight: 900;
+      transition: transform 0.15s, filter 0.2s;
+    }
+    .btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+    .btn:active { transform: scale(0.97); }
+    .btn.fantasma { background: transparent; border: 1px solid var(--linea); color: var(--texto); }
+    .btn.fantasma:hover { background: rgba(255, 255, 255, 0.06); }
+    .paso { margin-top: 14px; color: var(--muted); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .aviso { min-height: 16px; margin-top: 10px; color: #ff8b8b; font-size: 12px; }
+    .ok-check {
+      display: grid;
+      place-items: center;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: rgba(37, 211, 102, 0.14);
+      border: 2px solid var(--verde-fuerte);
+      font-size: 38px;
+      color: var(--verde-fuerte);
+      animation: pop 0.45s ease both;
+    }
+    @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* ===== App principal ===== */
+    .principal { display: flex; flex-direction: column; height: 100vh; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--linea);
+    }
+    .topbar .marca { display: flex; align-items: center; gap: 9px; font-weight: 900; letter-spacing: -0.02em; }
+    .topbar .marca small { color: var(--muted); font-weight: 700; font-size: 12px; }
+    .topbar .bol { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(150deg, var(--verde-fuerte), #0f8d4e); }
+    .topbar .bol svg { width: 17px; height: 17px; fill: #fff; }
+    .mi-cuenta { display: flex; align-items: center; gap: 9px; margin-left: auto; font-size: 12px; color: var(--muted); text-align: right; }
+    .mi-cuenta b { display: block; color: var(--texto); font-size: 13px; }
+    .mi-cuenta img, .mi-cuenta .inicial {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--panel);
+      color: var(--verde-fuerte);
+      font-weight: 900;
+      border: 1px solid var(--linea);
+    }
+    .wa { display: grid; grid-template-columns: 320px minmax(0, 1fr); flex: 1; min-height: 0; }
+
+    /* Izquierda: lista de chats */
+    .chats { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--linea); background: var(--panel); }
+    .chats-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 14px 8px; }
+    .chats-head h2 { margin: 0; font-size: 17px; letter-spacing: -0.02em; }
+    .chats-head .nuevo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px solid rgba(0, 168, 132, 0.45);
+      border-radius: 12px;
+      background: rgba(0, 168, 132, 0.14);
+      color: var(--verde-fuerte);
+      font-weight: 800;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    .chats-head .nuevo:hover { background: rgba(0, 168, 132, 0.3); }
+    .buscador { padding: 4px 14px 10px; }
+    .buscador input {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid var(--linea);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+    }
+    .buscador input:focus { border-color: var(--verde); }
+    #w-lista { flex: 1; min-height: 0; overflow: auto; }
+    .fila-chat {
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+    }
+    .fila-chat:hover { background: rgba(255, 255, 255, 0.05); }
+    .fila-chat.activo { background: rgba(0, 168, 132, 0.16); }
+    .av {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      flex: none;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--panel2);
+      color: var(--verde-fuerte);
+      font-weight: 900;
+      font-size: 17px;
+      border: 1px solid var(--linea);
+    }
+    .fila-chat .cuerpo { flex: 1; min-width: 0; }
+    .fila-chat .fila1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .fila-chat b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fila-chat .hora { font-size: 10px; color: var(--muted); flex: none; }
+    .fila-chat small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .vacio-chats { padding: 34px 18px; text-align: center; color: var(--muted); font-size: 12.5px; line-height: 1.65; }
+    .vacio-chats b { display: block; margin-bottom: 6px; color: var(--texto); font-size: 14px; }
+
+    /* Derecha: conversación */
+    .conversacion {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(0, 168, 132, 0.05), transparent 42%),
+        radial-gradient(circle at 82% 72%, rgba(37, 211, 102, 0.05), transparent 46%),
+        var(--fondo);
+    }
+    .conv-head { display: flex; align-items: center; gap: 11px; padding: 11px 16px; background: var(--panel2); border-bottom: 1px solid var(--linea); }
+    .conv-head .atras { display: none; border: 0; background: transparent; color: var(--texto); font-size: 20px; padding: 0 4px; }
+    .conv-head b { display: block; font-size: 15px; }
+    .conv-head small { color: var(--muted); font-size: 11.5px; }
+    #w-chat { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    #w-sin-chat { margin: auto; max-width: 340px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.75; padding: 24px; }
+    #w-sin-chat b { color: var(--texto); }
+    #w-sin-chat .grande { display: block; font-size: 44px; margin-bottom: 10px; }
+    #w-mensajes { flex: 1; min-height: 0; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .msg {
+      max-width: 74%;
+      padding: 8px 11px 6px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      animation: subir 0.2s ease both;
+    }
+    .msg .hora { display: block; margin-top: 3px; text-align: right; font-size: 10px; color: rgba(255, 255, 255, 0.55); }
+    .msg.yo { align-self: flex-end; background: var(--mio); border-bottom-right-radius: 4px; }
+    .msg.ellos { align-self: flex-start; background: var(--otro); border-bottom-left-radius: 4px; }
+    .sello { align-self: center; margin: 6px 0 2px; padding: 4px 11px; border-radius: 9px; background: rgba(0, 0, 0, 0.35); color: var(--muted); font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em; }
+    .sin-msgs { margin: auto; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .sin-msgs .grande { display: block; font-size: 40px; margin-bottom: 8px; }
+    form.enviar { display: flex; gap: 10px; padding: 12px 14px; background: var(--panel2); border-top: 1px solid var(--linea); }
+    form.enviar input {
+      flex: 1;
+      min-width: 0;
+      padding: 12px 15px;
+      border: 1px solid var(--linea);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.32);
+      color: #fff;
+      outline: none;
+    }
+    form.enviar input:focus { border-color: var(--verde); }
+    form.enviar button {
+      width: 46px;
+      height: 46px;
+      flex: none;
+      border: 0;
+      border-radius: 50%;
+      background: var(--verde);
+      display: grid;
+      place-items: center;
+      transition: transform 0.15s, filter 0.2s;
+    }
+    form.enviar button:hover { transform: scale(1.07); filter: brightness(1.1); }
+    form.enviar button svg { width: 20px; height: 20px; fill: #04110c; }
+
+    /* Modal nuevo chat + toast */
+    .modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
+    .modal .caja { width: min(400px, 100%); padding: 22px; border: 1px solid var(--linea); border-radius: 20px; background: var(--panel); box-shadow: var(--sombra); animation: subir 0.25s ease both; }
+    .modal h3 { margin: 0 0 4px; font-size: 18px; }
+    .modal p { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .modal .cerrar { float: right; border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; }
+    .modal .cerrar:hover { color: #fff; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 40;
+      max-width: 84%;
+      padding: 11px 17px;
+      border: 1px solid var(--linea);
+      border-radius: 12px;
+      background: #152029;
+      color: #fff;
+      font-size: 12.5px;
+      box-shadow: var(--sombra);
+      animation: subir 0.2s ease both;
+    }
+
+    @media (max-width: 760px) {
+      .wa { grid-template-columns: 1fr; }
+      .conversacion { display: none; }
+      .principal.chat-abierto .chats { display: none; }
+      .principal.chat-abierto .conversacion { display: flex; }
+      .conv-head .atras { display: block; }
+      .mi-cuenta .info { display: none; }
+      .msg { max-width: 86%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+
+  <!-- ============ PASO 1: BIENVENIDA ============ -->
+  <div class="pantalla on" id="w-paso1">
+    <div class="tarjeta">
+      <div class="logo-wa">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.04 3C8.9 3 3.1 8.8 3.1 15.94c0 2.28.6 4.5 1.74 6.46L3 29.5l7.3-1.9a12.9 12.9 0 0 0 5.74 1.37c7.14 0 12.94-5.8 12.94-12.94C29 8.8 23.18 3 16.04 3zm0 23.7c-1.83 0-3.63-.49-5.2-1.42l-.37-.22-4.33 1.14 1.16-4.22-.24-.39a10.7 10.7 0 0 1-1.64-5.66c0-5.94 4.84-10.77 10.79-10.77 2.88 0 5.59 1.12 7.63 3.16a10.7 10.7 0 0 1 3.15 7.62c0 5.95-4.84 10.77-10.79 10.77zm5.92-8.06c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.5-.16-.72.16-.21.32-.83 1.05-1.01 1.26-.19.22-.37.25-.69.08-.32-.16-1.36-.5-2.58-1.6-.95-.85-1.6-1.9-1.78-2.22-.19-.32-.02-.5.14-.66.14-.14.32-.37.48-.56.16-.19.21-.32.32-.53.11-.22.05-.4-.03-.56-.08-.16-.72-1.74-.99-2.38-.26-.63-.53-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.1-1.12 2.67 0 1.58 1.14 3.1 1.3 3.31.16.22 2.25 3.43 5.45 4.81.76.33 1.35.52 1.81.67.76.24 1.46.21 2.01.13.61-.09 1.9-.78 2.17-1.53.27-.75.27-1.39.19-1.53-.08-.13-.29-.21-.61-.37z"/></svg>
+      </div>
+      <h1>Bienvenido a WhatsApp</h1>
+      <p>
+        Chas y llamadas de calidad con los ciudadanos de Medellín RP. Lea la
+        <b>Política de privacidad</b> y los <b>Términos de servicio</b>; al tocar
+        "Continuar" usted los acepta.
+      </p>
+      <div class="acciones">
+        <button class="btn" id="w-cont1" type="button">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PASO 2: NÚMERO DE TELÉFONO ============ -->
+  <div class="pantalla" id="w-paso2">
+    <div class="tarjeta">
+      <div class="logo-wa" style="width:64px;height:64px;margin-bottom:14px">
+        <svg viewBox="0 0 32 32" style="width:34px;height:34px" aria-hidden="true"><path d="M8 3a3 3 0 0 0-3 3v2a3 3 0 0 0 2 2.83V26a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V10.83A3 3 0 0 0 24 8V6a3 3 0 0 0-3-3h-2v2h2v6H9V5h-1V3zm1 4h14v1a1 1 0 0 1-1 1h-1v14a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V10H9a1 1 0 0 1-1-1V7zm4 14h6v2h-6v-2z"/></svg>
+      </div>
+      <h1>Crea un número de teléfono</h1>
+      <p>Este será tu número virtual de WhatsApp en el servidor.</p>
+      <label class="campo">
+        <span>Número de teléfono</span>
+        <span class="prefijo"><b>+57</b><input id="w-numero" type="tel" inputmode="numeric" maxlength="14" placeholder="300 123 4567" autocomplete="off" /></span>
+      </label>
+      <div class="acciones">
+        <button class="btn" id="w-cont2" type="button">Continuar</button>
+        <button class="btn fantasma" id="w-volver2" type="button">Volver</button>
+      </div>
+      <div class="aviso" id="w-aviso2"></div>
+      <div class="paso">Paso 1 de 3</div>
+    </div>
+  </div>
+
+  <!-- ============ PASO 3: FOTO DE PERFIL Y NOMBRE ============ -->
+  <div class="pantalla" id="w-paso3">
+    <div class="tarjeta">
+      <div class="foto-perfil">
+        <img id="w-preview-foto" alt="Foto de perfil" hidden />
+        <div class="inicial" id="w-inicial-foto">?</div>
+        <label title="Elegir foto de perfil">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3.2L9 5h6l1.8 2H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm8 2.5A4.5 4.5 0 1 0 16.5 14 4.5 4.5 0 0 0 12 9.5z"/></svg>
+          <input id="w-foto" type="file" accept="image/*" />
+        </label>
+      </div>
+      <h1>Pon tu foto y nombre</h1>
+      <p>Así te verán los demás ciudadanos cuando les escribas.</p>
+      <label class="campo">
+        <span>Nombre</span>
+        <input id="w-nombre" type="text" maxlength="40" placeholder="Ej: Sebastián Gómez" autocomplete="off" />
+      </label>
+      <div class="acciones">
+        <button class="btn" id="w-cont3" type="button">Continuar</button>
+        <button class="btn fantasma" id="w-volver3" type="button">Volver</button>
+      </div>
+      <div class="aviso" id="w-aviso3"></div>
+      <div class="paso">Paso 2 de 3</div>
+    </div>
+  </div>
+
+  <!-- ============ PASO 4: CUENTA LISTA ============ -->
+  <div class="pantalla" id="w-paso4">
+    <div class="tarjeta">
+      <div class="ok-check">✓</div>
+      <h1>¡Listo! Ya creaste la cuenta</h1>
+      <p>
+        Tu número <b id="w-listo-numero">—</b> quedó activo con el nombre
+        <b id="w-listo-nombre">—</b>.
+      </p>
+      <div class="acciones">
+        <button class="btn" id="w-terminar" type="button">Terminar</button>
+      </div>
+      <div class="paso">Paso 3 de 3</div>
+    </div>
+  </div>
+
+  <!-- ============ APP PRINCIPAL ============ -->
+  <div class="principal" id="w-principal" hidden>
+    <header class="topbar">
+      <span class="marca">
+        <span class="bol"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.04 3C8.9 3 3.1 8.8 3.1 15.94c0 2.28.6 4.5 1.74 6.46L3 29.5l7.3-1.9a12.9 12.9 0 0 0 5.74 1.37c7.14 0 12.94-5.8 12.94-12.94C29 8.8 23.18 3 16.04 3zm0 23.7c-1.83 0-3.63-.49-5.2-1.42l-.37-.22-4.33 1.14 1.16-4.22-.24-.39a10.7 10.7 0 0 1-1.64-5.66c0-5.94 4.84-10.77 10.79-10.77 2.88 0 5.59 1.12 7.63 3.16a10.7 10.7 0 0 1 3.15 7.62c0 5.95-4.84 10.77-10.79 10.77z"/></svg></span>
+        WhatsApp <small>· Medellín RP</small>
+      </span>
+      <span class="mi-cuenta">
+        <span class="info"><b id="w-mi-nombre">—</b><small id="w-mi-numero">—</small></span>
+        <img id="w-mi-foto" alt="Mi foto" hidden />
+        <span class="inicial" id="w-mi-inicial">?</span>
+      </span>
+    </header>
+
+    <div class="wa">
+      <!-- IZQUIERDA: tus chats -->
+      <aside class="chats">
+        <div class="chats-head">
+          <h2>Mis chats</h2>
+          <button class="nuevo" id="w-btn-nuevo" type="button">＋ Nuevo chat</button>
+        </div>
+        <div class="buscador">
+          <input id="w-buscar" type="text" placeholder="Buscar chat..." aria-label="Buscar chat" autocomplete="off" />
+        </div>
+        <div id="w-lista"></div>
+      </aside>
+
+      <!-- DERECHA: conversación -->
+      <section class="conversacion">
+        <div id="w-sin-chat">
+          <span class="grande">💬</span>
+          <b>WhatsApp Medellín RP</b><br />
+          Selecciona un chat a la izquierda o toca <b>＋ Nuevo chat</b> para
+          escribirle a alguien.<br />
+          <small>Tus conversaciones quedan guardadas en este dispositivo.</small>
+        </div>
+
+        <div id="w-chat" hidden>
+          <div class="conv-head">
+            <button class="atras" id="w-atras" type="button" title="Volver a los chats">←</button>
+            <img class="av" id="w-conv-foto" alt="" hidden />
+            <span class="av" id="w-conv-inicial">?</span>
+            <span><b id="w-conv-nombre">—</b><small id="w-conv-numero">—</small></span>
+          </div>
+          <div id="w-mensajes"></div>
+          <form class="enviar" id="w-form">
+            <input id="w-msg" type="text" maxlength="1000" placeholder="Escribe un mensaje" autocomplete="off" />
+            <button type="submit" title="Enviar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: NUEVO CHAT ============ -->
+  <div class="modal" id="w-modal" hidden>
+    <div class="caja">
+      <button class="cerrar" id="w-cerrar-nuevo" type="button" title="Cerrar">×</button>
+      <h3>＋ Nuevo chat</h3>
+      <p>Escribe el número (y el nombre) de la persona con quien quieres hablar.</p>
+      <label class="campo">
+        <span>Número</span>
+        <span class="prefijo"><b>+57</b><input id="w-nuevo-numero" type="tel" inputmode="numeric" maxlength="14" placeholder="300 123 4567" autocomplete="off" /></span>
+      </label>
+      <label class="campo">
+        <span>Nombre (opcional)</span>
+        <input id="w-nuevo-nombre" type="text" maxlength="40" placeholder="Ej: Camila Restrepo" autocomplete="off" />
+      </label>
+      <div class="acciones">
+        <button class="btn" id="w-crear-chat" type="button">Abrir chat</button>
+      </div>
+      <div class="aviso" id="w-aviso-nuevo"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="w-toast" hidden></div>
+
+<script>
+/* ===== WhatsApp Medellín RP =====
+   Onboarding (bienvenida -> número -> foto/nombre -> listo) y chats.
+   Todo se guarda en localStorage: los chats quedan guardados en el
+   dispositivo aunque cierres la app o el celular. */
+const CLAVE = "merp_whatsapp_v1";
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+
+let estado = { cuenta: null, chats: [] };
+let chatAbierto = null;
+let fotoNueva = "";
+
+function cargar() {
+  try {
+    const j = JSON.parse(localStorage.getItem(CLAVE) || "null");
+    if (j && typeof j === "object") {
+      estado = { cuenta: j.cuenta || null, chats: Array.isArray(j.chats) ? j.chats : [] };
+    }
+  } catch (e) { estado = { cuenta: null, chats: [] }; }
+}
+function guardar() {
+  try { localStorage.setItem(CLAVE, JSON.stringify(estado)); }
+  catch (e) { toast("No se pudo guardar en este dispositivo (almacenamiento lleno)."); }
+}
+let relojToast = null;
+function toast(texto) {
+  const e = $("#w-toast");
+  e.textContent = texto;
+  e.hidden = false;
+  clearTimeout(relojToast);
+  relojToast = setTimeout(() => { e.hidden = true; }, 3000);
+}
+const soloDigitos = (v) => String(v || "").replace(/\D/g, "");
+function normalizarNumero(v) {
+  let d = soloDigitos(v);
+  if (d.length === 12 && d.startsWith("57")) d = d.slice(2);
+  return d.slice(0, 10);
+}
+const numeroValido = (n) => /^3\d{9}$/.test(n);
+function formatear(n) {
+  const d = soloDigitos(n).slice(0, 10);
+  return d.length ? "+57 " + d.replace(/(\d{3})(\d{0,3})(\d{0,4})/, (m, a, b, c) => [a, b, c].filter(Boolean).join(" ")) : "";
+}
+function formatarEntrada(input) {
+  const d = soloDigitos(input.value).slice(0, 10);
+  input.value = d.replace(/^(\d{0,3})(\d{0,3})(\d{0,4})$/, (m, a, b, c) => [a, b, c].filter(Boolean).join(" "));
+}
+function hora(ts) {
+  return new Date(ts).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", timeZone: "America/Bogota" });
+}
+function diaCorto(ts) {
+  return new Date(ts).toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Bogota" });
+}
+function selloDia(ts) {
+  const hoy = new Date(), ayer = new Date(Date.now() - 86400000);
+  const misma = (a, b) => a.toDateString() === b.toDateString();
+  const dia = new Date(ts);
+  if (misma(dia, hoy)) return "HOY";
+  if (misma(dia, ayer)) return "AYER";
+  return diaCorto(ts);
+}
+function comprimirImagen(file, max) {
+  return new Promise((ok, mal) => {
+    if (!file || !file.size) { ok(""); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const lado = Math.min(img.width, img.height);
+        const c = document.createElement("canvas");
+        c.width = c.height = max;
+        const x = c.getContext("2d");
+        x.fillStyle = "#fff";
+        x.fillRect(0, 0, max, max);
+        x.drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, max, max);
+        ok(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => mal(new Error("El archivo no es una imagen válida."));
+      img.src = r.result;
+    };
+    r.onerror = () => mal(new Error("No se pudo leer la imagen."));
+    r.readAsDataURL(file);
+  });
+}
+
+/* ===== Onboarding ===== */
+function irPaso(n) {
+  document.querySelectorAll(".pantalla").forEach((p) => p.classList.remove("on"));
+  const p = $("#w-paso" + n);
+  if (p) p.classList.add("on");
+}
+$("#w-cont1").addEventListener("click", () => { irPaso(2); setTimeout(() => $("#w-numero").focus(), 120); });
+$("#w-volver2").addEventListener("click", () => irPaso(1));
+$("#w-volver3").addEventListener("click", () => irPaso(2));
+$("#w-numero").addEventListener("input", (e) => formatarEntrada(e.target));
+$("#w-nuevo-numero").addEventListener("input", (e) => formatarEntrada(e.target));
+
+$("#w-cont2").addEventListener("click", () => {
+  const n = normalizarNumero($("#w-numero").value);
+  if (!numeroValido(n)) {
+    $("#w-aviso2").textContent = "Escribe un número celular colombiano válido: 10 dígitos que empiezan por 3.";
+    return;
+  }
+  $("#w-aviso2").textContent = "";
+  irPaso(3);
+  setTimeout(() => $("#w-nombre").focus(), 120);
+});
+
+$("#w-foto").addEventListener("change", async (e) => {
+  try {
+    const datos = await comprimirImagen(e.target.files[0], 320);
+    if (!datos) return;
+    fotoNueva = datos;
+    const prev = $("#w-preview-foto");
+    prev.src = datos;
+    prev.hidden = false;
+    $("#w-inicial-foto").hidden = true;
+  } catch (err) { $("#w-aviso3").textContent = "❌ " + err.message; }
+});
+
+$("#w-cont3").addEventListener("click", () => {
+  const nombre = $("#w-nombre").value.trim();
+  if (nombre.length < 2) {
+    $("#w-aviso3").textContent = "Escribe tu nombre (mínimo 2 caracteres).";
+    return;
+  }
+  $("#w-aviso3").textContent = "";
+  $("#w-listo-numero").textContent = formatear(normalizarNumero($("#w-numero").value));
+  $("#w-listo-nombre").textContent = nombre;
+  irPaso(4);
+});
+
+$("#w-terminar").addEventListener("click", () => {
+  estado.cuenta = {
+    numero: normalizarNumero($("#w-numero").value),
+    nombre: $("#w-nombre").value.trim(),
+    foto: fotoNueva,
+  };
+  guardar();
+  abrirPrincipal();
+});
+
+/* ===== App principal ===== */
+function pintarFoto(img, ini, persona) {
+  const conFoto = persona && persona.foto;
+  if (conFoto) { img.src = persona.foto; img.hidden = false; ini.hidden = true; }
+  else {
+    ini.textContent = (persona && persona.nombre ? persona.nombre.trim().charAt(0) : "?").toUpperCase() || "?";
+    ini.hidden = false;
+    img.hidden = true;
+  }
+}
+function abrirPrincipal() {
+  document.querySelectorAll(".pantalla").forEach((p) => p.classList.remove("on"));
+  $("#w-principal").hidden = false;
+  $("#w-mi-nombre").textContent = estado.cuenta.nombre;
+  $("#w-mi-numero").textContent = formatear(estado.cuenta.numero);
+  pintarFoto($("#w-mi-foto"), $("#w-mi-inicial"), estado.cuenta);
+  pintarChats();
+}
+const ultimoDe = (c) => (c.mensajes && c.mensajes.length ? c.mensajes[c.mensajes.length - 1] : null);
+function avHtml(c) {
+  return c.foto
+    ? `<img class="av" src="${esc(c.foto)}" alt="">`
+    : `<span class="av">${esc((c.nombre || "?").trim().charAt(0).toUpperCase() || "?")}</span>`;
+}
+function pintarChats() {
+  const q = ($("#w-buscar").value || "").trim().toLowerCase();
+  const lista = estado.chats
+    .filter((c) => !q || (c.nombre || "").toLowerCase().includes(q) || soloDigitos(c.numero).includes(q))
+    .sort((a, b) => (ultimoDe(b) ? ultimoDe(b).t : b.creado || 0) - (ultimoDe(a) ? ultimoDe(a).t : a.creado || 0));
+  $("#w-lista").innerHTML = lista.length
+    ? lista
+        .map((c) => {
+          const m = ultimoDe(c);
+          return `<div class="fila-chat${c.id === chatAbierto ? " activo" : ""}" data-chat="${esc(c.id)}">${avHtml(c)}<span class="cuerpo"><span class="fila1"><b>${esc(c.nombre)}</b><span class="hora">${m ? hora(m.t) : ""}</span></span><small>${m ? esc((m.de === "yo" ? "Tú: " : "") + m.texto) : "Sin mensajes aún"}</small></span></div>`;
+        })
+        .join("")
+    : `<div class="vacio-chats"><b>${q ? "Sin resultados" : "Aún no tienes chats"}</b>${q ? "Prueba con otro nombre o número." : "Toca ＋ Nuevo chat para escribirle a alguien."}</div>`;
+}
+function chatActual() {
+  return estado.chats.find((c) => c.id === chatAbierto) || null;
+}
+function abrirChat(id) {
+  const c = estado.chats.find((x) => x.id === id);
+  if (!c) return;
+  chatAbierto = id;
+  $("#w-principal").classList.add("chat-abierto");
+  $("#w-sin-chat").hidden = true;
+  $("#w-chat").hidden = false;
+  $("#w-conv-nombre").textContent = c.nombre;
+  $("#w-conv-numero").textContent = formatear(c.numero);
+  pintarFoto($("#w-conv-foto"), $("#w-conv-inicial"), c);
+  pintarMensajes();
+  pintarChats();
+}
+function pintarMensajes() {
+  const c = chatActual();
+  if (!c) return;
+  const cont = $("#w-mensajes");
+  if (!c.mensajes || !c.mensajes.length) {
+    cont.innerHTML = `<div class="sin-msgs"><span class="grande">✨</span>Empieza la conversación con <b>${esc(c.nombre)}</b>.<br><small>${esc(formatear(c.numero))}</small></div>`;
+    return;
+  }
+  let diaPrevio = "";
+  cont.innerHTML = c.mensajes
+    .map((m) => {
+      const dia = diaCorto(m.t);
+      const sello = dia !== diaPrevio ? `<div class="sello">${selloDia(m.t)}</div>` : "";
+      diaPrevio = dia;
+      return `${sello}<div class="msg ${m.de === "yo" ? "yo" : "ellos"}">${esc(m.texto)}<span class="hora">${hora(m.t)}</span></div>`;
+    })
+    .join("");
+  cont.scrollTop = cont.scrollHeight;
+}
+
+/* Enviar mensajes (se guardan en el acto) */
+$("#w-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const texto = $("#w-msg").value.trim();
+  const c = chatActual();
+  if (!texto || !c) return;
+  c.mensajes = c.mensajes || [];
+  c.mensajes.push({ de: "yo", texto, t: Date.now() });
+  $("#w-msg").value = "";
+  guardar();
+  pintarMensajes();
+  pintarChats();
+});
+
+/* Clicks en la lista de chats */
+$("#w-lista").addEventListener("click", (e) => {
+  const fila = e.target.closest("[data-chat]");
+  if (fila) abrirChat(fila.dataset.chat);
+});
+$("#w-buscar").addEventListener("input", pintarChats);
+$("#w-atras").addEventListener("click", () => {
+  $("#w-principal").classList.remove("chat-abierto");
+});
+
+/* ===== Nuevo chat ===== */
+function abrirModalNuevo() {
+  $("#w-nuevo-numero").value = "";
+  $("#w-nuevo-nombre").value = "";
+  $("#w-aviso-nuevo").textContent = "";
+  $("#w-modal").hidden = false;
+  setTimeout(() => $("#w-nuevo-numero").focus(), 120);
+}
+$("#w-btn-nuevo").addEventListener("click", abrirModalNuevo);
+$("#w-cerrar-nuevo").addEventListener("click", () => { $("#w-modal").hidden = true; });
+$("#w-modal").addEventListener("click", (e) => { if (e.target.id === "w-modal") $("#w-modal").hidden = true; });
+$("#w-crear-chat").addEventListener("click", () => {
+  const n = normalizarNumero($("#w-nuevo-numero").value);
+  if (!numeroValido(n)) {
+    $("#w-aviso-nuevo").textContent = "Escribe un número celular colombiano válido: 10 dígitos que empiezan por 3.";
+    return;
+  }
+  if (estado.cuenta && n === estado.cuenta.numero) {
+    $("#w-aviso-nuevo").textContent = "Ese número es el tuyo: escribe el de otra persona.";
+    return;
+  }
+  let c = estado.chats.find((x) => soloDigitos(x.numero) === n);
+  if (!c) {
+    c = {
+      id: "c" + Date.now() + Math.random().toString(36).slice(2, 6),
+      numero: n,
+      nombre: $("#w-nuevo-nombre").value.trim() || "Sin nombre (" + formatear(n) + ")",
+      foto: "",
+      mensajes: [],
+      creado: Date.now(),
+    };
+    estado.chats.push(c);
+    guardar();
+    toast("Chat creado con " + c.nombre);
+  }
+  $("#w-modal").hidden = true;
+  abrirChat(c.id);
+  setTimeout(() => $("#w-msg").focus(), 150);
+});
+
+/* ===== Arranque ===== */
+cargar();
+if (estado.cuenta && numeroValido(estado.cuenta.numero)) {
+  abrirPrincipal();
+} else {
+  irPaso(1);
+}
+</script>
+</template>
+
 <template id="plantilla-twitter">
 
   <meta charset="utf-8">
