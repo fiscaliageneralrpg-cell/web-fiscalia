@@ -1,0 +1,3545 @@
+const express = require("express");
+const session = require("express-session");
+const path = require("node:path");
+const fs = require("node:fs");
+require("dotenv").config();
+
+const { pool, probarConexion, buscarUsuarioPorDiscord } = require("./db");
+
+const CANAL_PUBLICACION_ENCUESTAS = process.env.CANAL_PUBLICACION_ENCUESTAS || "1507918744645668975";
+const CANAL_LOG_TWITTER = process.env.CANAL_LOG_TWITTER || "1539432339413799042";
+
+const app = express();
+const PORT = Number(process.env.PORT || 3000);
+
+const variablesObligatorias = [
+  "SESSION_SECRET",
+  "DISCORD_CLIENT_ID",
+  "DISCORD_CLIENT_SECRET",
+  "DISCORD_REDIRECT_URI",
+  "DISCORD_GUILD_ID",
+  "DISCORD_BOT_TOKEN",
+];
+
+const faltantes = variablesObligatorias.filter((v) => !process.env[v]);
+if (faltantes.length > 0) {
+  console.error(`[CONFIGURACION] Faltan variables en Render: ${faltantes.join(", ")}`);
+  process.exit(1);
+}
+
+const ROL_WHITELIST_APROBADA = "1500316176960716940";
+const ROL_WHITELIST_PENDIENTE = "1500556631157768242";
+const ROL_VERIFICADO = "1561032118962880570";
+const ROL_NO_VERIFICADO = "1561032118962880569";
+const CANAL_WHITELIST = "1565815040077205674";
+const ROL_STAFF_WHITELIST = "1561032119013351437";
+const ROL_FUNDACION = "1561032119029989388";
+const ROL_STAFF = "1561032119013351437";
+const ROLES_POLICIA = new Set([
+  "1561032118975598743",
+  "1561032118975598744",
+  "1561032118975598745",
+  "1561032118975598746",
+]);
+const EMOJI_ESPERA = "<:8810datetime:1538599244678692934>";
+const EMOJI_ACEPTADO = "<:1507611843198451915:1538596251879219371>";
+const EMOJI_DENEGADO = "<a:1485274567520948324:1549034139456380978>";
+const EMOJI_ADMIN = "<a:1334651531206856755:1548832195400040488>";
+const EMOJI_FORMULARIO = "<:1543355584793813002:1549408007610302527>";
+const EMOJI_FORMULARIO_2 = "<:1543355638636220526:1549408009212403763>";
+const NOMBRE_SERVIDOR = "「ME:RP」Medellín RP︱ER:LC";
+
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+
+app.use(express.json({ limit: "12mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+/* ===================== SESIONES EN MYSQL ===================== */
+// La sesion se guarda en MySQL (tabla web_sesiones) y NO en memoria, para
+// que un reinicio o despliegue en Render no cierre el login de nadie: si el
+// usuario no le da a "Cerrar sesion", la sesion sigue abierta la proxima
+// vez que entre. Si MySQL no responde, la web no se cuelga: se espera como
+// mucho 4 segundos y se reintenta solo cada 15 segundos.
+class AlmacenSesionesWeb extends session.Store {
+  constructor() {
+    super();
+    this.esquema = null;
+    this.falloHasta = 0;
+    this.sinLeer = new Set();
+  }
+
+  asegurarEsquema() {
+    if (!this.esquema) {
+      this.esquema = pool
+        .execute(`
+          CREATE TABLE IF NOT EXISTS web_sesiones (
+            sid VARCHAR(128) NOT NULL PRIMARY KEY,
+            sesion MEDIUMTEXT NOT NULL,
+            expira BIGINT NOT NULL,
+            INDEX idx_web_sesiones_expira (expira)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `)
+        .catch((error) => {
+          this.esquema = null; // se vuelve a intentar en la proxima peticion
+          throw error;
+        });
+    }
+    return this.esquema;
+  }
+
+  ejecutar(sql, params) {
+    let reloj;
+    const tope = new Promise((_, rechazar) => {
+      reloj = setTimeout(
+        () => rechazar(new Error("MySQL no respondio a tiempo (sesion)")),
+        4000
+      );
+    });
+    const consulta = this.asegurarEsquema().then(() => pool.execute(sql, params));
+    consulta.catch(() => {}); // si gana el tope, el rechazo posterior queda atendido
+    return Promise.race([consulta, tope]).finally(() => clearTimeout(reloj));
+  }
+
+  marcarFallo() {
+    this.falloHasta = Date.now() + 15000;
+  }
+
+  apuntarSinLectura(sid) {
+    // Sin lectura previa no se permite escribir, para no pisar la sesion
+    // real con una vacia mientras MySQL este caido.
+    if (this.sinLeer.size > 5000) {
+      this.sinLeer.delete(this.sinLeer.values().next().value);
+    }
+    this.sinLeer.add(sid);
+  }
+
+  get(sid, callback) {
+    if (Date.now() < this.falloHasta) {
+      this.apuntarSinLectura(sid);
+      return callback(null, null);
+    }
+    this.ejecutar("SELECT sesion, expira FROM web_sesiones WHERE sid = ?", [sid])
+      .then(([filas]) => {
+        this.falloHasta = 0;
+        // Lectura exitosa = MySQL responde: se levanta la proteccion para que
+        // este sid si se pueda guardar despues (si no, un fallo previo dejaria
+        // el login sin persistir para siempre).
+        this.sinLeer.delete(sid);
+        const fila = filas[0];
+        if (!fila) return callback(null, null);
+        if (Number(fila.expira) < Date.now()) {
+          this.ejecutar("DELETE FROM web_sesiones WHERE sid = ?", [sid]).catch(() => {});
+          return callback(null, null);
+        }
+        let sesion;
+        try {
+          sesion = JSON.parse(fila.sesion);
+        } catch (error) {
+          return callback(null, null);
+        }
+        if (sesion.cookie && typeof sesion.cookie.expires === "string") {
+          sesion.cookie.expires = new Date(sesion.cookie.expires);
+        }
+        return callback(null, sesion);
+      })
+      .catch((error) => {
+        this.marcarFallo();
+        console.error("[SESION] No se pudo leer la sesion desde MySQL:", error.message);
+        this.apuntarSinLectura(sid);
+        return callback(null, null);
+      });
+  }
+
+  guardar(sid, sesion, callback) {
+    if (this.sinLeer.has(sid)) return callback(null);
+    let expira = Date.now() + 1000 * 60 * 60 * 24 * 30;
+    if (sesion.cookie && sesion.cookie.expires) {
+      const marca = new Date(sesion.cookie.expires).getTime();
+      if (Number.isFinite(marca)) expira = marca;
+    }
+    const texto = JSON.stringify(sesion);
+    this.ejecutar(
+      `INSERT INTO web_sesiones (sid, sesion, expira) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE sesion = VALUES(sesion), expira = VALUES(expira)`,
+      [sid, texto, expira]
+    )
+      .then(() => callback(null))
+      .catch((error) => {
+        this.marcarFallo();
+        console.error("[SESION] No se pudo guardar la sesion en MySQL:", error.message);
+        callback(null); // la peticion sigue aunque la sesion quede en pausa
+      });
+  }
+
+  set(sid, sesion, callback) {
+    this.guardar(sid, sesion, callback);
+  }
+
+  touch(sid, sesion, callback) {
+    this.guardar(sid, sesion, callback);
+  }
+
+  destroy(sid, callback) {
+    this.sinLeer.delete(sid);
+    this.ejecutar("DELETE FROM web_sesiones WHERE sid = ?", [sid])
+      .then(() => callback(null))
+      .catch((error) => {
+        console.error("[SESION] No se pudo cerrar la sesion en MySQL:", error.message);
+        callback(null);
+      });
+  }
+}
+
+app.use(
+  session({
+    store: new AlmacenSesionesWeb(),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    proxy: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      // 30 dias y se renueva en cada visita: la sesion queda abierta hasta
+      // que el usuario le da a "Cerrar sesion".
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    },
+  })
+);
+
+// Si la sesion sigue abierta, la pagina de login NO se muestra: se va
+// directo al panel. Recien al cerrar sesion vuelve a pedir iniciar sesion.
+function irAlPanelSiHaySesion(req, res, next) {
+  const paginasDeLogin = ["/iniciar-sesion.html", "/iniciar-seccion.html"];
+  if (!paginasDeLogin.includes(req.path) || !req.session || !req.session.usuario) {
+    return next();
+  }
+  const destino = req.session.usuario.cedulaRegistrada
+    ? "/dashboard-user.html"
+    : "/cargando";
+  return res.redirect(destino);
+}
+
+app.use(irAlPanelSiHaySesion);
+app.use(express.static(path.join(__dirname, "public")));
+
+// Carpeta photos/ en la raíz del repo (civil.png, encuesta.png, capturas).
+// Si la imagen también existe en public/photos, la de public gana.
+app.use("/photos", express.static(path.join(__dirname, "photos")));
+
+// Tarjeta Nequi en la RAIZ del repo (tarjeta.png): el servidor solo sirve
+// public/ y photos/, asi que sin esta ruta la imagen de la raiz no se veria.
+// Es el respaldo de la tarjeta cuando el enlace de Discord caduca.
+app.get("/tarjeta.png", (req, res) => {
+  const archivo = path.join(__dirname, "tarjeta.png");
+  if (!fs.existsSync(archivo)) return res.status(404).end();
+  res.sendFile(archivo);
+});
+
+// Sonidos del microfono del panel policial (tambien estan en la RAIZ del
+// repo). Sin estas rutas el navegador no los podria reproducir porque
+// express.static solo cubre public/ y photos/.
+function enviarSonidoDeRaiz(res, nombres) {
+  for (const nombre of nombres) {
+    const archivo = path.join(__dirname, nombre);
+    if (fs.existsSync(archivo)) {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.sendFile(archivo);
+    }
+  }
+  return res.status(404).end();
+}
+
+// Al PRENDER el microfono del panel policial.
+app.get("/mic-on.wav", (req, res) => {
+  enviarSonidoDeRaiz(res, ["mic_click_on (1).wav", "mic_click_on.wav", "mic-on.wav"]);
+});
+
+// Al APAGAR el microfono del panel policial.
+app.get("/mic-off.wav", (req, res) => {
+  enviarSonidoDeRaiz(res, ["mic_click_off.wav", "mic-off.wav"]);
+});
+
+app.get("/iniciar-sesion.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "iniciar-sesion.html"));
+});
+
+app.get("/iniciar-seccion.html", (req, res) => {
+  res.redirect("/iniciar-sesion.html");
+});
+
+function escapeHtml(texto) {
+  return String(texto || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
+
+function redirigirDespuesDeLogin(req, res, destino) {
+  req.session.save((err) => {
+    if (err) {
+      console.error("[SESION] No se pudo guardar la sesión:", err);
+      return res.status(500).send("No se pudo guardar la sesión.");
+    }
+    return res.redirect(destino);
+  });
+}
+
+async function obtenerRolesDelServidor(discordId) {
+  const url = new URL(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}`
+  );
+  const respuesta = await fetch(url, {
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      "User-Agent": "Medellin-RP-Web/1.0",
+    },
+  });
+  if (respuesta.status === 404) return null;
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text();
+    throw new Error(`Discord no devolvió los roles: ${respuesta.status} ${detalle}`);
+  }
+  const miembro = await respuesta.json();
+  return Array.isArray(miembro.roles) ? miembro.roles : [];
+}
+
+async function agregarRolDiscord(discordId, rolId, motivo) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}/roles/${rolId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+        "X-Audit-Log-Reason": motivo || "Rol de whitelist",
+      },
+    }
+  );
+  if (!respuesta.ok && respuesta.status !== 204) {
+    const detalle = await respuesta.text();
+    throw new Error(`Discord no pudo agregar el rol ${rolId}: ${respuesta.status} ${detalle}`);
+  }
+}
+
+async function quitarRolDiscord(discordId, rolId, motivo) {
+  const respuesta = await fetch(
+    `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${discordId}/roles/${rolId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+        "X-Audit-Log-Reason": motivo || "Rol de whitelist",
+      },
+    }
+  );
+  if (!respuesta.ok && respuesta.status !== 204) {
+    const detalle = await respuesta.text();
+    throw new Error(`Discord no pudo quitar el rol ${rolId}: ${respuesta.status} ${detalle}`);
+  }
+}
+
+// Asigna el rol de verificado o no verificado segun si el usuario ya tiene cedula.
+// Los dos roles se excluyen entre si: solo puede tener uno de los dos.
+async function actualizarRolVerificacion(discordId, verificado) {
+  const rolCorrespondiente = verificado ? ROL_VERIFICADO : ROL_NO_VERIFICADO;
+  const rolContrario = verificado ? ROL_NO_VERIFICADO : ROL_VERIFICADO;
+  await agregarRolDiscord(
+    discordId,
+    rolCorrespondiente,
+    verificado ? "Cedula verificada en la web" : "Usuario sin cedula en la web"
+  );
+  await quitarRolDiscord(
+    discordId,
+    rolContrario,
+    verificado ? "Ahora tiene cedula; se quita rol de no verificado" : "Sigue sin cedula; se quita rol de verificado"
+  );
+}
+
+async function obtenerMiembrosDelServidor() {
+  const miembros = [];
+  let after = "0";
+  for (let pagina = 0; pagina < 20; pagina += 1) {
+    const url = new URL(`https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members`);
+    url.searchParams.set("limit", "1000");
+    if (after !== "0") url.searchParams.set("after", after);
+    const respuesta = await fetch(url, {
+      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, "User-Agent": "Medellin-RP-Web/1.0" },
+    });
+    if (!respuesta.ok) throw new Error(`Discord no devolvió los miembros: ${respuesta.status}`);
+    const paginaMiembros = await respuesta.json();
+    miembros.push(
+      ...paginaMiembros.map((miembro) => ({
+        id: miembro.user.id,
+        username: miembro.user.username,
+        nombre: miembro.nick || miembro.user.global_name || miembro.user.username,
+        avatar: obtenerAvatarUrl(miembro.user),
+      }))
+    );
+    if (paginaMiembros.length < 1000) break;
+    after = paginaMiembros.at(-1)?.user?.id || after;
+  }
+  return miembros;
+}
+
+function obtenerAvatarUrl(usuario) {
+  if (!usuario.avatar) return null;
+  const extension = usuario.avatar.startsWith("a_") ? "gif" : "png";
+  return `https://cdn.discordapp.com/avatars/${usuario.id}/${usuario.avatar}.${extension}?size=256`;
+}
+
+// Estado real de la whitelist del usuario. Mira las ultimas 5 solicitudes y
+// da prioridad a una aceptada: si el staff acepto una anterior y despues
+// quedaron filas pendientes/denegadas de pruebas, el usuario no se traba en
+// la pagina de pendiente; avanza al paso de crear la cedula.
+async function estadoWhitelistResumen(discordId) {
+  const [filas] = await pool.execute(
+    `SELECT estado FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 5`,
+    [discordId]
+  );
+  const lista = filas.map((fila) => fila.estado);
+  if (lista.includes("aceptada")) return "aceptada";
+  return lista[0] || null;
+}
+
+async function enviarEmbedDiscord(canalId, embed, components = [], opciones = {}) {
+  const respuesta = await fetch(`https://discord.com/api/v10/channels/${canalId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+      "User-Agent": "Medellin-RP-Web/1.0",
+    },
+    body: JSON.stringify({ ...opciones, embeds: [embed], components }),
+  });
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text();
+    throw new Error(`Discord no pudo enviar el mensaje: ${respuesta.status} ${detalle}`);
+  }
+}
+
+/* ===================== RUTA CARGANDO ===================== */
+
+app.get("/cargando", async (req, res) => {
+  if (!req.session.usuario) {
+    return res.redirect("/iniciar-sesion.html");
+  }
+
+  const nombre = req.session.usuario.nombre || req.session.usuario.username;
+
+  // Estados del usuario:
+  //   1. Nada (sin rol verificado ni cedula)        -> crear-cedula
+  //   2. Rol verificado en Discord pero SIN cedula  -> crear-cedula (mensaje distinto)
+  //   3. Cedula en la base de datos                 -> dashboard (ya esta todo completo)
+  const tieneCedulaDB = Boolean(req.session.usuario.cedulaRegistrada);
+  let tieneRolVerificado = Boolean(req.session.usuario.verificadoDiscord);
+
+  // Sincronizacion de roles en Discord: si ya tiene cedula se le asegura el
+  // rol verificado. Si no tiene cedula pero ya trae el rol verificado de
+  // Discord, no se lo quitamos (evita pelear con el bot).
+  try {
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    const yaTieneVerificadoDiscord = Array.isArray(roles) && roles.includes(ROL_VERIFICADO);
+    tieneRolVerificado = yaTieneVerificadoDiscord || tieneRolVerificado;
+    await actualizarRolVerificacion(req.session.usuario.id, tieneCedulaDB || yaTieneVerificadoDiscord);
+  } catch (error) {
+    console.error("[CARGANDO ROLES]", error.message);
+  }
+
+  // Destino: solo con cedula en la base de datos vas al dashboard.
+  // Con rol No Verificado -> whitelist.
+  // Con rol Verificado sin cedula -> crear cedula.
+  // Sin nada -> whitelist.
+  let destino;
+  if (tieneCedulaDB) {
+    destino = "/dashboard-user.html";
+  } else if (Array.isArray(roles) && roles.includes(ROL_NO_VERIFICADO)) {
+    destino = "/whitelist.html";
+  } else if (tieneRolVerificado) {
+    destino = "/crear-cedula.html";
+  } else {
+    destino = "/whitelist.html";
+  }
+
+  // Mensaje segun el estado (inyectado a la pagina).
+  let estadoTexto = "nada";
+  if (tieneCedulaDB) {
+    estadoTexto = "completo"; // cedula en DB
+  } else if (Array.isArray(roles) && roles.includes(ROL_NO_VERIFICADO)) {
+    estadoTexto = "sin_rol"; // no verificado, ir a whitelist
+  } else if (tieneRolVerificado) {
+    estadoTexto = "verificado_sin_cedula"; // rol verificado pero sin cedula
+  } else {
+    estadoTexto = "sin_rol"; // nada, ir a whitelist
+  }
+
+  let html = fs.readFileSync(path.join(__dirname, "public", "cargando.html"), "utf8");
+  html = html.replace("{{NOMBRE_USUARIO}}", escapeHtml(nombre));
+  html = html.replace("{{VERIFICADO}}", tieneCedulaDB ? "true" : "false");
+  html = html.replace("{{ESTADO}}", estadoTexto);
+  html = html.replace("{{DESTINO}}", destino);
+  res.send(html);
+});
+
+/* ===================== DISCORD OAUTH2 ===================== */
+
+app.get("/auth/discord", (req, res) => {
+  // Si ya tiene la sesion abierta, no hace falta volver a pasar por Discord:
+  // se va directo al panel (lo mismo que hace la pagina de login).
+  if (req.session && req.session.usuario) {
+    return res.redirect(req.session.usuario.cedulaRegistrada ? "/dashboard-user.html" : "/cargando");
+  }
+  const parametros = new URLSearchParams({
+    client_id: process.env.DISCORD_CLIENT_ID,
+    redirect_uri: process.env.DISCORD_REDIRECT_URI,
+    response_type: "code",
+    scope: "identify",
+  });
+  res.redirect(`https://discord.com/oauth2/authorize?${parametros.toString()}`);
+});
+
+app.get("/auth/discord/callback", async (req, res) => {
+  const { code, error, error_description: descripcion } = req.query;
+
+  if (error) {
+    return res.status(400).send(`Discord canceló el inicio de sesión: ${descripcion || error}`);
+  }
+  if (!code) {
+    return res.status(400).send("No se recibió el código de autorización de Discord.");
+  }
+
+  // Paso actual del login: sirve para saber exactamente donde fallo.
+  let paso = "inicio";
+  try {
+    const parametrosToken = new URLSearchParams({
+      client_id: process.env.DISCORD_CLIENT_ID,
+      client_secret: process.env.DISCORD_CLIENT_SECRET,
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: process.env.DISCORD_REDIRECT_URI,
+    });
+
+    paso = "token de Discord (discord.com/api/v10/oauth2/token)";
+    const respuestaToken = await fetch("https://discord.com/api/v10/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Medellin-RP-Web/1.0",
+      },
+      body: parametrosToken.toString(),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    const datosToken = await respuestaToken.json();
+    if (!respuestaToken.ok || !datosToken.access_token) {
+      console.error("[DISCORD TOKEN]", datosToken);
+      return res.status(401).send("Discord no pudo validar el inicio de sesión.");
+    }
+
+    paso = "usuario de Discord (discord.com/api/v10/users/@me)";
+    const respuestaUsuario = await fetch("https://discord.com/api/v10/users/@me", {
+      headers: {
+        Authorization: `${datosToken.token_type} ${datosToken.access_token}`,
+        "User-Agent": "Medellin-RP-Web/1.0",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    const usuario = await respuestaUsuario.json();
+    if (!respuestaUsuario.ok || !usuario.id) {
+      console.error("[DISCORD USUARIO]", usuario);
+      return res.status(401).send("No se pudo obtener tu usuario de Discord.");
+    }
+
+    paso = "roles del servidor de Discord";
+    const rolesDiscord = await obtenerRolesDelServidor(usuario.id);
+    const estaEnServidor = Array.isArray(rolesDiscord);
+    const roles = rolesDiscord || [];
+    const whitelistAprobada = roles.includes(ROL_WHITELIST_APROBADA);
+    // Rol de verificado en Discord: con este rol no se le pide whitelist
+    // ni se le vuelve a asignar el de no verificado.
+    const verificadoDiscord = roles.includes(ROL_VERIFICADO);
+
+    paso = "base de datos MySQL (buscar usuario por discord)";
+    const usuarioRegistrado = await buscarUsuarioPorDiscord(usuario.id);
+
+    paso = "base de datos MySQL (estado de whitelist)";
+    const estadoWhitelist = await estadoWhitelistResumen(usuario.id);
+
+    req.session.usuario = {
+      id: usuario.id,
+      username: usuario.username,
+      nombre: usuario.global_name || usuario.username,
+      avatar: usuario.avatar,
+      avatarUrl: obtenerAvatarUrl(usuario),
+      roles,
+      estaEnServidor,
+      whitelistAprobada,
+      verificadoDiscord,
+      whitelistPendiente: estadoWhitelist === "pendiente",
+      estadoWhitelist,
+      cedulaRegistrada: Boolean(usuarioRegistrado),
+      cedula: usuarioRegistrado,
+    };
+
+    console.log(
+      `[LOGIN] ${usuario.username} (${usuario.id}) | whitelist=${whitelistAprobada} | verificado=${verificadoDiscord} | cedula=${Boolean(usuarioRegistrado)}`
+    );
+
+    if (!estaEnServidor) {
+      console.log(`[LOGIN] ${usuario.id} no pertenece al servidor ${process.env.DISCORD_GUILD_ID}; acceso rechazado.`);
+      return redirigirDespuesDeLogin(req, res, "/no-estas-en-el-servidor.html");
+    }
+
+    // SIEMPRE pasar por /cargando (ya no redirige a whitelist.html)
+    return redirigirDespuesDeLogin(req, res, "/cargando");
+  } catch (error) {
+    console.error("=== ERROR LOGIN DISCORD ===");
+    console.error("Paso:", paso);
+    console.error("Nombre:", error.name);
+    console.error("Mensaje:", error.message);
+    console.error("Código:", error.code);
+    console.error("Stack:", error.stack);
+    console.error("==========================");
+    const detalle = error.name === "TimeoutError" || error.name === "AbortError"
+      ? "Se agotó el tiempo de espera (timeout)."
+      : error.message;
+    return res.status(500).send(
+      "Ocurrió un error interno durante el inicio de sesión.<br>" +
+      "<b>Paso que falló:</b> " + paso + "<br>" +
+      "<b>Detalle:</b> " + detalle
+    );
+  }
+});
+
+/* ===================== MIDDLEWARES ===================== */
+
+function exigirSesion(req, res) {
+  if (!req.session.usuario) {
+    res.status(401).json({ error: "Debes iniciar sesión con Discord." });
+    return false;
+  }
+  return true;
+}
+
+async function exigirFundacion(req, res) {
+  if (!exigirSesion(req, res)) return false;
+  try {
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    if (roles === null) {
+      res.status(403).json({ redirect: "/no-estas-en-el-servidor.html" });
+      return false;
+    }
+    if (!roles.includes(ROL_FUNDACION) && !roles.includes(ROL_STAFF)) {
+      res.status(403).json({ error: "No tienes el rol autorizado para acceder al panel administrativo." });
+      return false;
+    }
+    req.session.usuario.roles = roles;
+    return true;
+  } catch (error) {
+    console.error("[FUNDACION AUTH]", error.message);
+    res.status(503).json({ error: "No se pudo verificar tu rol de Fundación." });
+    return false;
+  }
+}
+
+async function exigirPolicia(req, res) {
+  if (!exigirSesion(req, res)) return false;
+  try {
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    if (!roles?.some((rol) => ROLES_POLICIA.has(String(rol)))) {
+      res.status(403).json({ error: "No tienes un rol policial autorizado para usar el PDA." });
+      return false;
+    }
+    req.session.usuario.roles = roles;
+    return true;
+  } catch (error) {
+    console.error("[POLICIA AUTH]", error.message);
+    res.status(503).json({ error: "No se pudo verificar tu rol policial." });
+    return false;
+  }
+}
+
+/* ===================== API WHITELIST ===================== */
+
+app.post("/api/whitelist", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const respuestas = req.body?.respuestas;
+  if (!respuestas || typeof respuestas !== "object") {
+    return res.status(400).json({ error: "Las respuestas son obligatorias." });
+  }
+  try {
+    const [pendientesExistentes] = await pool.execute(
+      `SELECT id FROM whitelist_solicitudes WHERE discord_id = ? AND estado = 'pendiente' ORDER BY id DESC LIMIT 1`,
+      [req.session.usuario.id]
+    );
+    if (pendientesExistentes.length) {
+      return res.status(409).json({
+        error: "Ya tienes una solicitud de whitelist pendiente.",
+        redirect: "/whitelist-pendiente.html",
+      });
+    }
+
+    const [resultado] = await pool.execute(
+      `INSERT INTO whitelist_solicitudes (discord_id, discord_username, respuestas, estado) VALUES (?, ?, ?, 'pendiente')`,
+      [req.session.usuario.id, req.session.usuario.username, JSON.stringify(respuestas)]
+    );
+
+    try {
+      await agregarRolDiscord(req.session.usuario.id, ROL_WHITELIST_PENDIENTE, "Whitelist enviada desde la web");
+    } catch (errorRol) {
+      // No fatal: la solicitud ya quedó guardada y aun sin rol se envia el embed
+      // al equipo. Borrarla aqui provocaba que la pagina la redirigiera a /cargando.
+      console.error("[WHITELIST] No se pudo agregar el rol pendiente (la solicitud se mantiene):", errorRol.message);
+    }
+
+    const campos = Object.entries(respuestas).map(([pregunta, respuesta]) => ({
+      name: pregunta.replaceAll("_", " ").slice(0, 256),
+      value: String(respuesta || "Sin respuesta").slice(0, 1024),
+      inline: false,
+    }));
+
+    try {
+      await enviarEmbedDiscord(
+        CANAL_WHITELIST,
+        {
+          title: `${EMOJI_FORMULARIO} NUEVA SOLICITUD DE WHITELIST`,
+          description: `${EMOJI_ESPERA} El usuario <@${req.session.usuario.id}> envió una solicitud desde la página web.\n**Estado:** Pendiente de revisión`,
+          color: 0xffd166,
+          thumbnail: req.session.usuario.avatarUrl ? { url: req.session.usuario.avatarUrl } : undefined,
+          fields: [
+            { name: `${EMOJI_ADMIN} Usuario`, value: `<@${req.session.usuario.id}>`, inline: true },
+            { name: `${EMOJI_FORMULARIO_2} Discord ID`, value: req.session.usuario.id, inline: true },
+            ...campos,
+          ].slice(0, 25),
+          footer: { text: `${NOMBRE_SERVIDOR} • Gestión de whitelist` },
+          timestamp: new Date().toISOString(),
+        },
+        [
+          {
+            type: 1,
+            components: [
+              {
+                type: 2,
+                style: 3,
+                label: "ACEPTAR",
+                custom_id: `whitelist:aceptar:${resultado.insertId}:${req.session.usuario.id}`,
+              },
+              {
+                type: 2,
+                style: 4,
+                label: "DENEGAR",
+                custom_id: `whitelist:denegar:${resultado.insertId}:${req.session.usuario.id}`,
+              },
+            ],
+          },
+        ],
+        {
+          content: `<@&${ROL_STAFF_WHITELIST}> **Esta whitelist se envió desde la web.**`,
+          allowed_mentions: { roles: [ROL_STAFF_WHITELIST] },
+        }
+      );
+    } catch (errorDiscord) {
+      console.error("[WHITELIST] Guardado en MySQL, pero no llegó a Discord:", errorDiscord.message);
+    }
+
+    return res.json({ correcto: true, redirect: "/whitelist-pendiente.html" });
+  } catch (error) {
+    console.error("[WHITELIST] No se pudo guardar:", error.message);
+    return res.status(500).json({ error: "No se pudo guardar la whitelist. Verifica que exista la tabla en MySQL." });
+  }
+});
+
+app.get("/api/whitelist/status", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const listaUltimas = await pool
+      .execute(`SELECT estado, motivo_denegacion FROM whitelist_solicitudes WHERE discord_id = ? ORDER BY id DESC LIMIT 5`, [req.session.usuario.id])
+      .then(([filas]) => filas);
+    const resumen = await estadoWhitelistResumen(req.session.usuario.id);
+    const roles = await obtenerRolesDelServidor(req.session.usuario.id);
+    const aprobadaPorRol = roles.includes(ROL_WHITELIST_APROBADA);
+    // Regla de verificacion: con el rol de verificado en Discord (o con
+    // cedula en la base de datos) la whitelist ya no se le vuelve a pedir.
+    const cedula = await buscarUsuarioPorDiscord(req.session.usuario.id);
+    const tieneRolVerificado = roles.includes(ROL_VERIFICADO);
+
+    // Cedula en la base de datos: directo al dashboard.
+    if (cedula) {
+      return res.json({ estado: "verificado", redirect: "/dashboard-user.html" });
+    }
+
+    // Rol verificado en Discord pero SIN cedula en DB: paso 2 crear cedula.
+    if (tieneRolVerificado) {
+      return res.json({ estado: "verificado_sin_cedula", redirect: "/crear-cedula.html" });
+    }
+
+    // Aceptada por rol de Discord o por la base de datos:
+    // paso 2 del flujo -> crear la cedula.
+    if (aprobadaPorRol || resumen === "aceptada") {
+      return res.json({ estado: "aceptada", redirect: "/crear-cedula.html" });
+    }
+    if (resumen === "pendiente") return res.json({ estado: "pendiente" });
+    if (resumen === "denegada") {
+      const denegadaReciente = listaUltimas.find((fila) => fila.estado === "denegada");
+      return res.json({
+        estado: "denegada",
+        motivo: denegadaReciente?.motivo_denegacion || "La solicitud fue denegada.",
+        redirect: "/whitelist-denegada.html",
+      });
+    }
+    // Sin solicitud: mejor volver al formulario para que pueda enviarla de nuevo.
+    // (Antes mandaba a /cargando, y eso creaba el bucle de redirecciones).
+    return res.json({ estado: "sin_solicitud", redirect: "/whitelist.html" });
+  } catch (error) {
+    console.error("[WHITELIST STATUS]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el estado de la whitelist." });
+  }
+});
+
+/* ===================== API CÉDULA ===================== */
+
+app.post("/api/cedula", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const { nombres, apellidos, sexo, nacionalidad, lugar_nac, fecha_nac, roblox } = req.body || {};
+  const discordId = req.session.usuario.id;
+  const fechaTexto = String(fecha_nac || "").trim();
+  const coincidenciaFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(fechaTexto);
+  if (!coincidenciaFecha) {
+    return res.status(400).json({ error: "La fecha debe tener el formato DD/MM/AAAA, por ejemplo 02/02/2000." });
+  }
+  const [, dia, mes, anio] = coincidenciaFecha;
+  const fechaISO = `${anio}-${mes}-${dia}`;
+  const fechaValida = new Date(`${fechaISO}T00:00:00Z`);
+  if (
+    fechaValida.getUTCFullYear() !== Number(anio) ||
+    fechaValida.getUTCMonth() + 1 !== Number(mes) ||
+    fechaValida.getUTCDate() !== Number(dia)
+  ) {
+    return res.status(400).json({ error: "La fecha de nacimiento no es válida." });
+  }
+  if (!String(nombres || "").trim() || !String(apellidos || "").trim()) {
+    return res.status(400).json({ error: "Nombres y apellidos son obligatorios." });
+  }
+  if (!["MASCULINO", "FEMENINO"].includes(String(sexo || ""))) {
+    return res.status(400).json({ error: "Selecciona un sexo válido." });
+  }
+  if (!["COLOMBIANA", "EXTRANJERA"].includes(String(nacionalidad || ""))) {
+    return res.status(400).json({ error: "Selecciona una nacionalidad válida." });
+  }
+  if (!String(lugar_nac || "").trim() || !String(fecha_nac || "").trim()) {
+    return res.status(400).json({ error: "Lugar y fecha de nacimiento son obligatorios." });
+  }
+  if (!String(roblox || "").trim()) {
+    return res.status(400).json({ error: "El usuario de Roblox es obligatorio." });
+  }
+
+  try {
+    const roles = await obtenerRolesDelServidor(discordId);
+    const estadoWhitelist = await estadoWhitelistResumen(discordId);
+    const whitelistAceptada =
+      roles.includes(ROL_WHITELIST_APROBADA) || estadoWhitelist === "aceptada";
+    if (!whitelistAceptada) {
+      return res.status(403).json({ error: "Tu whitelist todavía no está aceptada." });
+    }
+
+    const conexion = await pool.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const [ultimo] = await conexion.execute(
+        `SELECT COALESCE(MAX(CAST(nuip AS UNSIGNED)), 1000) AS ultimo FROM usuarios FOR UPDATE`
+      );
+      const nuip = String(Number(ultimo[0].ultimo) + 1);
+      const nombreCompleto = `${String(nombres).trim()} ${String(apellidos).trim()}`;
+
+      await conexion.execute(
+        `INSERT INTO usuarios
+          (discord_id, nuip, nombre, nombres, apellidos, sexo,
+           fecha_nacimiento, fecha_nac, nacionalidad, lugar_nac, roblox_name)
+         VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?, ?)`,
+        [discordId, nuip, nombreCompleto, String(nombres).trim(), String(apellidos).trim(), String(sexo), fechaISO, fechaTexto, String(nacionalidad), String(lugar_nac).trim(), String(roblox).trim()]
+      );
+      await conexion.commit();
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
+
+    const cedula = await buscarUsuarioPorDiscord(discordId);
+    req.session.usuario.cedulaRegistrada = true;
+    req.session.usuario.cedula = cedula;
+
+    try {
+      await actualizarRolVerificacion(discordId, true);
+    } catch (errorRol) {
+      console.error("[CEDULA ROLES] No se pudo asignar el rol verificado:", errorRol.message);
+    }
+
+    try {
+      await enviarEmbedDiscord("1539426748142325780", {
+        title: "🪪 NUEVO REGISTRO CIVIL",
+        description: "Se creó una nueva cédula ciudadana desde la página web de Medellín RP.",
+        color: 0x00a876,
+        thumbnail: req.session.usuario.avatarUrl ? { url: req.session.usuario.avatarUrl } : undefined,
+        fields: [
+          { name: "👤 Ciudadano", value: `${cedula.nombres || nombres} ${cedula.apellidos || apellidos}`, inline: false },
+          { name: "🆔 NUIP", value: `CC ${cedula.nuip}`, inline: true },
+          { name: "⚧ Sexo", value: String(sexo), inline: true },
+          { name: "🌎 Nacionalidad", value: String(nacionalidad), inline: true },
+          { name: "📍 Lugar de nacimiento", value: String(lugar_nac), inline: true },
+          { name: "🎮 Roblox", value: String(roblox), inline: true },
+          { name: "💬 Discord", value: `<@${discordId}>`, inline: true },
+        ],
+        footer: { text: "Medellín RP • Registro Civil" },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (errorDiscord) {
+      console.error("[CEDULA] Guardado en MySQL, pero no llegó el log a Discord:", errorDiscord.message);
+    }
+
+    return req.session.save((error) => {
+      if (error) {
+        console.error("[CEDULA] No se pudo guardar la sesión:", error);
+        return res.status(500).json({ error: "Cédula guardada, pero no se pudo actualizar la sesión." });
+      }
+      return res.json({ correcto: true, redirect: "/dashboard-user.html" });
+    });
+  } catch (error) {
+    console.error("[CEDULA] No se pudo guardar:", error.message);
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "La cuenta de Discord ya tiene una cédula registrada." });
+    }
+    return res.status(500).json({ error: "No se pudo guardar la cédula." });
+  }
+});
+
+/* ===================== API ESTADO ===================== */
+
+app.get("/api/estado", async (req, res) => {
+  try {
+    await probarConexion();
+    return res.json({ correcto: true, mysql: true, mensaje: "La web está funcionando correctamente." });
+  } catch (error) {
+    console.error("[API ESTADO MYSQL]", error.message);
+    return res.status(503).json({ correcto: false, mysql: false, mensaje: "La web funciona, pero no pudo conectar con MySQL." });
+  }
+});
+
+/* ===================== API USUARIO ===================== */
+
+app.get("/api/usuario", async (req, res) => {
+  if (!req.session.usuario) {
+    return res.status(401).json({ autenticado: false });
+  }
+  try {
+    const cedulaActualizada = await buscarUsuarioPorDiscord(req.session.usuario.id);
+    const rolesDiscord = await obtenerRolesDelServidor(req.session.usuario.id);
+    const estaEnServidor = Array.isArray(rolesDiscord);
+    const rolesActualizados = rolesDiscord || [];
+    const resumenWhitelist = await estadoWhitelistResumen(req.session.usuario.id);
+    const tieneWhitelistPendiente = resumenWhitelist === "pendiente";
+
+    req.session.usuario.cedula = cedulaActualizada;
+    req.session.usuario.cedulaRegistrada = Boolean(cedulaActualizada);
+    req.session.usuario.verificadoDiscord = rolesActualizados.includes(ROL_VERIFICADO);
+    req.session.usuario.roles = rolesActualizados;
+    req.session.usuario.estaEnServidor = estaEnServidor;
+    req.session.usuario.whitelistPendiente = tieneWhitelistPendiente;
+
+    // En cuanto la cedula aparece (la guardo el bot de Discord), se asigna el
+    // rol de verificado y se retira el de no verificado. Aqui es donde termina
+    // el circulo: crear-cedula -> bot guarda -> este endpoint -> rol verificado.
+    if (cedulaActualizada && !req.session.usuario.verificadoDiscord) {
+      try {
+        await actualizarRolVerificacion(req.session.usuario.id, true);
+        req.session.usuario.verificadoDiscord = true;
+        req.session.usuario.roles = await obtenerRolesDelServidor(req.session.usuario.id);
+      } catch (errorRol) {
+        console.error("[USUARIO ROLES] No se pudo asignar el rol verificado:", errorRol.message);
+      }
+    }
+
+    return res.json({
+      autenticado: true,
+      usuario: req.session.usuario,
+      fundacionAutorizada: rolesActualizados.includes(ROL_FUNDACION),
+      staffAutorizado: rolesActualizados.includes(ROL_STAFF),
+      policialAutorizado: rolesActualizados.some((rol) => ROLES_POLICIA.has(String(rol))),
+      estaEnServidor,
+      redireccion: tieneWhitelistPendiente ? "/whitelist-pendiente.html" : null,
+    });
+  } catch (error) {
+    console.error("[API USUARIO]", error.message);
+    return res.status(503).json({ autenticado: true, error: "No se pudo consultar la cédula en MySQL." });
+  }
+});
+
+/* ===================== API CÉDULA IMAGEN ===================== */
+
+app.get("/api/cedula/imagen", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const [filas] = await pool.execute(`SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1`, [req.session.usuario.id]);
+    if (!filas[0]?.cedula_imagen) {
+      return res.status(404).send("La imagen de la cédula todavía no existe.");
+    }
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].cedula_imagen);
+  } catch (error) {
+    console.error("[API CEDULA IMAGEN]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen.");
+  }
+});
+
+/* ===================== API POLICIAL (PDA) ===================== */
+
+app.get("/api/policial/ciudadano/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  try {
+    const cedula = await buscarUsuarioPorDiscord(discordId);
+    const leer = async (tabla) => {
+      const [filas] = await pool.execute(`SELECT payload FROM ${tabla} WHERE discord_id = ? ORDER BY fecha DESC`, [discordId]);
+      return filas.map((fila) => (typeof fila.payload === "string" ? JSON.parse(fila.payload) : fila.payload));
+    };
+    const [arrestos, antecedentes, multas] = await Promise.all([
+      leer("expediente_arrestos"),
+      leer("expediente_antecedentes"),
+      leer("expediente_multas"),
+    ]);
+    return res.json({ correcto: true, ciudadano: cedula, expediente: { arrestos, antecedentes, multas } });
+  } catch (error) {
+    console.error("[API PDA POLICIAL]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el ciudadano." });
+  }
+});
+
+app.get("/api/policial/cedula/:nuip", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const nuip = String(req.params.nuip || "").trim();
+  if (!nuip) return res.status(400).json({ error: "Debes escribir el número de cédula." });
+  try {
+    const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [nuip]);
+    if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada." });
+    return await responderCiudadanoCompleto(res, filas[0]);
+  } catch (error) {
+    console.error("[API PDA NUIP]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar la cédula." });
+  }
+});
+
+// Devuelve el ciudadano con su expediente completo (JSON del bot).
+async function responderCiudadanoCompleto(res, ciudadano) {
+  const discordId = String(ciudadano.discord_id || "");
+  if (!discordId) return res.status(404).json({ error: "La cédula no está vinculada a un Discord." });
+  let expediente = { arrestos: [], antecedentes: [], multas: [] };
+  if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+    try {
+      const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+      const respuestaBot = await fetch(`${baseApi}/api/expediente/${discordId}`, {
+        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (respuestaBot.ok) {
+        const datosBot = await respuestaBot.json();
+        expediente = datosBot.expediente || expediente;
+      }
+    } catch (e) {
+      console.warn("[API PDA NUIP] No se pudo leer expediente del bot:", e.message);
+    }
+  }
+  return res.json({ correcto: true, discordId, ciudadano, expediente });
+}
+
+// Búsqueda única del PDA: acepta número de cédula, placa o nombre.
+app.get("/api/policial/buscar", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const consulta = String(req.query.consulta || "").trim();
+  if (!consulta) return res.status(400).json({ error: "Escribe una cédula, una placa o un nombre." });
+  try {
+    // 1) Todo dígito => cédula (número de documento).
+    if (/^\d{4,15}$/.test(consulta)) {
+      const [filas] = await pool.execute("SELECT * FROM usuarios WHERE nuip = ? LIMIT 1", [consulta]);
+      if (!filas.length) return res.status(404).json({ error: "La cédula no está registrada." });
+      return await responderCiudadanoCompleto(res, filas[0]);
+    }
+
+    const esPlaca = /^[A-Za-z0-9-]{4,10}$/.test(consulta) && /\d/.test(consulta) && /[A-Za-z]/.test(consulta);
+
+    // 2) Letras + números sin espacios => placa de vehículo.
+    if (esPlaca) {
+      const placa = consulta.toUpperCase();
+      let discordId = "";
+      try {
+        const [vehiculos] = await pool.execute("SELECT discord_id FROM vehiculos WHERE UPPER(placa) = ? LIMIT 1", [placa]);
+        discordId = String(vehiculos[0]?.discord_id || "");
+      } catch (e) {
+        console.warn("[API PDA BUSCAR] vehiculos no disponible:", e.message);
+      }
+      if (!discordId && process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+        try {
+          const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+          const respuestaBot = await fetch(`${baseApi}/api/vehiculos/000000000000000000?placa=${encodeURIComponent(placa)}`, {
+            headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (respuestaBot.ok) {
+            const datosBot = await respuestaBot.json();
+            discordId = String(datosBot.propietario?.discordId || "");
+          }
+        } catch (e) {
+          console.warn("[API PDA BUSCAR] placa no disponible en el bot:", e.message);
+        }
+      }
+      if (discordId) {
+        const [dueno] = await pool.execute("SELECT * FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
+        if (dueno.length) return await responderCiudadanoCompleto(res, dueno[0]);
+      }
+      // Si la placa no existe, se continúa por si también es un nombre.
+    }
+
+    // 3) Resto => nombre (coincidencia parcial en nombre, nombres o apellidos).
+    const patron = `%${consulta}%`;
+    const [filas] = await pool.execute(
+      "SELECT nuip, discord_id, nombre, nombres, apellidos FROM usuarios WHERE nombre LIKE ? OR nombres LIKE ? OR apellidos LIKE ? ORDER BY nombre LIMIT 20",
+      [patron, patron, patron],
+    );
+    if (!filas.length) {
+      return res.status(404).json({ error: `No se encontró nadie con "${consulta}" (cédula, placa o nombre).` });
+    }
+    if (filas.length === 1) {
+      const [completo] = await pool.execute("SELECT * FROM usuarios WHERE discord_id = ? LIMIT 1", [String(filas[0].discord_id || "")]);
+      if (completo.length) return await responderCiudadanoCompleto(res, completo[0]);
+    }
+    return res.json({
+      correcto: true,
+      coincidencias: filas.map((f) => ({
+        nuip: f.nuip || "",
+        discordId: String(f.discord_id || ""),
+        nombre: String(f.nombre || `${f.nombres || ""} ${f.apellidos || ""}`.trim() || "Sin nombre"),
+      })),
+    });
+  } catch (error) {
+    console.error("[API PDA BUSCAR]", error.message);
+    return res.status(500).json({ error: "No se pudo completar la búsqueda." });
+  }
+});
+
+app.get("/api/policial/cedula-imagen/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
+  try {
+    const [filas] = await pool.execute("SELECT cedula_imagen FROM usuarios WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!filas[0]?.cedula_imagen) return res.status(404).send("La cédula no tiene imagen.");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].cedula_imagen);
+  } catch (error) {
+    console.error("[API IMAGEN CÉDULA POLICIAL]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen de la cédula.");
+  }
+});
+
+app.post("/api/policial/arresto", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.body?.discordId || "").trim();
+  const delitos = Array.isArray(req.body?.delitos) ? req.body.delitos.map(String).filter(Boolean).slice(0, 25) : [];
+  const imagenBase64 = String(req.body?.imagenBase64 || "");
+  if (!/^\d{10,25}$/.test(discordId) || !delitos.length || !imagenBase64) {
+    return res.status(400).json({ error: "Debes seleccionar ciudadano, antecedentes y una imagen de evidencia." });
+  }
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/arrestos/${req.session.usuario.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ discordId, delitos, imagenBase64, oficialId: req.session.usuario.id, oficial: req.session.usuario.nombre || req.session.usuario.username }),
+      signal: AbortSignal.timeout(30000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA ARRESTO]", error.message);
+    return res.status(500).json({ error: "No se pudo registrar el arresto." });
+  }
+});
+
+app.get("/api/policial/alertas", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/alertas/${req.session.usuario.id}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA ALERTAS]", error.message);
+    return res.status(503).json({ error: "No se pudieron cargar las alertas del bot." });
+  }
+});
+
+/* ==================== RASTREADOR DE OFICIALES (ER:LC EN VIVO) ====================
+   Lee las posiciones REALES del servidor de ER:LC con la API oficial de PRC
+   (api.erlc.gg/v2/server) y las convierte a píxeles del mapa de ER:LC Tools.
+   Requiere en Render la variable ERLC_SERVER_KEY (en el juego: Settings ->
+   ERLC API, pack del servidor privado). Opcional:
+     ERLC_EQUIPOS_POLICIA="police,sheriff,highway patrol"  (equipos a mostrar)
+     ERLC_SERVER_API="https://api.erlc.gg/v2/server"       (solo para pruebas) */
+const EQUIPOS_POLICIA_POR_DEFECTO = ["police", "sheriff", "trooper", "highway patrol", "state trooper"];
+
+function equipoEsPolicia(equipo) {
+  const nombre = String(equipo || "").trim().toLowerCase();
+  if (!nombre) return false;
+  const propios = String(process.env.ERLC_EQUIPOS_POLICIA || "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const lista = propios.length ? propios : EQUIPOS_POLICIA_POR_DEFECTO;
+  return lista.some((e) => nombre === e || nombre.includes(e));
+}
+
+/* LocationX/LocationZ de api.erlc.gg -> píxeles del mapa de verano de
+   ER:LC Tools (fórmula de https://erlc-tools.com/map-api, verificada en el
+   juego contra códigos postales):
+     world z = -5426.232 + 2·LocationX        world x = 4641.842 − 2·LocationZ
+     X = (z + 5472)·2.75                      Y = 29700 − (x + 6112)·2.75     */
+function ubicacionRastreo(locationX, locationZ) {
+  const mundoZ = -5426.232 + 2 * Number(locationX || 0);
+  const mundoX = 4641.842 - 2 * Number(locationZ || 0);
+  return {
+    mundoX: Math.round(mundoX * 100) / 100,
+    mundoZ: Math.round(mundoZ * 100) / 100,
+    pxX: Math.round((mundoZ + 5472) * 2.75 * 10) / 10,
+    pxY: Math.round((29700 - (mundoX + 6112) * 2.75) * 10) / 10,
+  };
+}
+
+/* Cache corto para no martillar la API de ER:LC con el refresco de 5 s. */
+let cacheRastreo = { tiempo: 0, jugadores: null };
+
+app.get("/api/policial/rastreo", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const clave = String(process.env.ERLC_SERVER_KEY || "").trim();
+  if (!clave) {
+    return res.status(503).json({
+      error: "Falta la clave del servidor de ER:LC en Render (variable ERLC_SERVER_KEY). La encuentras en el juego: Settings → ERLC API.",
+    });
+  }
+
+  let jugadores = null;
+  if (cacheRastreo.jugadores && Date.now() - cacheRastreo.tiempo < 4000) {
+    jugadores = cacheRastreo.jugadores;
+  } else {
+    try {
+      const origen = String(process.env.ERLC_SERVER_API || "https://api.erlc.gg/v2/server")
+        .trim().replace(/[?&]Players=true$/, "");
+      const respuesta = await fetch(`${origen}${origen.includes("?") ? "&" : "?"}Players=true`, {
+        headers: { "server-key": clave, Accept: "application/json" },
+        signal: AbortSignal.timeout(12000),
+      });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        return res.status(502).json({
+          error: `El servidor de ER:LC respondió ${respuesta.status}: ${datos.message || datos.error || "sin detalle"}.`,
+        });
+      }
+      jugadores = (Array.isArray(datos.Players) ? datos.Players : [])
+        .map((jugador) => {
+          if (!jugador?.Location) return null;
+          const [robloxName, robloxId] = String(jugador.Player || "").split(":");
+          const loc = jugador.Location;
+          const mapa = ubicacionRastreo(loc.LocationX, loc.LocationZ);
+          return {
+            nombre: String(robloxName || "").trim() || "Jugador",
+            robloxId: robloxId || null,
+            equipo: String(jugador.Team || "Civilian"),
+            unidad: jugador.Callsign || null,
+            permiso: jugador.Permission || null,
+            estrellas: Number(jugador.WantedStars || 0),
+            policia: equipoEsPolicia(jugador.Team),
+            calle: loc.StreetName || null,
+            postal: loc.PostalCode || null,
+            edificio: loc.BuildingNumber || null,
+            ...mapa,
+          };
+        })
+        .filter(Boolean);
+      cacheRastreo = { tiempo: Date.now(), jugadores };
+    } catch (error) {
+      console.error("[RASTREO ERLC]", error.message);
+      return res.status(502).json({ error: "No se pudo consultar el servidor de ER:LC en este momento." });
+    }
+  }
+
+  const mios = [
+    String(req.query.yo || "").trim().toLowerCase(),
+    String(req.session.usuario?.cedula?.roblox_name || "").trim().toLowerCase(),
+  ].filter(Boolean);
+  const conYo = jugadores.map((j) => ({ ...j, esYo: mios.includes(String(j.nombre).toLowerCase()) }));
+
+  return res.json({
+    correcto: true,
+    servidor: "Servidor ER:LC",
+    policia: conYo.filter((j) => j.policia),
+    yo: conYo.find((j) => j.esYo) || null,
+    total: conYo.length,
+    actualizadoEn: new Date().toISOString(),
+  });
+});
+
+/* ==================== CÁMARAS DE LA CIUDAD (ER:LC Tools) ====================
+   Posiciones FIJAS de las cámaras del juego: seguridad, velocidad y
+   semáforo, desde map-points-summer.json de ER:LC Tools (datos estáticos
+   con CORS abierto; la API de ER:LC no transmite video de cámaras).
+   Mundo (studs) -> px del mapa de verano: X=(z+5472)·2.75, Y=29700−(x+6112)·2.75 */
+const TIPOS_CAMARA = [
+  { id: "security", nombre: "Cámaras de seguridad", color: "#5fd0c0", emoji: "📷" },
+  { id: "speedcams", nombre: "Cámaras de velocidad", color: "#ffb020", emoji: "📸" },
+  { id: "redlight", nombre: "Cámaras de semáforo", color: "#ff5a5a", emoji: "🔴" },
+];
+let cacheCamaras = { tiempo: 0, datos: null };
+
+function pixelDeMundo(mundoX, mundoZ) {
+  return {
+    pxX: Math.round((Number(mundoZ) + 5472) * 2.75 * 10) / 10,
+    pxY: Math.round((29700 - (Number(mundoX) + 6112) * 2.75) * 10) / 10,
+  };
+}
+
+app.get("/api/policial/camaras", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  if (cacheCamaras.datos && Date.now() - cacheCamaras.tiempo < 30 * 60 * 1000) {
+    return res.json(cacheCamaras.datos);
+  }
+  try {
+    const origen = String(process.env.ERLC_MAP_POINTS || "https://erlc-tools.com/map-points-summer.json").trim();
+    const r = await fetch(origen, { signal: AbortSignal.timeout(15000), headers: { Accept: "application/json" } });
+    const datos = await r.json().catch(() => ({}));
+    if (!r.ok || !Array.isArray(datos.kinds)) {
+      return res.status(502).json({ error: `ER:LC Tools respondió ${r.status} al leer las cámaras.` });
+    }
+    const grupos = TIPOS_CAMARA.map((tipo) => {
+      const kind = datos.kinds.find((k) => k.id === tipo.id);
+      const items = [];
+      (kind?.groups || []).forEach((g) => (g.items || []).forEach((it) => {
+        const [x, , z, yaw, etiqueta, zona] = it;
+        if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(z))) return;
+        const fila = { ...pixelDeMundo(x, z), yaw: Number(yaw) || 0, etiqueta: etiqueta ? String(etiqueta) : null };
+        if (Array.isArray(zona) && Number.isFinite(Number(zona[0])) && Number.isFinite(Number(zona[2]))) {
+          /* tramo vigilado de la cámara de velocidad (world studs -> px) */
+          fila.tramo = { ...pixelDeMundo(zona[0], zona[2]), ancho: Number(zona[4]) || null, largo: Number(zona[5]) || null };
+        }
+        items.push(fila);
+      }));
+      return { ...tipo, total: items.length, items };
+    });
+    const salida = {
+      correcto: true,
+      grupos,
+      total: grupos.reduce((a, g) => a + g.total, 0),
+      fuente: "ER:LC Tools (map-points-summer)",
+      actualizadoEn: new Date().toISOString(),
+    };
+    cacheCamaras = { tiempo: Date.now(), datos: salida };
+    return res.json(salida);
+  } catch (error) {
+    console.error("[CAMARAS ERLC-TOOLS]", error.message);
+    return res.status(502).json({ error: "No se pudieron cargar las cámaras de ER:LC Tools en este momento." });
+  }
+});
+
+app.get("/api/policial/vehiculo/:placa", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const placa = String(req.params.placa || "").trim().toUpperCase();
+  if (!/^[A-Z0-9-]{3,10}$/.test(placa)) return res.status(400).json({ error: "La placa no es válida." });
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}?placa=${encodeURIComponent(placa)}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PDA VEHÍCULO]", error.message);
+    return res.status(503).json({ error: "No se pudo consultar el vehículo." });
+  }
+});
+
+app.get("/api/policial/usuarios", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    return res.json({ correcto: true, usuarios: await obtenerMiembrosDelServidor() });
+  } catch (error) {
+    console.error("[API PDA USUARIOS]", error.message);
+    return res.status(503).json({ error: "No se pudo cargar la lista de ciudadanos." });
+  }
+});
+
+app.get("/api/policial/imagen/:discordId", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).send("Discord ID inválido.");
+  try {
+    const [filas] = await pool.execute("SELECT imagen_png FROM pda_fuerza_publica WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!filas[0]?.imagen_png) return res.status(404).send("El ciudadano todavía no ha generado su PDA.");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(filas[0].imagen_png);
+  } catch (error) {
+    console.error("[API PDA IMAGEN]", error.message);
+    return res.status(500).send("No se pudo cargar la imagen PDA.");
+  }
+});
+
+// Foto de Roblox del ciudadano. El navegador no puede llamar a Roblox
+// directamente (no envía cabeceras CORS), así que el servidor resuelve
+// el nombre de usuario -> ID -> foto de perfil y la devuelve en JSON.
+app.get("/api/policial/roblox-avatar/:username", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const username = String(req.params.username || "").trim();
+  if (!username || username.length > 40) return res.status(400).json({ error: "Usuario de Roblox inválido." });
+  try {
+    const r = await fetch("https://users.roblox.com/v1/usernames/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usernames: [username], excludeBannedUsers: false }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) return res.status(502).json({ error: "Roblox no respondió (usuarios)." });
+    const datos = await r.json();
+    const id = datos?.data?.[0]?.id;
+    if (!id) return res.status(404).json({ error: "Ese usuario de Roblox no existe." });
+    const t = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${id}&size=150x150&format=Png&isCircular=false`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!t.ok) return res.status(502).json({ error: "Roblox no respondió (fotos)." });
+    const td = await t.json();
+    const foto = td?.data?.[0]?.imageUrl;
+    if (!foto) return res.status(404).json({ error: "Ese usuario no tiene foto de perfil." });
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.json({ correcto: true, userId: id, foto });
+  } catch (error) {
+    console.error("[API ROBLOX AVATAR]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar la foto de Roblox." });
+  }
+});
+
+/* ===================== RADIO POLICIAL (base de datos real) =====================
+   Quien entra a una radio queda en la tabla radio_conectados con un latido
+   cada pocos segundos. Si la pestana se cierra sin salir, el latido se corta
+   y a los 90 segundos esa persona aparece como desconectada.                */
+
+let radioSchemaPromise;
+async function asegurarEsquemaRadio() {
+  if (!radioSchemaPromise) {
+    radioSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS radio_conectados (
+          discord_id VARCHAR(32) NOT NULL PRIMARY KEY,
+          canal INT NOT NULL,
+          nombre VARCHAR(120) NOT NULL,
+          entra_en BIGINT NOT NULL,
+          latido BIGINT NOT NULL,
+          micro TINYINT NOT NULL DEFAULT 0,
+          KEY idx_radio_canal (canal)
+        )
+      `);
+      /* Migracion: la tabla pudo crearce antes de existir la columna
+         "micro" (CREATE TABLE IF NOT EXISTS no agrega columnas nuevas).
+         Si ya esta, MySQL responde 1060 y se ignora. */
+      try {
+        await pool.execute("ALTER TABLE radio_conectados ADD COLUMN micro TINYINT NOT NULL DEFAULT 0");
+      } catch (error) {
+        if (error.code !== "ER_DUP_FIELDNAME") throw error;
+      }
+    })().catch((error) => {
+      radioSchemaPromise = null;
+      throw error;
+    });
+  }
+  return radioSchemaPromise;
+}
+
+const CANALES_RADIO = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const LATIDO_RADIO_MS = 90000;
+
+/* Microfonos PRENDIDOS ahora mismo (id -> canal). Solo quien aparece aqui
+   puede mandar voz por la radio; lo pone /api/radio/mic al prender y lo
+   quitan apagar, salir, entrar a otro canal y la limpieza de latidos. */
+const microsActivos = new Map();
+
+async function limpiarRadioVieja() {
+  const desde = Date.now() - LATIDO_RADIO_MS;
+  const [viejas] = await pool.execute("SELECT discord_id FROM radio_conectados WHERE latido < ?", [desde]);
+  await pool.execute("DELETE FROM radio_conectados WHERE latido < ?", [desde]);
+  for (const fila of viejas) microsActivos.delete(String(fila.discord_id));
+}
+
+/* Eventos en vivo de la radio (SSE): cuando alguien entra, prende o apaga
+   el micro o sale, TODOS los demas conectados a ese canal reciben el aviso
+   al instante y reproducen el sonido de la radio. */
+const oyentesRadio = new Map();
+
+function avisarRadio(canal, evento) {
+  const oyentes = oyentesRadio.get(Number(canal));
+  if (!oyentes || !oyentes.size) return;
+  const linea = "data: " + JSON.stringify(evento) + "\n\n";
+  for (const respuesta of oyentes) {
+    try { respuesta.write(linea); } catch (e) { /* la conexion se cierra sola */ }
+  }
+}
+
+app.get("/api/radio/eventos", (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const canal = Number(req.query.canal);
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  // Si la sesion ya trae un rol policial (se verifico al entrar al panel)
+  // no hace falta llamar a Discord otra vez; si no, se verifica ahora.
+  const roles = req.session.usuario.roles || [];
+  const esPolicial = roles.some((rol) => ROLES_POLICIA.has(String(rol)));
+  const verificar = esPolicial ? Promise.resolve(true) : exigirPolicia(req, res);
+  Promise.resolve(verificar).then((permitido) => {
+    if (!permitido) return;
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (typeof res.flushHeaders === "function") res.flushHeaders();
+    res.write(": conectado\n\n");
+    const oyentes = oyentesRadio.get(canal) || new Set();
+    oyentes.add(res);
+    oyentesRadio.set(canal, oyentes);
+    const keepAlive = setInterval(() => {
+      try { res.write(": ping\n\n"); } catch (e) {}
+    }, 20000);
+    req.on("close", () => {
+      clearInterval(keepAlive);
+      const conjunto = oyentesRadio.get(canal);
+      if (conjunto) {
+        conjunto.delete(res);
+        if (!conjunto.size) oyentesRadio.delete(canal);
+      }
+    });
+  });
+});
+
+// Estado de la radio: cuantos conectados hay en cada canal y, si se pide
+// un canal, la lista completa. Cada consulta renueva el latido del consultante.
+app.get("/api/radio/estado", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const canal = req.query.canal !== undefined ? Number(req.query.canal) : null;
+  if (canal !== null && !CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  try {
+    await asegurarEsquemaRadio();
+    const ahora = Date.now();
+    await limpiarRadioVieja();
+    const miId = String(req.session.usuario.id || "");
+    await pool.execute("UPDATE radio_conectados SET latido = ? WHERE discord_id = ?", [ahora, miId]);
+    const [filas] = await pool.execute("SELECT discord_id, canal, nombre, entra_en, micro FROM radio_conectados");
+    /* Repara microsActivos desde la BD: si el proceso se reinicio (deploy o
+       despertar de Render) el mapa quedo vacio aunque la tabla dice quien
+       tiene el micro prendido. Solo se agregan, nunca se quitan aqui. */
+    for (const fila of filas) {
+      if (Number(fila.micro) === 1) microsActivos.set(String(fila.discord_id), Number(fila.canal));
+    }
+    const conteos = {};
+    for (let i = 1; i <= 10; i += 1) conteos[i] = 0;
+    filas.forEach((fila) => {
+      const c = Number(fila.canal);
+      if (conteos[c] !== undefined) conteos[c] += 1;
+    });
+    const miFila = filas.find((fila) => String(fila.discord_id) === miId) || null;
+    let conectados = null;
+    if (canal !== null) {
+      conectados = filas
+        .filter((fila) => Number(fila.canal) === canal)
+        .map((fila) => ({
+          discordId: String(fila.discord_id),
+          nombre: fila.nombre,
+          desde: Number(fila.entra_en),
+          micro: Number(fila.micro) || 0,
+          tu: String(fila.discord_id) === miId,
+        }))
+        .sort((a, b) => a.desde - b.desde);
+    }
+    return res.json({
+      correcto: true,
+      ahora,
+      conteos,
+      miCanal: miFila ? Number(miFila.canal) : null,
+      conectados,
+    });
+  } catch (error) {
+    console.error("[API RADIO ESTADO]", error.message);
+    return res.status(500).json({ error: "No se pudo leer la radio." });
+  }
+});
+
+app.post("/api/radio/entrar", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const canal = Number(req.body?.canal);
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  try {
+    await asegurarEsquemaRadio();
+    const ahora = Date.now();
+    await limpiarRadioVieja();
+    const id = String(req.session.usuario.id);
+    const nombre = String(req.session.usuario.nombre || req.session.usuario.username || "Oficial").slice(0, 120);
+    await pool.execute(
+      `INSERT INTO radio_conectados (discord_id, canal, nombre, entra_en, latido, micro)
+       VALUES (?, ?, ?, ?, ?, 0)
+       ON DUPLICATE KEY UPDATE canal = VALUES(canal), nombre = VALUES(nombre), entra_en = VALUES(entra_en), latido = VALUES(latido), micro = 0`,
+      [id, canal, nombre, ahora, ahora]
+    );
+    microsActivos.delete(id); /* el upsert pone micro = 0 */
+    avisarRadio(canal, { tipo: "entrar", discordId: id, nombre, t: ahora });
+    return res.json({ correcto: true, canal });
+  } catch (error) {
+    console.error("[API RADIO ENTRAR]", error.message);
+    return res.status(500).json({ error: "No se pudo entrar a la radio." });
+  }
+});
+
+app.post("/api/radio/salir", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  try {
+    await asegurarEsquemaRadio();
+    const id = String(req.session.usuario.id);
+    const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
+    await pool.execute("DELETE FROM radio_conectados WHERE discord_id = ?", [id]);
+    microsActivos.delete(id);
+    if (filas.length) {
+      avisarRadio(Number(filas[0].canal), { tipo: "salir", discordId: id, nombre: filas[0].nombre, t: Date.now() });
+    }
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[API RADIO SALIR]", error.message);
+    return res.status(500).json({ error: "No se pudo salir de la radio." });
+  }
+});
+
+// Encender/apagar el microfono: guarda el estado en la tabla (para que los
+// demas lo vean) y avisa al canal para que escuchen el sonido al instante.
+app.post("/api/radio/mic", async (req, res) => {
+  if (!(await exigirPolicia(req, res))) return;
+  const encender = String(req.body?.estado || "") === "prender";
+  try {
+    await asegurarEsquemaRadio();
+    const id = String(req.session.usuario.id);
+    const [filas] = await pool.execute("SELECT canal, nombre FROM radio_conectados WHERE discord_id = ?", [id]);
+    if (!filas.length) return res.status(400).json({ error: "No estás conectado a ninguna radio." });
+    await pool.execute("UPDATE radio_conectados SET micro = ? WHERE discord_id = ?", [encender ? 1 : 0, id]);
+    if (encender) microsActivos.set(id, Number(filas[0].canal));
+    else microsActivos.delete(id);
+    avisarRadio(Number(filas[0].canal), {
+      tipo: encender ? "prender" : "apagar",
+      discordId: id,
+      nombre: filas[0].nombre,
+      t: Date.now(),
+    });
+    return res.json({ correcto: true, micro: encender ? 1 : 0 });
+  } catch (error) {
+    console.error("[API RADIO MIC]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el microfono." });
+  }
+});
+
+/* Voz del microfono: el panel manda trozos de audio (PCM 8 kHz en base64)
+   mientras el usuario mantiene presionado, y aqui se reenvian AL INSTANTE a
+   todos los demas conectados al canal por el mismo SSE de la radio.
+   Sin Discord ni MySQL por trozo: solo sesion + micro prendido.            */
+const ultimaReparacionVoz = new Map(); /* id -> ultimo intento de reparar
+   el mapa desde la BD (para no consultar MySQL en cada trozo rechazado) */
+
+app.post("/api/radio/voz", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const id = String(req.session.usuario.id);
+  const canal = Number(req.body?.canal);
+  const seq = Number(req.body?.seq) || 0;
+  const pcm = typeof req.body?.pcm === "string" ? req.body.pcm : "";
+  if (!CANALES_RADIO.has(canal)) return res.status(400).json({ error: "Esa radio no existe." });
+  /* tope generoso: un trozo de 8192 muestras a 8 kHz son hasta ~21,800
+     caracteres en base64 en un micro raro de baja tasa */
+  if (!pcm || pcm.length > 32000 || seq < 0) return res.status(400).json({ error: "Audio invalido." });
+  if (microsActivos.get(id) !== canal) {
+    /* microsActivos vive en memoria: si Render reinicia el proceso (lo hace
+       en cada deploy y al despertar el servicio) se vacia aunque el usuario
+       siga con el micro presionado. Antes de rechazar, se repara el mapa
+       leyendo la fila de radio_conectados (micro=1 en ese canal). */
+    const ahora = Date.now();
+    if (ahora - (ultimaReparacionVoz.get(id) || 0) > 2000) {
+      ultimaReparacionVoz.set(id, ahora);
+      try {
+        const [filas] = await pool.execute("SELECT canal, micro FROM radio_conectados WHERE discord_id = ?", [id]);
+        const fila = filas[0];
+        if (fila && Number(fila.micro) === 1 && Number(fila.canal) === canal) {
+          microsActivos.set(id, canal); /* reparado: el trozo sale abajo */
+        } else {
+          console.log(`[API RADIO VOZ] rechazado id=${id} canal=${canal} (micro apagado o sin radio)`);
+          return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+        }
+      } catch (error) {
+        console.error("[API RADIO VOZ]", error.message);
+        return res.status(500).json({ error: "No se pudo enviar la voz." });
+      }
+    } else {
+      return res.status(403).json({ error: "Prende el microfono antes de hablar." });
+    }
+  }
+  avisarRadio(canal, { tipo: "voz", discordId: id, seq, pcm, t: Date.now() });
+  return res.json({ correcto: true });
+});
+
+/* ===================== NEQUI / SALDOS ===================== */
+
+let saldosSchemaPromise;
+
+// Prepara la tabla saldos en MySQL (la misma que llena el bot cada 1 segundo
+// desde data/saldo.json). La web la crea sola si aun no existe.
+async function asegurarEsquemaSaldos() {
+  if (!saldosSchemaPromise) {
+    saldosSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS saldos (
+          discord_id VARCHAR(32) NOT NULL PRIMARY KEY,
+          billetera BIGINT NOT NULL DEFAULT 0,
+          banco BIGINT NOT NULL DEFAULT 0,
+          numero_tarjeta VARCHAR(64) NULL,
+          actualizado_en DATETIME NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      // Si la tabla es vieja (sin numero_tarjeta), intentamos agregar la columna.
+      try {
+        await pool.execute("ALTER TABLE saldos ADD COLUMN numero_tarjeta VARCHAR(64) NULL AFTER banco");
+      } catch (error) {
+        if (error?.code !== "ER_DUP_FIELDNAME") throw error;
+      }
+    })().catch((error) => {
+      saldosSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return saldosSchemaPromise;
+}
+
+// Historial de movimientos Nequi en MySQL (lo que se ve en la pestaña
+// Movimientos de nequi.html). La tabla la crea el servidor sola, y tambien
+// se puede crear desde HeidiSQL sobre la base s66_medellin (ver SQL del chat).
+let movimientosSchemaPromise;
+
+async function asegurarEsquemaMovimientos() {
+  if (!movimientosSchemaPromise) {
+    movimientosSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS nequi_movimientos (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          discord_id VARCHAR(32) NOT NULL,
+          tipo VARCHAR(20) NOT NULL,
+          monto BIGINT NOT NULL DEFAULT 0,
+          destino_id VARCHAR(32) NULL,
+          destino_nombre VARCHAR(190) NULL,
+          origen VARCHAR(20) NOT NULL DEFAULT 'web',
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_mov_discord (discord_id, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    })().catch((error) => {
+      movimientosSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return movimientosSchemaPromise;
+}
+
+// Guarda un movimiento sin romper la operacion si algo falla en la tabla.
+async function registrarMovimiento(fila) {
+  try {
+    await asegurarEsquemaMovimientos();
+    await pool.execute(
+      `INSERT INTO nequi_movimientos
+         (discord_id, tipo, monto, destino_id, destino_nombre, origen)
+       VALUES (?, ?, ?, ?, ?, 'web')`,
+      [
+        String(fila.discordId || ""),
+        String(fila.tipo || "movimiento"),
+        Number(fila.monto) || 0,
+        fila.destinoId || null,
+        fila.destinoNombre || null,
+      ],
+    );
+  } catch (error) {
+    console.error("[NEQUI MOVIMIENTOS]", error.message);
+  }
+}
+
+// ===== NOTIFICACIONES DEL CELULAR (MySQL en vez de localStorage) =====
+let notificacionesSchemaPromise;
+
+async function asegurarEsquemaNotificaciones() {
+  if (!notificacionesSchemaPromise) {
+    notificacionesSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS celular_notificaciones (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          discord_id VARCHAR(32) NOT NULL,
+          clave VARCHAR(90) NOT NULL,
+          icono VARCHAR(16) NOT NULL DEFAULT '🔔',
+          titulo VARCHAR(140) NOT NULL,
+          texto VARCHAR(400) NOT NULL DEFAULT '',
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          leido_en DATETIME NULL,
+          UNIQUE KEY uniq_notif_usuario (discord_id, clave),
+          INDEX idx_notif_lista (discord_id, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS celular_notif_cursor (
+          discord_id VARCHAR(32) NOT NULL PRIMARY KEY,
+          mov_cursor BIGINT NOT NULL DEFAULT 0,
+          tw_cursor BIGINT NOT NULL DEFAULT 0,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    })().catch((error) => {
+      notificacionesSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return notificacionesSchemaPromise;
+}
+
+// Guarda una notificación ignorando duplicados (clave única por usuario).
+async function insertarNotificacionCelular(fila) {
+  try {
+    await pool.execute(
+      `INSERT INTO celular_notificaciones
+         (discord_id, clave, icono, titulo, texto, leido_en)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = id`,
+      [
+        String(fila.discordId || ""),
+        String(fila.clave || "").slice(0, 90),
+        String(fila.icono || "🔔").slice(0, 16),
+        String(fila.titulo || "").slice(0, 140),
+        String(fila.texto || "").slice(0, 400),
+        fila.leido ? new Date() : null,
+      ],
+    );
+  } catch (error) {
+    console.error("[CELULAR NOTIFICACIONES]", error.message);
+  }
+}
+
+// Compara los movimientos de Nequi y las publicaciones de las cuentas que
+// sigues contra el cursor del usuario y crea SOLO las notificaciones nuevas.
+async function sincronizarNotificacionesCelular(discordId) {
+  await asegurarEsquemaNotificaciones();
+  await asegurarEsquemaMovimientos();
+
+  const [filasCursor] = await pool.execute(
+    "SELECT mov_cursor, tw_cursor FROM celular_notif_cursor WHERE discord_id = ?",
+    [discordId],
+  );
+  const [filaMov] = await pool.execute(
+    "SELECT IFNULL(MAX(id), 0) AS maximo FROM nequi_movimientos WHERE discord_id = ?",
+    [discordId],
+  );
+  const [filaTw] = await pool.execute(
+    "SELECT IFNULL(MAX(id), 0) AS maximo FROM twitter_publicaciones",
+    [],
+  );
+  const maxMov = Number(filaMov?.[0]?.maximo) || 0;
+  const maxTw = Number(filaTw?.[0]?.maximo) || 0;
+
+  // Primera visita: solo marcamos el punto de partida (sin avisos viejos).
+  if (!filasCursor.length) {
+    await pool.execute(
+      `INSERT INTO celular_notif_cursor (discord_id, mov_cursor, tw_cursor)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE mov_cursor = VALUES(mov_cursor),
+                                tw_cursor = VALUES(tw_cursor)`,
+      [discordId, maxMov, maxTw],
+    );
+    return;
+  }
+
+  const movCursor = Number(filasCursor[0].mov_cursor) || 0;
+  const twCursor = Number(filasCursor[0].tw_cursor) || 0;
+
+  // 💰 Nequi: dinero que te dieron (o movimientos nuevos).
+  if (maxMov > movCursor) {
+    try {
+      const [movimientos] = await pool.execute(
+        `SELECT id, tipo, monto, destino_nombre
+           FROM nequi_movimientos
+          WHERE discord_id = ? AND id > ? AND id <= ?
+          ORDER BY id ASC
+          LIMIT 20`,
+        [discordId, movCursor, maxMov],
+      );
+      for (const movimiento of movimientos) {
+        const recibido = /recib|entrada|dep[oó]sito|recarga/i.test(
+          String(movimiento.tipo || ""),
+        );
+        const monto = Number(movimiento.monto) || 0;
+        await insertarNotificacionCelular({
+          discordId,
+          clave: `mov:${movimiento.id}`,
+          icono: recibido ? "💰" : "💸",
+          titulo: recibido ? "Te dieron plata" : "Movimiento Nequi",
+          texto: `${recibido ? "Recibiste" : "Movimiento de"} ${monto.toLocaleString("es-CO")} $${movimiento.destino_nombre ? ` · ${movimiento.destino_nombre}` : ""}`,
+        });
+      }
+    } catch (error) {
+      console.error("[CELULAR NEQUI]", error.message);
+    }
+  }
+
+  // 🐦 Twitter: publicaciones nuevas de las cuentas que sigues.
+  if (maxTw > twCursor) {
+    try {
+      const [cuentas] = await pool.execute(
+        "SELECT id FROM twitter_cuentas WHERE discord_id = ? LIMIT 1",
+        [discordId],
+      );
+      if (cuentas.length) {
+        const miCuentaId = Number(cuentas[0].id) || 0;
+        const [seguidas] = await pool.execute(
+          "SELECT seguido_id FROM twitter_seguidores WHERE seguidor_id = ? LIMIT 500",
+          [miCuentaId],
+        );
+        const ids = seguidas
+          .map((fila) => Number(fila.seguido_id))
+          .filter((id) => id && id !== miCuentaId);
+        if (ids.length) {
+          const marcas = ids.map(() => "?").join(",");
+          const [publicaciones] = await pool.execute(
+            `SELECT p.id, p.descripcion, p.nombre, c.nombre AS autor_nombre
+               FROM twitter_publicaciones p
+               INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+              WHERE p.id > ? AND p.id <= ? AND p.cuenta_id IN (${marcas})
+              ORDER BY p.id ASC
+              LIMIT 20`,
+            [twCursor, maxTw, ...ids],
+          );
+          for (const publicacion of publicaciones) {
+            await insertarNotificacionCelular({
+              discordId,
+              clave: `tw:${publicacion.id}`,
+              icono: "🐦",
+              titulo: `Nueva publicación de ${publicacion.autor_nombre || "una cuenta que sigues"}`,
+              texto: String(
+                publicacion.descripcion ||
+                  publicacion.nombre ||
+                  "Publicó algo nuevo en Twitter Medellín RP.",
+              ).slice(0, 180),
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[CELULAR TWITTER]", error.message);
+    }
+  }
+
+  await pool.execute(
+    "UPDATE celular_notif_cursor SET mov_cursor = ?, tw_cursor = ? WHERE discord_id = ?",
+    [Math.max(maxMov, movCursor), Math.max(maxTw, twCursor), discordId],
+  );
+}
+
+// 🔔 Bandeja de notificaciones del celular (lee y sincroniza desde MySQL).
+app.get("/api/celular/notificaciones", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await sincronizarNotificacionesCelular(discordId);
+    const [filas] = await pool.execute(
+      `SELECT id, icono, titulo, texto, creado_en
+         FROM celular_notificaciones
+        WHERE discord_id = ?
+        ORDER BY id DESC
+        LIMIT 30`,
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      origen: "mysql-celular_notificaciones",
+      notificaciones: filas.map((fila) => ({
+        id: Number(fila.id),
+        icono: fila.icono,
+        titulo: fila.titulo,
+        texto: fila.texto,
+        fecha: fila.creado_en
+          ? new Date(fila.creado_en).toISOString()
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("[API CELULAR NOTIFICACIONES]", error.message);
+    return res.status(500).json({
+      codigo: "NOTIFICACIONES_NO_DISPONIBLES",
+      error: "No se pudieron leer las notificaciones desde MySQL.",
+    });
+  }
+});
+
+// ✕ Elimina una notificación concreta (solo puede borrar las suyas).
+app.delete("/api/celular/notificaciones/:id", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  const notificacionId = Number(req.params.id);
+  if (!Number.isFinite(notificacionId) || notificacionId <= 0) {
+    return res
+      .status(400)
+      .json({ error: "Identificador de notificación inválido." });
+  }
+  try {
+    await asegurarEsquemaNotificaciones();
+    const [resultado] = await pool.execute(
+      "DELETE FROM celular_notificaciones WHERE id = ? AND discord_id = ?",
+      [notificacionId, discordId],
+    );
+    return res.json({
+      correcto: true,
+      eliminadas: Number(resultado.affectedRows) || 0,
+    });
+  } catch (error) {
+    console.error("[API CELULAR BORRAR]", error.message);
+    return res
+      .status(500)
+      .json({ error: "No se pudo eliminar la notificación." });
+  }
+});
+
+// 🗑 Vacía la bandeja completa del usuario con sesión iniciada.
+app.delete("/api/celular/notificaciones", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await asegurarEsquemaNotificaciones();
+    const [resultado] = await pool.execute(
+      "DELETE FROM celular_notificaciones WHERE discord_id = ?",
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      eliminadas: Number(resultado.affectedRows) || 0,
+    });
+  } catch (error) {
+    console.error("[API CELULAR VACIAR]", error.message);
+    return res
+      .status(500)
+      .json({ error: "No se pudo vaciar la bandeja de notificaciones." });
+  }
+});
+
+// LECTURA DEL SALDO: SOLO MySQL. El bot escribe aqui cada 1 segundo lo que
+// lee de data/saldo.json, asi que la web ya no depende de la API del bot
+// (el "Not Found" que devolvia NEQUI_API_URL ya no puede aparecer aqui).
+app.get("/api/nequi", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await asegurarEsquemaSaldos();
+    const [filas] = await pool.execute(
+      `SELECT billetera, banco, numero_tarjeta, actualizado_en
+         FROM saldos
+        WHERE discord_id = ?
+        LIMIT 1`,
+      [discordId]
+    );
+    if (!filas[0]) {
+      return res.status(404).json({
+        codigo: "CUENTA_NEQUI_INEXISTENTE",
+        error: "No tienes una cuenta Nequi activa. Ejecuta /saldo en Discord.",
+      });
+    }
+    const fila = filas[0];
+    return res.json({
+      correcto: true,
+      origen: "mysql-saldos",
+      saldo: {
+        billetera: Number(fila.billetera || 0),
+        banco: Number(fila.banco || 0),
+        numeroTarjeta: fila.numero_tarjeta || null,
+        actualizadoEn: fila.actualizado_en || null,
+      },
+    });
+  } catch (error) {
+    console.error("[API NEQUI]", error.message);
+    return res.status(503).json({
+      codigo: "SALDOS_MYSQL_ERROR",
+      error: "No se pudo leer el saldo desde MySQL: " + error.message,
+    });
+  }
+});
+
+// OPERACIONES (depositar / retirar / transferir): van a la API del bot porque
+// el dinero real vive en data/saldo.json del servidor del bot. El bot luego
+// lo replica a la tabla saldos con el watcher de 1 segundo.
+app.post("/api/nequi/operacion", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    return res.status(503).json({
+      codigo: "NEQUI_API_NO_CONFIGURADA",
+      error: "Render no tiene configurada NEQUI_API_URL o NEQUI_API_KEY.",
+    });
+  }
+  try {
+    const base = process.env.NEQUI_API_URL.replace(/\/$/, "");
+    const respuesta = await fetch(`${base}/${discordId}/operacion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Nequi-Key": process.env.NEQUI_API_KEY,
+      },
+      body: JSON.stringify({
+        tipo: String(req.body?.tipo || ""),
+        monto: Number(req.body?.monto),
+        destinoId: req.body?.destinoId ? String(req.body.destinoId) : undefined,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const datos = await respuesta
+      .json()
+      .catch(() => ({ error: `El bot respondio ${respuesta.status} sin JSON valido.` }));
+
+    // Operacion exitosa: queda registrada en nequi_movimientos para que la
+    // pestana Movimientos de nequi.html muestre el historial de cada quien.
+    if (respuesta.ok && datos && datos.correcto) {
+      const tipo = String(req.body?.tipo || "");
+      const monto = Number(req.body?.monto) || 0;
+      const destinoId = req.body?.destinoId ? String(req.body.destinoId) : "";
+      const destinoNombre = req.body?.destinoNombre
+        ? String(req.body.destinoNombre).slice(0, 190)
+        : null;
+      await registrarMovimiento({
+        discordId,
+        tipo,
+        monto,
+        destinoId: destinoId || null,
+        destinoNombre,
+      });
+      // El que recibe la transferencia tambien la ve en SU lista.
+      if (tipo === "transferir" && destinoId) {
+        await registrarMovimiento({
+          discordId: destinoId,
+          tipo: "recibido",
+          monto,
+          destinoId: discordId,
+          destinoNombre:
+            req.session.usuario.nombre ||
+            req.session.usuario.username ||
+            null,
+        });
+      }
+    }
+
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API NEQUI OPERACION]", error.message);
+    return res.status(502).json({
+      codigo: "NEQUI_API_INACCESIBLE",
+      error: "No se pudo contactar la API del bot para completar la operacion.",
+    });
+  }
+});
+
+// HISTORIAL DE MOVIMIENTOS del usuario con sesion iniciada (los de SU cuenta
+// unicamente, ordenados del mas reciente al mas antiguo).
+app.get("/api/nequi/movimientos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  try {
+    await asegurarEsquemaMovimientos();
+    const limite = Math.min(Math.max(Number(req.query.limite) || 200, 1), 500);
+    const [filas] = await pool.execute(
+      `SELECT id, tipo, monto, destino_id, destino_nombre, origen, creado_en
+         FROM nequi_movimientos
+        WHERE discord_id = ?
+        ORDER BY id DESC
+        LIMIT ${limite}`,
+      [discordId],
+    );
+    return res.json({
+      correcto: true,
+      origen: "mysql-nequi_movimientos",
+      movimientos: filas.map((fila) => ({
+        id: Number(fila.id),
+        tipo: fila.tipo,
+        monto: Number(fila.monto) || 0,
+        destinoId: fila.destino_id || null,
+        destinoNombre: fila.destino_nombre || null,
+        origen: fila.origen || "web",
+        creadoEn: fila.creado_en
+          ? new Date(fila.creado_en).toISOString()
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("[API NEQUI MOVIMIENTOS]", error.message);
+    return res.status(500).json({
+      codigo: "MOVIMIENTOS_NO_DISPONIBLES",
+      error: "No se pudo leer el historial de movimientos desde MySQL.",
+    });
+  }
+});
+
+// DIAGNOSTICO: muestra como esta la tabla saldos y que responde la API del
+// bot (sin exponer la clave). Abrir en el navegador con la sesion iniciada.
+app.get("/api/nequi/diagnostico", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  const discordId = req.session.usuario.id;
+  const informe = {
+    nequiApiUrl: process.env.NEQUI_API_URL || null,
+    nequiApiKeyConfigurada: Boolean(process.env.NEQUI_API_KEY),
+    tablaSaldos: {},
+    apiBot: null,
+  };
+  try {
+    await asegurarEsquemaSaldos();
+    const [conteo] = await pool.execute("SELECT COUNT(*) AS total FROM saldos");
+    const [tuya] = await pool.execute("SELECT * FROM saldos WHERE discord_id = ? LIMIT 1", [discordId]);
+    informe.tablaSaldos = {
+      existe: true,
+      filas: Number(conteo[0]?.total || 0),
+      tuFila: tuya[0] || null,
+    };
+  } catch (error) {
+    informe.tablaSaldos = { existe: false, error: error.message };
+  }
+  if (informe.nequiApiUrl && informe.nequiApiKeyConfigurada) {
+    try {
+      const respuesta = await fetch(`${informe.nequiApiUrl.replace(/\/$/, "")}/${discordId}`, {
+        headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        signal: AbortSignal.timeout(6000),
+      });
+      informe.apiBot = {
+        urlProbada: `${informe.nequiApiUrl.replace(/\/$/, "")}/<tu-discord-id>`,
+        status: respuesta.status,
+        cuerpo: (await respuesta.text()).slice(0, 300),
+      };
+    } catch (error) {
+      informe.apiBot = { error: error.message };
+    }
+  } else {
+    informe.apiBot = { error: "Faltan NEQUI_API_URL o NEQUI_API_KEY en Render." };
+  }
+  // Pruebas de red: desde Render hacia los destinos clave.
+  // Sirve para saber si da timeout (firewall) o si conecta.
+  informe.red = {};
+  const destinos = [
+    { nombre: "mysql-directo", host: "213.165.91.6", puerto: 3306 },
+    { nombre: "bot-node", host: "179.236.233.10", puerto: 3000 },
+    { nombre: "bot-dominio", host: "node.duck-hosting.lat", puerto: 3000 },
+  ];
+  await Promise.all(destinos.map(async (d) => {
+    const inicio = Date.now();
+    try {
+      const conectado = await new Promise((resolver, rechazar) => {
+        const socket = new (require("node:net").Socket)();
+        const limite = setTimeout(() => { socket.destroy(); rechazar(new Error("timeout")); }, 5000);
+        socket.once("connect", () => { clearTimeout(limite); socket.destroy(); resolver(true); });
+        socket.once("error", (e) => { clearTimeout(limite); rechazar(e); });
+        socket.connect(d.puerto, d.host);
+      });
+      informe.red[d.nombre] = { host: d.host, puerto: d.puerto, estado: "CONECTA", ms: Date.now() - inicio };
+    } catch (error) {
+      informe.red[d.nombre] = { host: d.host, puerto: d.puerto, estado: error.message === "timeout" ? "TIMEOUT (bloqueado)" : error.code || error.message, ms: Date.now() - inicio };
+    }
+  }));
+  return res.json(informe);
+});
+
+// Prueba de red publica (sin sesion): sirve para saber desde Render
+// que puertos puede alcanzar mientras el login este caido por MySQL.
+// Ahora tambien muestra que host usa la web (MYSQL_HOST) y hace una
+// conexion MySQL REAL con mysql2 (la misma que usa el login).
+app.get("/api/red", async (req, res) => {
+  // 1) Configuracion real de la web (sin contrasena).
+  const configuracionMysql = {
+    host: process.env.MYSQL_HOST || null,
+    puerto: Number(process.env.MYSQL_PORT || 3306),
+    database: process.env.MYSQL_DATABASE || null,
+    user: process.env.MYSQL_USER || null,
+  };
+
+  // 2) DNS: a que IP(s) resuelve MYSQL_HOST (para ver si es la esperada).
+  let dns = null;
+  try {
+    const dnsModulo = require("node:dns/promises");
+    dns = await dnsModulo.lookup(configuracionMysql.host, { all: true });
+  } catch (error) {
+    dns = { error: error.message };
+  }
+
+  // 3) Conexion MySQL REAL con mysql2 (la misma del login).
+  let conexionReal = null;
+  try {
+    const inicioReal = Date.now();
+    const { pool } = require("./db");
+    const conexion = await pool.getConnection();
+    try {
+      await conexion.ping();
+      conexionReal = { estado: "CONECTA", ms: Date.now() - inicioReal };
+    } finally {
+      conexion.release();
+    }
+  } catch (error) {
+    conexionReal = {
+      estado: error.code || error.message,
+      mensaje: error.message,
+      errno: error.errno ?? null,
+      sqlState: error.sqlState ?? null,
+    };
+  }
+
+  // 4) Pruebas TCP a los destinos clave (incluye el host real de MySQL).
+  const destinos = [
+    { nombre: "mysql-configurado", host: configuracionMysql.host, puerto: configuracionMysql.puerto },
+    { nombre: "mysql-directo", host: "213.165.91.6", puerto: 3306 },
+    { nombre: "bot-node", host: "179.236.233.10", puerto: 3000 },
+    { nombre: "bot-dominio", host: "node.duck-hosting.lat", puerto: 3000 },
+    { nombre: "bot-api-4021", host: "213.165.91.6", puerto: 4021 },
+  ];
+  const resultados = {};
+  await Promise.all(destinos.map(async (d) => {
+    const inicio = Date.now();
+    try {
+      await new Promise((resolver, rechazar) => {
+        const socket = new (require("node:net").Socket)();
+        const limite = setTimeout(() => { socket.destroy(); rechazar(new Error("timeout")); }, 5000);
+        socket.once("connect", () => { clearTimeout(limite); socket.destroy(); resolver(true); });
+        socket.once("error", (e) => { clearTimeout(limite); rechazar(e); });
+        socket.connect(d.puerto, d.host);
+      });
+      resultados[d.nombre] = { host: d.host, puerto: d.puerto, estado: "CONECTA", ms: Date.now() - inicio };
+    } catch (error) {
+      resultados[d.nombre] = {
+        host: d.host,
+        puerto: d.puerto,
+        estado: error.message === "timeout" ? "TIMEOUT (bloqueado)" : error.code || error.message,
+        ms: Date.now() - inicio,
+      };
+    }
+  }));
+
+  return res.json({ configuracionMysql, dns, conexionRealMysql: conexionReal, tcp: resultados });
+});
+
+app.get("/api/nequi/usuarios", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const respuesta = await fetch(`https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members?limit=1000`, {
+      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, "User-Agent": "Medellin-RP-Web/1.0" },
+    });
+    if (!respuesta.ok) throw new Error(`Discord respondió ${respuesta.status}.`);
+    const miembros = await respuesta.json();
+    return res.json({
+      usuarios: miembros
+        .filter((m) => m.user?.id !== req.session.usuario.id)
+        .map((m) => ({ id: m.user.id, nombre: m.nick || m.user.global_name || m.user.username, username: m.user.username }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    });
+  } catch (error) {
+    console.error("[API NEQUI USUARIOS]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar los usuarios del servidor." });
+  }
+});
+
+app.post("/api/multas/:multaId/pagar", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+    }
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/multas/${req.session.usuario.id}/pagar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ multaId: req.params.multaId }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API PAGAR MULTA]", error.message);
+    return res.status(500).json({ error: "No se pudo procesar el pago de la multa." });
+  }
+});
+
+app.get("/api/expediente", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      try {
+        const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+        const respuestaBot = await fetch(`${baseApi}/api/expediente/${encodeURIComponent(discordId)}`, {
+          headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (respuestaBot.ok) {
+          const datosBot = await respuestaBot.json();
+          const expedienteBot = datosBot.expediente || {};
+          return res.json({
+            correcto: true,
+            origen: "bot-data-antecedentes",
+            expediente: {
+              arrestos: Array.isArray(expedienteBot.arrestos) ? expedienteBot.arrestos : [],
+              antecedentes: Array.isArray(expedienteBot.antecedentes) ? expedienteBot.antecedentes : [],
+              multas: Array.isArray(expedienteBot.multas) ? expedienteBot.multas : [],
+              conteos: { arrestos: 0, antecedentes: 0, multas: 0, ordenes: 0 },
+            },
+          });
+        }
+      } catch (e) {
+        console.warn("[API EXPEDIENTE] No se pudo leer data/antecedentes.json mediante el bot:", e.message);
+      }
+    }
+    const [arrestos, antecedentes, multas] = await Promise.all([
+      pool.execute("SELECT payload FROM expediente_arrestos WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
+      pool.execute("SELECT payload FROM expediente_antecedentes WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
+      pool.execute("SELECT payload FROM expediente_multas WHERE discord_id = ? ORDER BY fecha DESC", [discordId]),
+    ]);
+    const convertir = ([filas]) => filas.map((f) => (typeof f.payload === "string" ? JSON.parse(f.payload) : f.payload));
+    const datos = { arrestos: convertir(arrestos), antecedentes: convertir(antecedentes), multas: convertir(multas) };
+    return res.json({ correcto: true, expediente: { ...datos, conteos: { arrestos: datos.arrestos.length, antecedentes: datos.antecedentes.length, multas: datos.multas.length, ordenes: 0 } } });
+  } catch (error) {
+    console.error("[API EXPEDIENTE]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el expediente sincronizado en MySQL." });
+  }
+});
+
+async function solicitarApiVehiculos(req, metodo = "GET", cuerpo = null, sufijo = "") {
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    const error = new Error("Render no tiene configurada la conexión con la API del bot.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const opciones = { method: metodo, headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) };
+  if (cuerpo !== null) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);
+  }
+  const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+  const respuesta = await fetch(`${baseApi}/api/vehiculos/${req.session.usuario.id}${sufijo}`, opciones);
+  const datos = await respuesta.json();
+  return { estado: respuesta.status, datos };
+}
+
+app.get("/api/vehiculos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(req, "GET");
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS GET]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.post("/api/vehiculos", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(req, "POST", req.body);
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS POST]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/vehiculos/:id", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiVehiculos(req, "DELETE", null, `/${encodeURIComponent(req.params.id)}`);
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API VEHICULOS DELETE]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+async function solicitarApiTienda(req, metodo = "GET", cuerpo = null, sufijo = "") {
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    const error = new Error("Render no tiene configurada la conexión con la API del bot.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+  const opciones = { method: metodo, headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY }, signal: AbortSignal.timeout(8000) };
+  if (cuerpo !== null) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);
+  }
+  const respuesta = await fetch(`${baseApi}/api/tienda/${req.session.usuario.id}${sufijo}`, opciones);
+  const datos = await respuesta.json();
+  return { estado: respuesta.status, datos };
+}
+
+app.get("/api/tienda", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiTienda(req);
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API TIENDA GET]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.post("/api/tienda/:productoId/comprar", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const resultado = await solicitarApiTienda(req, "POST", { productoId: req.params.productoId }, "/comprar");
+    return res.status(resultado.estado).json(resultado.datos);
+  } catch (error) {
+    console.error("[API TIENDA COMPRA]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+});
+
+app.get("/api/comportamiento", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/comportamiento/${req.session.usuario.id}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API COMPORTAMIENTO]", error.message);
+    return res.status(500).json({ error: "No se pudo consultar el comportamiento." });
+  }
+});
+
+/* ===================== FUNDACIÓN ===================== */
+
+app.post("/api/fundacion", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+    return res.status(503).json({ error: "Render no tiene configurada la conexión con la API del bot." });
+  }
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      body: JSON.stringify({ ...req.body, adminId: req.session.usuario.id, adminTag: req.session.usuario.username }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const datos = await respuesta.json();
+    return res.status(respuesta.status).json(datos);
+  } catch (error) {
+    console.error("[API FUNDACION]", error.message);
+    return res.status(500).json({ error: "No se pudo completar la operación de Fundación." });
+  }
+});
+
+app.get("/api/fundacion/catalogo", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const resultado = await solicitarApiTienda(req, "GET");
+    return res.status(resultado.estado).json({ correcto: resultado.estado >= 200 && resultado.estado < 300, tienda: resultado.datos.tienda || [], inventario: resultado.datos.inventario || [], error: resultado.datos.error });
+  } catch (error) {
+    console.error("[API FUNDACION CATALOGO]", error.message);
+    return res.status(error.statusCode || 500).json({ error: error.message || "No se pudo cargar la tienda." });
+  }
+});
+
+app.delete("/api/fundacion/catalogo/:productoId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/${encodeURIComponent(req.params.productoId)}`, {
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo eliminar el objeto." });
+  }
+});
+
+app.get("/api/fundacion/comportamiento/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}?vista=comportamiento&discordId=${encodeURIComponent(req.params.discordId)}`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo cargar el comportamiento." });
+  }
+});
+
+app.delete("/api/fundacion/comportamiento/:discordId/:tipo/:indice", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/comportamiento/${encodeURIComponent(req.params.discordId)}/${encodeURIComponent(req.params.tipo)}/${encodeURIComponent(req.params.indice)}`, {
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API CANCELAR COMPORTAMIENTO]", error.message);
+    return res.status(500).json({ error: "No se pudo cancelar el registro." });
+  }
+});
+
+app.get("/api/fundacion/trabajos", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}?vista=trabajos`, {
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API TRABAJOS]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar los trabajos." });
+  }
+});
+
+app.delete("/api/fundacion/trabajos/:trabajoId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+    const respuesta = await fetch(`${baseApi}/api/fundacion/${req.session.usuario.id}/trabajo/${encodeURIComponent(req.params.trabajoId)}`, {
+      method: "DELETE",
+      headers: { "X-Nequi-Key": process.env.NEQUI_API_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.status(respuesta.status).json(await respuesta.json());
+  } catch (error) {
+    console.error("[API ELIMINAR TRABAJO]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar el trabajo." });
+  }
+});
+
+app.get("/api/fundacion/usuarios", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    const usuarios = await obtenerMiembrosDelServidor();
+    return res.json({ correcto: true, usuarios });
+  } catch (error) {
+    console.error("[FUNDACION USUARIOS]", error.message);
+    return res.status(503).json({ error: "No se pudo cargar la lista de usuarios del servidor." });
+  }
+});
+
+/* ===================== FUNDACIÓN TWITTER (panel admin) ===================== */
+
+app.get("/api/fundacion/twitter", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  try {
+    await asegurarEsquemaTwitter();
+    const [filas] = await pool.execute(
+      `SELECT id, discord_id, nombre, avatar_url, verificado, creado_en, actualizado_en
+         FROM twitter_cuentas
+        ORDER BY nombre ASC`
+    );
+    return res.json({
+      correcto: true,
+      cuentas: filas.map((f) => ({
+        id: f.id,
+        discord_id: f.discord_id,
+        nombre: f.nombre,
+        avatar_url: f.avatar_url || null,
+        verificado: Number(f.verificado),
+        creado_en: f.creado_en,
+        actualizado_en: f.actualizado_en,
+      })),
+    });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER LISTA]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar las cuentas Twitter." });
+  }
+});
+
+app.patch("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  const { verificado } = req.body || {};
+  try {
+    await asegurarEsquemaTwitter();
+    const [existente] = await pool.execute("SELECT 1 FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [discordId]);
+    if (!existente.length) return res.status(404).json({ error: "La cuenta de Twitter no existe." });
+    await pool.execute("UPDATE twitter_cuentas SET verificado = ? WHERE discord_id = ?", [verificado ? 1 : 0, discordId]);
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER VERIFICAR]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar la verificación." });
+  }
+});
+
+app.delete("/api/fundacion/twitter/:discordId", async (req, res) => {
+  if (!(await exigirFundacion(req, res))) return;
+  const discordId = String(req.params.discordId || "").trim();
+  if (!/^\d{10,25}$/.test(discordId)) return res.status(400).json({ error: "Discord ID inválido." });
+  try {
+    await asegurarEsquemaTwitter();
+    const [resultado] = await pool.execute("DELETE FROM twitter_cuentas WHERE discord_id = ?", [discordId]);
+    if (!resultado.affectedRows) return res.status(404).json({ error: "La cuenta de Twitter no existe." });
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[FUNDACION TWITTER ELIMINAR]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar la cuenta Twitter." });
+  }
+});
+
+/* ===================== TWITTER CIUDADANO ===================== */
+
+const TWITTER_AVATAR_DEFECTO = "https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png";
+let twitterSchemaPromise;
+
+async function asegurarEsquemaTwitter() {
+  if (!twitterSchemaPromise) {
+    twitterSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS twitter_cuentas (
+          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          discord_id VARCHAR(30) NOT NULL,
+          nombre VARCHAR(80) NOT NULL,
+          avatar_url TEXT NULL,
+          verificado TINYINT(1) NOT NULL DEFAULT 0,
+          ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          UNIQUE KEY uq_twitter_discord (discord_id),
+          KEY idx_twitter_nombre (nombre)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      const [columnas] = await pool.execute("SHOW COLUMNS FROM twitter_cuentas");
+      const existentes = new Set(columnas.map((c) => c.Field));
+      const faltantes = [
+        ["avatar_url", "ADD COLUMN avatar_url TEXT NULL"],
+        ["verificado", "ADD COLUMN verificado TINYINT(1) NOT NULL DEFAULT 0"],
+        ["ultimo_cambio_perfil", "ADD COLUMN ultimo_cambio_perfil DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+        ["creado_en", "ADD COLUMN creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+        ["actualizado_en", "ADD COLUMN actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+      ];
+      for (const [nombre, definicion] of faltantes) {
+        if (existentes.has(nombre)) continue;
+        await pool.execute(`ALTER TABLE twitter_cuentas ${definicion}`);
+        console.log(`[TWITTER] Columna ${nombre} creada automáticamente.`);
+      }
+    })().catch((error) => {
+      twitterSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return twitterSchemaPromise;
+}
+
+app.use("/api/twitter", async (req, res, next) => {
+  try {
+    await asegurarEsquemaTwitter();
+    return next();
+  } catch (error) {
+    console.error("[TWITTER ESQUEMA]", error.message);
+    return res.status(503).json({ error: "Twitter no está disponible porque no se pudo preparar la tabla de cuentas." });
+  }
+});
+
+function textoTwitter(valor, maximo) {
+  return String(valor ?? "").trim().slice(0, maximo);
+}
+
+function imagenTwitterValida(valor) {
+  if (!valor) return true;
+  return /^(https?:\/\/|data:image\/)/i.test(String(valor)) && String(valor).length <= 2_500_000;
+}
+
+async function obtenerCuentaTwitter(discordId) {
+  const [filas] = await pool.execute(`SELECT id, discord_id, nombre, avatar_url, verificado, ultimo_cambio_perfil, creado_en, actualizado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1`, [discordId]);
+  return filas[0] || null;
+}
+
+function serializarCuentaTwitter(cuenta) {
+  if (!cuenta) return null;
+  return { ...cuenta, avatar_url: cuenta.avatar_url || TWITTER_AVATAR_DEFECTO };
+}
+
+async function enviarLogTwitter(titulo, descripcion, campos = [], thumbnail) {
+  try {
+    const thumbnailHttp = /^https?:\/\//i.test(String(thumbnail || "")) ? thumbnail : undefined;
+    await enviarEmbedDiscord(CANAL_LOG_TWITTER, {
+      title: titulo,
+      description,
+      color: 0x22caa0,
+      fields: campos,
+      thumbnail: thumbnailHttp ? { url: thumbnailHttp } : undefined,
+      footer: { text: `${NOMBRE_SERVIDOR} • Twitter ciudadano` },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[TWITTER] No se pudo enviar el log a Discord:", error.message);
+  }
+}
+
+async function notificarSeguidoresTwitter(autor, publicacion) {
+  try {
+    const [seguidores] = await pool.execute(
+      `SELECT c.discord_id FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id WHERE s.seguido_id = ?`,
+      [autor.id]
+    );
+    const ids = seguidores.map((fila) => String(fila.discord_id)).filter(Boolean);
+    if (!ids.length) return 0;
+    if (process.env.NEQUI_API_URL && process.env.NEQUI_API_KEY) {
+      const baseApi = process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, "");
+      const respuestaBot = await fetch(`${baseApi}/api/twitter/${autor.discord_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Nequi-Key": process.env.NEQUI_API_KEY },
+        body: JSON.stringify({ followerIds: ids, nombre: publicacion.nombre, descripcion: publicacion.descripcion }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (respuestaBot.ok) {
+        const resultadoBot = await respuestaBot.json().catch(() => ({}));
+        return Number(resultadoBot.notificados || ids.length);
+      }
+    }
+    for (const id of ids) {
+      await enviarEmbedDiscord(
+        CANAL_LOG_TWITTER,
+        {
+          title: "🐦 Nueva publicación de una cuenta que sigues",
+          description: `**<@${autor.discord_id}>** publicó algo nuevo en Twitter ciudadano.\n\n**${publicacion.nombre}**\n${publicacion.descripcion}`,
+          color: 0x42d8d0,
+          fields: [
+            { name: "👤 Cuenta que publicó", value: `<@${autor.discord_id}>`, inline: true },
+            { name: "🔔 Notificado", value: `<@${id}> está siguiendo esta cuenta`, inline: true },
+          ],
+          footer: { text: `${NOMBRE_SERVIDOR} • Notificación Twitter` },
+          timestamp: new Date().toISOString(),
+        },
+        [],
+        { content: `<@${id}>`, allowed_mentions: { users: [id] } }
+      );
+    }
+    return ids.length;
+  } catch (error) {
+    console.error("[TWITTER NOTIFICACIONES]", error.message);
+    return 0;
+  }
+}
+
+async function exigirCuentaTwitter(req, res) {
+  if (!exigirSesion(req, res)) return null;
+  const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+  if (!cuenta) {
+    res.status(404).json({ error: "Debes crear tu cuenta de Twitter primero.", cuenta: null });
+    return null;
+  }
+  return cuenta;
+}
+
+app.get("/api/twitter/me", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+    return res.json({ cuenta: serializarCuentaTwitter(cuenta), avatarDefecto: TWITTER_AVATAR_DEFECTO });
+  } catch (error) {
+    console.error("[TWITTER ME]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar tu cuenta de Twitter." });
+  }
+});
+
+app.post("/api/twitter/cuenta", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    const nombre = textoTwitter(req.body?.nombre, 80);
+    const avatarRecibido = textoTwitter(req.body?.avatarUrl, 2_500_000);
+    const avatarUrl = /^data:[^;]+;base64,$/i.test(avatarRecibido) ? TWITTER_AVATAR_DEFECTO : (avatarRecibido || TWITTER_AVATAR_DEFECTO);
+    if (!nombre) return res.status(400).json({ error: "El nombre de Twitter es obligatorio." });
+    if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    if (await obtenerCuentaTwitter(discordId)) return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
+
+    await pool.execute(`INSERT INTO twitter_cuentas (discord_id, nombre, avatar_url, ultimo_cambio_perfil) VALUES (?, ?, ?, NOW())`, [discordId, nombre, avatarUrl]);
+    const cuenta = await obtenerCuentaTwitter(discordId);
+    await enviarLogTwitter("🐦 Nueva cuenta de Twitter", "Se registró una cuenta ciudadana desde la web de Medellín RP.", [
+      { name: "👤 Usuario", value: `<@${discordId}>`, inline: true },
+      { name: "📝 Nombre", value: nombre, inline: true },
+    ], avatarUrl);
+    return res.status(201).json({ correcto: true, cuenta: serializarCuentaTwitter(cuenta) });
+  } catch (error) {
+    console.error("[TWITTER CUENTA]", error.message);
+    if (error.code === "ER_DUP_ENTRY") return res.status(409).json({ error: "Ya tienes una cuenta de Twitter." });
+    const mensajesTwitter = {
+      ER_NO_SUCH_TABLE: "No existe la tabla de cuentas Twitter. Ejecuta database/twitter.sql en MySQL.",
+      ER_BAD_FIELD_ERROR: "La tabla Twitter está desactualizada. Ejecuta database/twitter.sql y database/twitter-verificacion.sql.",
+      ER_DATA_TOO_LONG: "La imagen es demasiado grande. Usa una imagen de máximo 1.8 MB.",
+      ER_ACCESS_DENIED_ERROR: "El usuario de MySQL no tiene permisos para guardar cuentas Twitter.",
+    };
+    return res.status(500).json({ error: mensajesTwitter[error.code] || "No se pudo crear la cuenta de Twitter.", detalle: process.env.NODE_ENV === "production" ? undefined : `${error.code || "ERROR"}: ${error.message}` });
+  }
+});
+
+app.put("/api/twitter/cuenta", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const cuenta = await obtenerCuentaTwitter(req.session.usuario.id);
+    if (!cuenta) return res.status(404).json({ error: "Primero debes crear tu cuenta de Twitter." });
+    const horasDesdeCambio = (Date.now() - new Date(cuenta.ultimo_cambio_perfil).getTime()) / 3_600_000;
+    if (horasDesdeCambio < 240) {
+      const diasRestantes = Math.max(1, Math.ceil((240 - horasDesdeCambio) / 24));
+      return res.status(429).json({ error: `Solo puedes cambiar tu nombre o foto cada 10 días. Faltan aproximadamente ${diasRestantes} día(s).` });
+    }
+    const nombre = textoTwitter(req.body?.nombre, 80) || cuenta.nombre;
+    const avatarUrl = req.body?.avatarUrl === undefined ? cuenta.avatar_url : (textoTwitter(req.body.avatarUrl, 2_500_000) || TWITTER_AVATAR_DEFECTO);
+    if (!imagenTwitterValida(avatarUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    await pool.execute(`UPDATE twitter_cuentas SET nombre = ?, avatar_url = ?, ultimo_cambio_perfil = NOW() WHERE id = ?`, [nombre, avatarUrl, cuenta.id]);
+    return res.json({ correcto: true, cuenta: serializarCuentaTwitter(await obtenerCuentaTwitter(req.session.usuario.id)) });
+  } catch (error) {
+    console.error("[TWITTER PERFIL]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el perfil." });
+  }
+});
+
+async function publicacionesTwitterPara(cuentaId, soloCuentaId = null) {
+  const condiciones = [];
+  const parametros = [];
+  if (soloCuentaId) {
+    condiciones.push("p.cuenta_id = ?");
+    parametros.push(soloCuentaId);
+  }
+  const filtro = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  const parametrosConsulta = [cuentaId, cuentaId, ...parametros, 10];
+  const [filas] = await pool.execute(
+    `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
+            c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id, c.verificado AS autor_verificado,
+            IF(p.cuenta_id = ?, 1, 0) AS propia,
+            (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
+            IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
+            (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
+       FROM twitter_publicaciones p
+       INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+       ${filtro}
+       ORDER BY p.creado_en DESC, p.id DESC LIMIT ?`,
+    parametrosConsulta
+  );
+  return filas;
+}
+
+app.get("/api/twitter/feed", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    return res.json({ cuenta: serializarCuentaTwitter(cuenta), publicaciones: await publicacionesTwitterPara(cuenta.id) });
+  } catch (error) {
+    console.error("[TWITTER FEED]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar el inicio de Twitter." });
+  }
+});
+
+app.get("/api/twitter/buscar", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const q = textoTwitter(req.query?.q, 120);
+  if (!q) return res.status(400).json({ error: "Escribe algo para buscar." });
+  try {
+    const patron = `%${q}%`;
+    const [publicaciones] = await pool.execute(
+      `SELECT p.id, p.cuenta_id, p.nombre, p.descripcion, p.imagen_url, p.creado_en,
+              c.nombre AS autor_nombre, c.avatar_url AS autor_avatar, c.discord_id AS autor_discord_id, c.verificado AS autor_verificado,
+              IF(p.cuenta_id = ?, 1, 0) AS propia,
+              (SELECT COUNT(*) FROM twitter_likes l WHERE l.publicacion_id = p.id) AS likes,
+              IF(EXISTS(SELECT 1 FROM twitter_likes l2 WHERE l2.publicacion_id = p.id AND l2.cuenta_id = ?), 1, 0) AS liked,
+              (SELECT COUNT(*) FROM twitter_comentarios co WHERE co.publicacion_id = p.id) AS comentarios
+         FROM twitter_publicaciones p
+         INNER JOIN twitter_cuentas c ON c.id = p.cuenta_id
+        WHERE p.nombre LIKE ? OR p.descripcion LIKE ? OR c.nombre LIKE ?
+        ORDER BY p.creado_en DESC, p.id DESC LIMIT 50`,
+      [cuenta.id, cuenta.id, patron, patron, patron]
+    );
+    return res.json({ consulta: q, publicaciones });
+  } catch (error) {
+    console.error("[TWITTER BUSCAR]", error.message);
+    return res.status(500).json({ error: "No se pudieron buscar publicaciones." });
+  }
+});
+
+app.get("/api/twitter/perfil/:discordId", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const [cuentas] = await pool.execute("SELECT id, discord_id, nombre, avatar_url, verificado, creado_en FROM twitter_cuentas WHERE discord_id = ? LIMIT 1", [req.params.discordId]);
+    if (!cuentas[0]) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
+    const objetivo = cuentas[0];
+    const [[estadisticas]] = await pool.execute(
+      `SELECT
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores,
+        (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo,
+        EXISTS(SELECT 1 FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ?) AS siguiendo_cuenta`,
+      [objetivo.id, objetivo.id, cuenta.id, objetivo.id]
+    );
+    const [seguidoresLista] = await pool.execute(
+      `SELECT c.discord_id, c.nombre, c.avatar_url FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguidor_id WHERE s.seguido_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [objetivo.id]
+    );
+    const [siguiendoLista] = await pool.execute(
+      `SELECT c.discord_id, c.nombre, c.avatar_url FROM twitter_seguidores s INNER JOIN twitter_cuentas c ON c.id = s.seguido_id WHERE s.seguidor_id = ? ORDER BY s.creado_en DESC LIMIT 100`,
+      [cuenta.id]
+    );
+    return res.json({
+      cuenta: { ...serializarCuentaTwitter(objetivo), seguidores: Number(estadisticas.seguidores || 0), siguiendo: Number(estadisticas.siguiendo || 0), siguiendo_cuenta: Boolean(estadisticas.siguiendo_cuenta), seguidores_lista: seguidoresLista, siguiendo_lista: siguiendoLista },
+      publicaciones: await publicacionesTwitterPara(cuenta.id, objetivo.id),
+    });
+  } catch (error) {
+    console.error("[TWITTER PERFIL PUBLICO]", error.message);
+    return res.status(500).json({ error: "No se pudo cargar el perfil." });
+  }
+});
+
+app.post("/api/twitter/cuentas/:discordId/seguir", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const objetivo = await obtenerCuentaTwitter(req.params.discordId);
+    if (!objetivo) return res.status(404).json({ error: "Ese usuario todavía no tiene cuenta de Twitter." });
+    if (objetivo.id === cuenta.id) return res.status(400).json({ error: "No puedes seguir tu propia cuenta." });
+    const [existente] = await pool.execute("SELECT 1 FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ? LIMIT 1", [cuenta.id, objetivo.id]);
+    if (existente.length) {
+      await pool.execute("DELETE FROM twitter_seguidores WHERE seguidor_id = ? AND seguido_id = ?", [cuenta.id, objetivo.id]);
+    } else {
+      await pool.execute("INSERT INTO twitter_seguidores (seguidor_id, seguido_id) VALUES (?, ?)", [cuenta.id, objetivo.id]);
+    }
+    const [[conteos]] = await pool.execute(
+      `SELECT (SELECT COUNT(*) FROM twitter_seguidores WHERE seguido_id = ?) AS seguidores, (SELECT COUNT(*) FROM twitter_seguidores WHERE seguidor_id = ?) AS siguiendo`,
+      [objetivo.id, cuenta.id]
+    );
+    return res.json({ siguiendo_cuenta: !existente.length, seguidores: Number(conteos.seguidores || 0), siguiendo: Number(conteos.siguiendo || 0) });
+  } catch (error) {
+    console.error("[TWITTER SEGUIR]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el seguimiento." });
+  }
+});
+
+app.post("/api/twitter/publicaciones", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const nombre = textoTwitter(req.body?.nombre, 80);
+    const descripcion = textoTwitter(req.body?.descripcion, 2000);
+    const imagenUrl = textoTwitter(req.body?.imagenUrl, 2_500_000);
+    if (!nombre || !descripcion) return res.status(400).json({ error: "El nombre y la descripción son obligatorios." });
+    if (!imagenTwitterValida(imagenUrl)) return res.status(400).json({ error: "La imagen debe ser una URL válida o una imagen cargada." });
+    const [resultado] = await pool.execute(`INSERT INTO twitter_publicaciones (cuenta_id, nombre, descripcion, imagen_url) VALUES (?, ?, ?, ?)`, [cuenta.id, nombre, descripcion, imagenUrl || null]);
+    const notificados = await notificarSeguidoresTwitter(cuenta, { nombre, descripcion });
+    return res.status(201).json({ correcto: true, id: resultado.insertId, notificados });
+  } catch (error) {
+    console.error("[TWITTER PUBLICAR]", error.message);
+    return res.status(500).json({ error: "No se pudo publicar el mensaje." });
+  }
+});
+
+app.delete("/api/twitter/publicaciones/:id", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const publicacionId = Number(req.params.id);
+  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) return res.status(400).json({ error: "Publicación inválida." });
+  try {
+    const [resultado] = await pool.execute("DELETE FROM twitter_publicaciones WHERE id = ? AND cuenta_id = ?", [publicacionId, cuenta.id]);
+    if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propias publicaciones." });
+    await enviarLogTwitter("🗑️ Publicación eliminada", "Una publicación fue eliminada desde Twitter ciudadano.", [
+      { name: "👤 Usuario", value: `<@${req.session.usuario.id}>`, inline: true },
+      { name: "🆔 Publicación", value: String(publicacionId), inline: true },
+    ], cuenta.avatar_url);
+    return res.json({ correcto: true, eliminada: publicacionId });
+  } catch (error) {
+    console.error("[TWITTER ELIMINAR]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar la publicación." });
+  }
+});
+
+app.post("/api/twitter/publicaciones/:id/like", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const publicacionId = Number(req.params.id);
+  if (!Number.isSafeInteger(publicacionId) || publicacionId < 1) return res.status(400).json({ error: "Publicación inválida." });
+  try {
+    const [existentes] = await pool.execute("SELECT 1 FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ? LIMIT 1", [publicacionId, cuenta.id]);
+    if (existentes.length) {
+      await pool.execute("DELETE FROM twitter_likes WHERE publicacion_id = ? AND cuenta_id = ?", [publicacionId, cuenta.id]);
+    } else {
+      await pool.execute("INSERT INTO twitter_likes (publicacion_id, cuenta_id) VALUES (?, ?)", [publicacionId, cuenta.id]);
+    }
+    const [total] = await pool.execute("SELECT COUNT(*) AS total FROM twitter_likes WHERE publicacion_id = ?", [publicacionId]);
+    return res.json({ liked: !existentes.length, likes: Number(total[0].total || 0) });
+  } catch (error) {
+    console.error("[TWITTER LIKE]", error.message);
+    return res.status(500).json({ error: "No se pudo actualizar el like." });
+  }
+});
+
+app.get("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  try {
+    const [comentarios] = await pool.execute(
+      `SELECT co.id, co.cuenta_id, co.texto, co.creado_en, c.nombre, c.avatar_url, c.discord_id FROM twitter_comentarios co INNER JOIN twitter_cuentas c ON c.id = co.cuenta_id WHERE co.publicacion_id = ? ORDER BY co.creado_en ASC`,
+      [Number(req.params.id)]
+    );
+    return res.json({ comentarios: comentarios.map((x) => ({ ...x, avatar_url: x.avatar_url || TWITTER_AVATAR_DEFECTO })) });
+  } catch (error) {
+    console.error("[TWITTER COMENTARIOS]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar los comentarios." });
+  }
+});
+
+app.post("/api/twitter/publicaciones/:id/comentarios", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const texto = textoTwitter(req.body?.texto, 600);
+  const publicacionId = Number(req.params.id);
+  if (!texto) return res.status(400).json({ error: "Escribe un comentario." });
+  try {
+    await pool.execute("INSERT INTO twitter_comentarios (publicacion_id, cuenta_id, texto) VALUES (?, ?, ?)", [publicacionId, cuenta.id, texto]);
+    return res.status(201).json({ correcto: true });
+  } catch (error) {
+    console.error("[TWITTER COMENTAR]", error.message);
+    return res.status(500).json({ error: "No se pudo publicar el comentario." });
+  }
+});
+
+app.delete("/api/twitter/comentarios/:id", async (req, res) => {
+  const cuenta = await exigirCuentaTwitter(req, res);
+  if (!cuenta) return;
+  const comentarioId = Number(req.params.id);
+  if (!Number.isSafeInteger(comentarioId) || comentarioId < 1) return res.status(400).json({ error: "Comentario inválido." });
+  try {
+    const [resultado] = await pool.execute("DELETE FROM twitter_comentarios WHERE id = ? AND cuenta_id = ?", [comentarioId, cuenta.id]);
+    if (!resultado.affectedRows) return res.status(403).json({ error: "Solo puedes eliminar tus propios comentarios." });
+    return res.json({ correcto: true, eliminado: comentarioId });
+  } catch (error) {
+    console.error("[TWITTER ELIMINAR COMENTARIO]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar el comentario." });
+  }
+});
+
+/* ===================== ENCUESTAS ===================== */
+
+function montarRutasEncuestas({ app, exigirSesion, exigirFundacion, logger = console } = {}) {
+  if (!app || typeof app.get !== "function") throw new TypeError("montarRutasEncuestas requiere la aplicación Express.");
+  if (typeof exigirSesion !== "function" || typeof exigirFundacion !== "function") throw new TypeError("Debes proporcionar exigirSesion y exigirFundacion de server.js.");
+
+  const intentos = new Map();
+
+  function configuracionBot() {
+    if (!process.env.NEQUI_API_URL || !process.env.NEQUI_API_KEY) {
+      const error = new Error("El servidor web no tiene configurada la conexión con la API del bot.");
+      error.statusCode = 503;
+      throw error;
+    }
+    return { base: process.env.NEQUI_API_URL.replace(/\/$/, "").replace(/\/api\/nequi$/, ""), clave: process.env.NEQUI_API_KEY };
+  }
+
+  function exigirOrigenMismoSitio(req, res, next) {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    const origen = req.get("origin");
+    if (!origen) return next();
+    try {
+      if (new URL(origen).host !== req.get("host")) return res.status(403).json({ error: "Origen de solicitud no permitido." });
+    } catch {
+      return res.status(403).json({ error: "Origen de solicitud inválido." });
+    }
+    return next();
+  }
+
+  function limitarRespuestas(req, res, next) {
+    const clave = String(req.session?.usuario?.id || req.ip || "desconocido");
+    const ahora = Date.now();
+    const historial = (intentos.get(clave) || []).filter((marca) => ahora - marca < 60_000);
+    if (historial.length >= 10) return res.status(429).json({ error: "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo." });
+    historial.push(ahora);
+    intentos.set(clave, historial);
+    if (intentos.size > 5000) {
+      for (const [id, marcas] of intentos) {
+        if (!marcas.some((marca) => ahora - marca < 60_000)) intentos.delete(id);
+      }
+    }
+    return next();
+  }
+
+  async function solicitarBot(ruta, { method = "GET", body, timeout = 10_000 } = {}) {
+    const { base, clave } = configuracionBot();
+    const opciones = { method, headers: { "X-Nequi-Key": clave, "User-Agent": "Medellin-RP-Web/1.0" }, signal: AbortSignal.timeout(timeout) };
+    if (body !== undefined) {
+      opciones.headers["Content-Type"] = "application/json";
+      opciones.body = JSON.stringify(body);
+    }
+    const respuesta = await fetch(`${base}${ruta}`, opciones);
+    const tipo = respuesta.headers.get("content-type") || "";
+    if (!tipo.includes("application/json")) {
+      const detalle = (await respuesta.text()).slice(0, 300);
+      const error = new Error(`La API del bot devolvió una respuesta inválida (${respuesta.status}): ${detalle}`);
+      error.statusCode = 502;
+      throw error;
+    }
+    return { status: respuesta.status, datos: await respuesta.json() };
+  }
+
+  function manejarError(res, error, contexto) {
+    logger.error(`[${contexto}]`, error.message);
+    if (error.name === "TimeoutError" || error.name === "AbortError") return res.status(504).json({ error: "La API del bot tardó demasiado en responder." });
+    return res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : "No se pudo completar la operación de encuestas." });
+  }
+
+  app.use("/api/encuestas", exigirOrigenMismoSitio);
+  app.use("/api/fundacion/encuestas", exigirOrigenMismoSitio);
+
+  app.get("/api/encuestas", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTAS LISTA");
+    }
+  });
+
+  app.get("/api/encuestas/:encuestaId", async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA DETALLE");
+    }
+  });
+
+  app.post("/api/encuestas/:encuestaId/responder", limitarRespuestas, async (req, res) => {
+    if (!exigirSesion(req, res)) return;
+    try {
+      const resultado = await solicitarBot(`/api/encuestas/${req.session.usuario.id}/${encodeURIComponent(req.params.encuestaId)}/responder`, { method: "POST", body: { respuestas: req.body?.respuestas }, timeout: 15_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "ENCUESTA RESPUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION ENCUESTAS");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas`, { method: "POST", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, fechaCierre: req.body?.fechaCierre, preguntas: req.body?.preguntas }, timeout: 15_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CREAR ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/publicar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/publicar`, { method: "POST", body: { fechaCierre: req.body?.fechaCierre }, timeout: 30_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION PUBLICAR ENCUESTA");
+    }
+  });
+
+  app.put("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "PUT", body: { titulo: req.body?.titulo, descripcion: req.body?.descripcion, fuerza: req.body?.fuerza, minimoAprobacion: req.body?.minimoAprobacion, preguntas: req.body?.preguntas }, timeout: 15_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION EDITAR ENCUESTA");
+    }
+  });
+
+  app.delete("/api/fundacion/encuestas/:encuestaId", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`, { method: "DELETE", body: {}, timeout: 15_000 });
+      return res.status(resultado.estado).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION ELIMINAR ENCUESTA");
+    }
+  });
+
+  app.get("/api/fundacion/encuestas/:encuestaId", async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}`);
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION DETALLE ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/calificar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/calificar`, { method: "POST", body: { usuarioId: req.body?.usuarioId, preguntaId: req.body?.preguntaId, calificacion: req.body?.calificacion, puntuacion: req.body?.puntuacion, comentario: req.body?.comentario }, timeout: 15_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CALIFICAR ENCUESTA");
+    }
+  });
+
+  app.post("/api/fundacion/encuestas/:encuestaId/cerrar", limitarRespuestas, async (req, res) => {
+    if (!(await exigirFundacion(req, res))) return;
+    try {
+      const resultado = await solicitarBot(`/api/fundacion/${req.session.usuario.id}/encuestas/${encodeURIComponent(req.params.encuestaId)}/cerrar`, { method: "POST", body: {}, timeout: 30_000 });
+      return res.status(resultado.status).json(resultado.datos);
+    } catch (error) {
+      return manejarError(res, error, "FUNDACION CERRAR ENCUESTA");
+    }
+  });
+
+  return app;
+}
+
+montarRutasEncuestas({ app, exigirSesion, exigirFundacion });
+
+/* ===================== WHATSAPP (chats en MySQL) =====================
+   Los chats de la app WhatsApp del celular se guardan TAMBIÉN aquí:
+   tabla whatsapp_cuentas (tu número, nombre y foto) y whatsapp_chats
+   (cada conversación con sus mensajes en JSON). El cliente manda y
+   trae todo con fetch; en HeidiSQL verás las dos tablas. */
+
+let whatsappSchemaPromise;
+
+async function asegurarEsquemaWhatsapp() {
+  if (!whatsappSchemaPromise) {
+    whatsappSchemaPromise = (async () => {
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS whatsapp_cuentas (
+          discord_id VARCHAR(30) NOT NULL,
+          numero VARCHAR(10) NOT NULL,
+          nombre VARCHAR(60) NOT NULL,
+          foto TEXT NULL,
+          creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (discord_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS whatsapp_chats (
+          id VARCHAR(40) NOT NULL,
+          discord_id VARCHAR(30) NOT NULL,
+          numero VARCHAR(10) NOT NULL,
+          nombre VARCHAR(60) NOT NULL,
+          foto TEXT NULL,
+          respondido TINYINT(1) NOT NULL DEFAULT 0,
+          mensajes MEDIUMTEXT NOT NULL,
+          creado BIGINT NOT NULL DEFAULT 0,
+          actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          KEY idx_wa_discord (discord_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    })().catch((error) => {
+      whatsappSchemaPromise = undefined;
+      throw error;
+    });
+  }
+  return whatsappSchemaPromise;
+}
+
+app.use("/api/whatsapp", async (req, res, next) => {
+  try {
+    await asegurarEsquemaWhatsapp();
+    return next();
+  } catch (error) {
+    console.error("[WHATSAPP ESQUEMA]", error.message);
+    return res.status(503).json({ error: "WhatsApp no está disponible porque no se pudo preparar la tabla." });
+  }
+});
+
+const digitosWhatsapp = (valor) => String(valor || "").replace(/\D/g, "");
+function numeroWhatsappValido(valor) {
+  let d = digitosWhatsapp(valor);
+  if (d.length === 12 && d.startsWith("57")) d = d.slice(2);
+  return /^3\d{9}$/.test(d);
+}
+function textoWhatsapp(valor, maximo) {
+  return String(valor ?? "").trim().slice(0, maximo);
+}
+function fotoWhatsappValida(valor) {
+  if (!valor) return true;
+  return /^data:image\//.test(valor) && valor.length <= 2_000_000;
+}
+
+/* GET: trae la cuenta y todos los chats del usuario (los pinta el celular) */
+app.get("/api/whatsapp", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    const [cuentas] = await pool.execute(
+      `SELECT numero, nombre, foto FROM whatsapp_cuentas WHERE discord_id = ? LIMIT 1`,
+      [discordId]
+    );
+    const [chats] = await pool.execute(
+      `SELECT id, numero, nombre, foto, respondido, mensajes, creado
+         FROM whatsapp_chats WHERE discord_id = ? ORDER BY creado DESC`,
+      [discordId]
+    );
+    const fila = cuentas[0];
+    const cuenta = fila
+      ? { numero: digitosWhatsapp(fila.numero).slice(0, 10), nombre: fila.nombre, foto: fila.foto || "" }
+      : null;
+    const lista = chats.map((c) => {
+      let mensajes = [];
+      try {
+        const parseado = JSON.parse(c.mensajes);
+        if (Array.isArray(parseado)) mensajes = parseado;
+      } catch (e) {}
+      return {
+        id: c.id,
+        numero: digitosWhatsapp(c.numero).slice(0, 10),
+        nombre: c.nombre,
+        foto: c.foto || "",
+        mensajes,
+        creado: Number(c.creado) || 0,
+        respondido: Boolean(c.respondido),
+      };
+    });
+    return res.json({ cuenta, chats: lista });
+  } catch (error) {
+    console.error("[WHATSAPP GET]", error.message);
+    return res.status(500).json({ error: "No se pudieron cargar tus chats de WhatsApp." });
+  }
+});
+
+/* POST: guarda la cuenta y reemplaza la lista de chats completa */
+app.post("/api/whatsapp", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    const cuenta = req.body?.cuenta;
+    const chats = Array.isArray(req.body?.chats) ? req.body.chats : [];
+    if (!cuenta || !numeroWhatsappValido(cuenta.numero)) {
+      return res.status(400).json({ error: "Número de WhatsApp inválido." });
+    }
+    const nombre = textoWhatsapp(cuenta.nombre, 60);
+    if (nombre.length < 2) return res.status(400).json({ error: "Nombre de WhatsApp inválido." });
+    const foto = cuenta.foto || "";
+    if (!fotoWhatsappValida(foto)) return res.status(400).json({ error: "La foto de perfil es demasiado grande." });
+    if (chats.length > 500) return res.status(400).json({ error: "Demasiados chats para guardar." });
+
+    await pool.execute(
+      `INSERT INTO whatsapp_cuentas (discord_id, numero, nombre, foto) VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE numero = VALUES(numero), nombre = VALUES(nombre), foto = VALUES(foto)`,
+      [discordId, digitosWhatsapp(cuenta.numero).slice(0, 10), nombre, foto]
+    );
+
+    const ids = [];
+    for (const c of chats) {
+      const id = textoWhatsapp(c?.id, 40);
+      const cNumero = digitosWhatsapp(c?.numero).slice(0, 10);
+      if (!id || !/^3\d{9}$/.test(cNumero)) continue;
+      const cNombre = textoWhatsapp(c?.nombre, 60) || "Sin nombre";
+      const cFoto = fotoWhatsappValida(c?.foto) ? c.foto || "" : "";
+      const respondido = c?.respondido ? 1 : 0;
+      const creado = Number(c?.creado) || Date.now();
+      const mensajes = (Array.isArray(c?.mensajes) ? c.mensajes : [])
+        .slice(-2000)
+        .map((m) => ({
+          de: m?.de === "el" ? "el" : "yo",
+          texto: textoWhatsapp(m?.texto, 1000),
+          t: Number(m?.t) || Date.now(),
+        }));
+      await pool.execute(
+        `INSERT INTO whatsapp_chats (id, discord_id, numero, nombre, foto, respondido, mensajes, creado)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE numero = VALUES(numero), nombre = VALUES(nombre), foto = VALUES(foto),
+           respondido = VALUES(respondido), mensajes = VALUES(mensajes)`,
+        [id, discordId, cNumero, cNombre, cFoto, respondido, JSON.stringify(mensajes), creado]
+      );
+      ids.push(id);
+    }
+
+    /* borra los chats que el cliente ya no tiene */
+    if (ids.length) {
+      const marcas = ids.map(() => "?").join(",");
+      await pool.execute(
+        `DELETE FROM whatsapp_chats WHERE discord_id = ? AND id NOT IN (${marcas})`,
+        [discordId, ...ids]
+      );
+    } else {
+      await pool.execute(`DELETE FROM whatsapp_chats WHERE discord_id = ?`, [discordId]);
+    }
+    return res.json({ correcto: true, chats: ids.length });
+  } catch (error) {
+    console.error("[WHATSAPP POST]", error.message);
+    return res.status(500).json({ error: "No se pudieron guardar tus chats de WhatsApp." });
+  }
+});
+
+/* DELETE: elimina la cuenta y todos sus chats de la base de datos */
+app.delete("/api/whatsapp", async (req, res) => {
+  if (!exigirSesion(req, res)) return;
+  try {
+    const discordId = req.session.usuario.id;
+    await pool.execute(`DELETE FROM whatsapp_chats WHERE discord_id = ?`, [discordId]);
+    await pool.execute(`DELETE FROM whatsapp_cuentas WHERE discord_id = ?`, [discordId]);
+    return res.json({ correcto: true });
+  } catch (error) {
+    console.error("[WHATSAPP DELETE]", error.message);
+    return res.status(500).json({ error: "No se pudo eliminar tu cuenta de WhatsApp." });
+  }
+});
+
+/* ===================== SESION / 404 ===================== */
+
+app.get("/cerrar-sesion", (req, res) => {
+  req.session.destroy((error) => {
+    if (error) console.error("[SESION]", error);
+    res.clearCookie("connect.sid");
+    return res.redirect(req.query.automatico === "1" ? "/se-cerro-seccion.html" : "/index.html");
+  });
+});
+
+app.use((req, res) => {
+  if (req.path.startsWith("/api/")) return res.status(404).json({ error: "Ruta API no encontrada." });
+  if (req.method === "GET") return res.redirect("/index.html");
+  return res.status(404).send("Página no encontrada.");
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[WEB] Servidor iniciado en el puerto ${PORT}.`);
+  probarConexion().catch((error) => console.error("[MYSQL] Error de conexión:", error.message));
+});
