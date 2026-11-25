@@ -390,13 +390,13 @@
         </p>
         <div class="instruction">
           Entra al servidor y ejecuta el comando oficial:<br />
-          <code>/registrar cedula</code><br />
+          <code>/registrar-cedula</code><br />
           Completa el formulario de Discord. El sistema generará
           automáticamente tu <b>NUIP</b>, lo <b>guardará en la base de datos</b>
           y queda vinculado con tu cuenta del portal.
         </div>
         <div class="actions">
-          <a class="button" href="https://discord.com/channels/1500206705055760406" target="_blank" rel="noopener noreferrer">Abrir servidor de Discord</a>
+          <a class="button" href="https://discord.com/channels/1561032118941917224" target="_blank" rel="noopener noreferrer">Abrir servidor de Discord</a>
           <button id="verificar" class="button" type="button">Ya la registré · Verificar</button>
         </div>
         <div id="estado">Esperando el registro de la cédula en Discord.</div>
@@ -422,7 +422,7 @@
             return;
           } else {
             estado.className = "show";
-            estado.textContent = "Todavía no aparece una cédula. Ejecuta /registrar cedula en Discord.";
+            estado.textContent = "Todavía no aparece una cédula. Ejecuta /registrar-cedula en Discord.";
           }
         } catch (error) {
           estado.className = "show error";
